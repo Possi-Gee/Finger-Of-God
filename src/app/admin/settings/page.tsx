@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Trash2, PlusCircle, Palette, Text, Link as LinkIcon, DollarSign, Percent } from 'lucide-react';
+import { Trash2, PlusCircle, Palette, Text, Link as LinkIcon, Percent, Landmark } from 'lucide-react';
 
 // Schemas for each form section
 const appNameSchema = z.object({ appName: z.string().min(1, 'App name is required') });
@@ -110,7 +110,7 @@ function CommerceSettingsForm({ onSubmit, defaultValues }: { onSubmit: (data: z.
     <form onSubmit={handleSubmit(onSubmit)}>
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2"><DollarSign /> Commerce Settings</CardTitle>
+          <CardTitle className="flex items-center gap-2"><Landmark /> Commerce Settings</CardTitle>
           <CardDescription>Manage tax rates and shipping fees.</CardDescription>
         </CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -124,9 +124,9 @@ function CommerceSettingsForm({ onSubmit, defaultValues }: { onSubmit: (data: z.
             </div>
              <div className="space-y-2">
                 <Label htmlFor="shippingFee">Shipping Fee</Label>
-                <div className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
-                    <span className="text-muted-foreground mr-2">GH₵</span>
-                    <input {...register('shippingFee')} className="w-full bg-transparent p-0 outline-none placeholder:text-muted-foreground" placeholder='0.00'/>
+                 <div className="flex h-10 w-full items-center rounded-md border border-input bg-background px-3 text-sm ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
+                    <span className="text-muted-foreground">GH₵</span>
+                    <input {...register('shippingFee')} className="w-full bg-transparent p-0 pl-2 outline-none placeholder:text-muted-foreground"/>
                 </div>
                 {errors.shippingFee && <p className="text-sm text-destructive mt-1">{errors.shippingFee.message}</p>}
             </div>
@@ -226,5 +226,3 @@ function FieldArrayLinks({ colIndex, control, register }: { colIndex: number; co
     </div>
   );
 }
-
-    
