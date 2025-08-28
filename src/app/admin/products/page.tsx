@@ -10,7 +10,7 @@ import { categories, type Product } from '@/lib/products';
 import { useProduct } from '@/hooks/use-product';
 import { generateProductDescription } from '@/ai/flows/generate-product-description';
 
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -18,7 +18,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import {
   AlertDialog,
@@ -559,3 +558,5 @@ export default function AdminProductsPage() {
     </div>
   );
 }
+
+    
