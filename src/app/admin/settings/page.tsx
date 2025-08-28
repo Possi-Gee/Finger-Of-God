@@ -158,7 +158,7 @@ export default function SiteSettingsPage() {
                         <Trash2 />
                       </Button>
                     </div>
-                    <FieldArrayLinks control={control} colIndex={colIndex} />
+                    <FieldArrayLinks control={control} register={register} colIndex={colIndex} />
                   </Card>
                 ))}
                 </div>
@@ -177,7 +177,7 @@ export default function SiteSettingsPage() {
   );
 }
 
-function FieldArrayLinks({ colIndex, control }: { colIndex: number; control: any }) {
+function FieldArrayLinks({ colIndex, control, register }: { colIndex: number; control: any, register: any }) {
   const { fields, append, remove } = useFieldArray({
     control,
     name: `footer.columns.${colIndex}.links`,
