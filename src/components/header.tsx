@@ -30,13 +30,11 @@ export function Header() {
       <div className="container flex h-14 max-w-screen-2xl items-center">
         <Link href="/" className="mr-6 flex items-center space-x-2">
            {settings.logoUrl ? (
-            <Image src={settings.logoUrl} alt={settings.appName} width={100} height={30} style={{objectFit: 'contain'}} />
+            <Image src={settings.logoUrl} alt={settings.appName} width={30} height={30} className="rounded-md object-contain" />
           ) : (
-            <>
-              <Package className="h-6 w-6 text-primary" />
-              <span className="font-bold sm:inline-block">{settings.appName}</span>
-            </>
+            <Package className="h-6 w-6 text-primary" />
           )}
+           <span className="font-bold sm:inline-block">{settings.appName}</span>
         </Link>
         <nav className="flex items-center gap-4 text-sm lg:gap-6">
           <Link

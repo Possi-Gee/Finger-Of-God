@@ -36,10 +36,11 @@ export function Footer() {
           <div className="col-span-2 lg:col-span-1">
             <Link href="/" className="flex items-center space-x-2 mb-4">
                {settings.logoUrl ? (
-                <Image src={settings.logoUrl} alt={settings.appName} width={120} height={40} style={{objectFit: 'contain', filter: 'brightness(0.1)'}} />
+                <Image src={settings.logoUrl} alt={settings.appName} width={30} height={30} className="rounded-md object-contain" style={{filter: 'brightness(0.1)'}} />
               ) : (
-                 <span className="text-xl font-bold">{settings.appName}</span>
+                 <ShoppingBag className="h-6 w-6" />
               )}
+               <span className="text-xl font-bold">{settings.appName}</span>
             </Link>
             <p className="text-sm text-muted-foreground">
               Your one-stop shop for everything you need.

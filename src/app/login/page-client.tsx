@@ -40,13 +40,11 @@ export function LoginPageClient() {
         <div className="text-center mb-6">
             <Link href="/" className="inline-flex items-center space-x-2">
                  {settings.logoUrl ? (
-                    <Image src={settings.logoUrl} alt={settings.appName} width={140} height={40} style={{objectFit: 'contain'}} />
+                    <Image src={settings.logoUrl} alt={settings.appName} width={40} height={40} className="rounded-md object-contain" />
                   ) : (
-                    <>
-                        <ShoppingBag className="h-8 w-8 text-primary" />
-                        <span className="text-2xl font-bold">{settings.appName}</span>
-                    </>
+                    <ShoppingBag className="h-8 w-8 text-primary" />
                 )}
+                <span className="text-2xl font-bold">{settings.appName}</span>
             </Link>
         </div>
       <Tabs defaultValue="login" className="w-full">
