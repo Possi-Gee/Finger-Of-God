@@ -1,4 +1,5 @@
-import { Header } from '@/components/header';
+
+import { BottomNavbar } from '@/components/bottom-navbar';
 
 export default function MainLayout({
   children,
@@ -7,8 +8,8 @@ export default function MainLayout({
 }) {
   return (
     <div className="relative flex min-h-screen flex-col bg-background">
-      <Header />
-      <main className="flex-1">{children}</main>
+      <main className="flex-1 pb-16">{children}</main>
+      <BottomNavbar />
     </div>
   );
 }
