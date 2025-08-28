@@ -2,15 +2,16 @@
 'use client';
 
 import Image from 'next/image';
-import { Heart, ShoppingCart } from 'lucide-react';
+import { Heart, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import type { Product } from '@/lib/products';
 import { useCart } from '@/hooks/use-cart';
 import { useWishlist } from '@/hooks/use-wishlist';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
+import { Badge } from '@/components/ui/badge';
 
 interface ProductCardProps {
   product: Product;
@@ -51,11 +52,12 @@ export function ProductCard({ product }: ProductCardProps) {
   };
 
   const wishlisted = isWishlisted(product.id);
+  const discount = product.originalPrice ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100) : 0;
 
   return (
-     <Link href={`/product/${product.id}`} className="group block">
+     <Link href={`/product/${product.id}`} className="group block h-full">
         <Card className="flex h-full flex-col overflow-hidden transition-all duration-300 group-hover:shadow-lg group-hover:-translate-y-1">
-          <CardHeader className="p-0">
+          <CardHeader className="p-0 relative">
             <div className="relative aspect-square w-full">
               <Image
                 src={product.image}
@@ -66,23 +68,34 @@ export function ProductCard({ product }: ProductCardProps) {
                 data-ai-hint={product.dataAiHint}
               />
             </div>
-          </CardHeader>
-          <CardContent className="flex-grow p-4">
-            <p className="text-xs text-muted-foreground">{product.category}</p>
-            <CardTitle className="mt-1 text-base font-semibold leading-tight">{product.name}</CardTitle>
-          </CardContent>
-          <CardFooter className="flex flex-wrap justify-between items-center gap-2 p-4 pt-0 mt-auto">
-            <p className="text-lg font-bold text-primary">${product.price.toFixed(2)}</p>
-            <div className="flex items-center space-x-1">
-              <Button variant="ghost" size="icon" onClick={handleToggleWishlist}>
+            <Button variant="ghost" size="icon" onClick={handleToggleWishlist} className="absolute top-2 right-2 bg-white/80 hover:bg-white rounded-full h-8 w-8">
                 <Heart className={cn('h-5 w-5', wishlisted ? 'text-red-500 fill-current' : 'text-foreground')} />
-              </Button>
-              <Button size="sm" onClick={handleAddToCart}>
-                <ShoppingCart className="mr-2 h-4 w-4" />
-                Add
-              </Button>
+            </Button>
+            {discount > 0 && (
+                <Badge variant="destructive" className="absolute top-2 left-2">-{discount}%</Badge>
+            )}
+          </CardHeader>
+          <CardContent className="flex flex-col flex-grow p-3">
+             {product.isOfficialStore && <Badge className="bg-cyan-600 hover:bg-cyan-700 w-fit mb-2">Official Store</Badge>}
+            <p className="text-sm font-medium leading-tight flex-grow">{product.name}</p>
+            <div className="mt-2 flex items-center gap-2">
+                <p className="text-lg font-bold text-foreground">${product.price.toFixed(2)}</p>
+                {product.originalPrice && (
+                    <p className="text-sm text-muted-foreground line-through">${product.originalPrice.toFixed(2)}</p>
+                )}
             </div>
-          </CardFooter>
+            <div className="flex items-center gap-1 mt-1">
+                <div className="flex items-center">
+                    {[...Array(5)].map((_, i) => (
+                        <Star key={i} className={cn("h-4 w-4", i < Math.round(product.rating) ? "text-yellow-400 fill-yellow-400" : "text-gray-300")} />
+                    ))}
+                </div>
+                <span className="text-xs text-muted-foreground">({product.reviews})</span>
+            </div>
+            <Button size="sm" onClick={handleAddToCart} className="w-full mt-4">
+                Add to Cart
+            </Button>
+          </CardContent>
         </Card>
     </Link>
   );

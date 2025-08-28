@@ -3,8 +3,12 @@ export type Product = {
   name: string;
   description: string;
   price: number;
+  originalPrice?: number;
   category: string;
   image: string;
+  rating: number;
+  reviews: number;
+  isOfficialStore?: boolean;
   dataAiHint: string;
 };
 
@@ -13,9 +17,13 @@ export const products: Product[] = [
     id: 1,
     name: 'Wireless Headphones',
     description: 'High-fidelity sound, 20-hour battery life, and noise-cancelling technology.',
-    price: 199.99,
+    price: 179.99,
+    originalPrice: 199.99,
     category: 'Electronics',
     image: 'https://picsum.photos/600/600?random=1',
+    rating: 4.5,
+    reviews: 89,
+    isOfficialStore: true,
     dataAiHint: 'headphones music',
   },
   {
@@ -25,6 +33,9 @@ export const products: Product[] = [
     price: 249.99,
     category: 'Electronics',
     image: 'https://picsum.photos/600/600?random=2',
+    rating: 4.8,
+    reviews: 124,
+    isOfficialStore: true,
     dataAiHint: 'smartwatch technology',
   },
   {
@@ -34,6 +45,8 @@ export const products: Product[] = [
     price: 129.99,
     category: 'Fashion',
     image: 'https://picsum.photos/600/600?random=3',
+    rating: 4.2,
+    reviews: 54,
     dataAiHint: 'backpack travel',
   },
   {
@@ -43,15 +56,21 @@ export const products: Product[] = [
     price: 15.99,
     category: 'Groceries',
     image: 'https://picsum.photos/600/600?random=4',
+    rating: 4.9,
+    reviews: 210,
+    isOfficialStore: true,
     dataAiHint: 'tea drink',
   },
   {
     id: 5,
     name: 'Running Shoes',
     description: 'Lightweight and comfortable shoes for your daily runs. Available in multiple sizes.',
-    price: 89.99,
+    price: 79.99,
+    originalPrice: 89.99,
     category: 'Fashion',
     image: 'https://picsum.photos/600/600?random=5',
+    rating: 4.6,
+    reviews: 150,
     dataAiHint: 'shoes sport',
   },
   {
@@ -61,15 +80,21 @@ export const products: Product[] = [
     price: 299.99,
     category: 'Home Goods',
     image: 'https://picsum.photos/600/600?random=6',
+    rating: 4.0,
+    reviews: 30,
     dataAiHint: 'furniture interior',
   },
   {
     id: 7,
     name: 'Yoga Mat',
     description: 'Eco-friendly and non-slip yoga mat for your daily practice.',
-    price: 39.99,
+    price: 34.99,
+    originalPrice: 39.99,
     category: 'Sports',
     image: 'https://picsum.photos/600/600?random=7',
+    rating: 4.7,
+    reviews: 98,
+    isOfficialStore: true,
     dataAiHint: 'yoga fitness',
   },
   {
@@ -79,6 +104,8 @@ export const products: Product[] = [
     price: 49.99,
     category: 'Home Goods',
     image: 'https://picsum.photos/600/600?random=8',
+    rating: 4.3,
+    reviews: 75,
     dataAiHint: 'kitchen appliance',
   },
   {
@@ -88,15 +115,21 @@ export const products: Product[] = [
     price: 79.99,
     category: 'Fashion',
     image: 'https://picsum.photos/600/600?random=9',
+    rating: 4.5,
+    reviews: 110,
     dataAiHint: 'jacket clothing',
   },
   {
     id: 10,
     name: 'Smart Home Hub',
     description: 'Control all your smart devices from one central hub with voice commands.',
-    price: 149.99,
+    price: 129.99,
+    originalPrice: 149.99,
     category: 'Electronics',
     image: 'https://picsum.photos/600/600?random=10',
+    rating: 4.6,
+    reviews: 130,
+    isOfficialStore: true,
     dataAiHint: 'smarthome technology',
   },
   {
@@ -106,6 +139,8 @@ export const products: Product[] = [
     price: 24.99,
     category: 'Books',
     image: 'https://picsum.photos/600/600?random=11',
+    rating: 4.9,
+    reviews: 300,
     dataAiHint: 'book food',
   },
   {
@@ -115,6 +150,8 @@ export const products: Product[] = [
     price: 229.99,
     category: 'Home Goods',
     image: 'https://picsum.photos/600/600?random=12',
+    rating: 4.4,
+    reviews: 85,
     dataAiHint: 'office furniture',
   },
 ];
