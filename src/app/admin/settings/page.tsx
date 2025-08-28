@@ -125,7 +125,7 @@ function CommerceSettingsForm({ onSubmit, defaultValues }: { onSubmit: (data: z.
              <div className="space-y-2">
                 <Label htmlFor="shippingFee">Shipping Fee (GH₵)</Label>
                  <div className="relative">
-                    <Input id="shippingFee" type="number" {...register('shippingFee')} className="pl-8" />
+                    <Input id="shippingFee" type="number" {...register('shippingFee')} className="pl-10" />
                     <span className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground">GH₵</span>
                  </div>
                 {errors.shippingFee && <p className="text-sm text-destructive mt-1">{errors.shippingFee.message}</p>}
