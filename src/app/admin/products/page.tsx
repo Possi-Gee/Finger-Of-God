@@ -7,6 +7,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { products as initialProducts, categories, type Product } from '@/lib/products';
+import { generateProductDescription } from '@/ai/flows/generate-product-description';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -16,7 +17,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -33,7 +33,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, Camera, Upload, Link as LinkIcon, AlertTriangle, Loader2 } from 'lucide-react';
+import { PlusCircle, Camera, Upload, Link as LinkIcon, AlertTriangle, Loader2, Bot, SwitchCamera } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const productSchema = z.object({
@@ -42,6 +42,7 @@ const productSchema = z.object({
   price: z.coerce.number().min(0.01, 'Price must be greater than 0'),
   category: z.string().min(1, 'Category is required'),
   image: z.string().url('A valid image is required'),
+  features: z.string().optional(),
 });
 
 type ProductFormValues = z.infer<typeof productSchema>;
@@ -57,6 +58,7 @@ export default function AdminProductsPage() {
     control,
     setValue,
     reset,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
@@ -69,6 +71,44 @@ export default function AdminProductsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
+  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('environment');
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  const productName = watch('name');
+  const features = watch('features');
+
+  const handleGenerateDescription = async () => {
+    if (!productName || !features) {
+      toast({
+        title: 'Missing Details',
+        description: 'Please enter a product name and some features to generate a description.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    setIsGenerating(true);
+    try {
+      const result = await generateProductDescription({
+        productName,
+        features,
+        numVariations: 1,
+      });
+      if (result.descriptions && result.descriptions.length > 0) {
+        setValue('description', result.descriptions[0], { shouldValidate: true });
+        toast({ title: 'Success', description: 'Generated product description.' });
+      } else {
+        throw new Error('No description was generated.');
+      }
+    } catch (error) {
+       toast({
+        title: 'Error',
+        description: 'Failed to generate description. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
 
   const stopCamera = useCallback(() => {
@@ -78,16 +118,10 @@ export default function AdminProductsPage() {
     }
   }, [stream]);
   
-  useEffect(() => {
-    return () => {
+  const startCamera = useCallback(async () => {
       stopCamera();
-    };
-  }, [stopCamera]);
-
-  const startCamera = async () => {
-      if (stream) return;
       try {
-        const newStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        const newStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode } });
         setHasCameraPermission(true);
         setStream(newStream);
         if (videoRef.current) {
@@ -97,17 +131,31 @@ export default function AdminProductsPage() {
         console.error('Error accessing camera:', error);
         setHasCameraPermission(false);
       }
-    };
-  
+    }, [facingMode, stopCamera]);
 
-  const handleTabChange = (value: string) => {
-    setImageTab(value);
-    if (value === 'camera') {
+
+  useEffect(() => {
+    if (open && imageTab === 'camera') {
       startCamera();
     } else {
       stopCamera();
     }
+
+    return () => {
+        if (open) {
+         stopCamera();
+        }
+    }
+  }, [open, imageTab, startCamera, stopCamera]);
+
+
+  const handleTabChange = (value: string) => {
+    setImageTab(value);
   };
+  
+  const handleToggleFacingMode = () => {
+      setFacingMode(prev => prev === 'user' ? 'environment' : 'user');
+  }
 
   useEffect(() => {
     if (!open) {
@@ -160,7 +208,11 @@ export default function AdminProductsPage() {
   const onSubmit = (data: ProductFormValues) => {
     const newProduct: Product = {
       id: products.length + 1,
-      ...data,
+      name: data.name,
+      description: data.description,
+      price: data.price,
+      category: data.category,
+      image: data.image,
       dataAiHint: `${data.category.toLowerCase()} product`
     };
     setProducts([...products, newProduct]);
@@ -198,13 +250,25 @@ export default function AdminProductsPage() {
                   {errors.name && <p className="text-sm text-destructive mt-1">{errors.name.message}</p>}
                 </div>
               </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="description" className="text-right">Description</Label>
+              
+              <div className="grid grid-cols-4 items-start gap-4">
+                 <Label htmlFor="features" className="text-right pt-2">Features</Label>
+                 <div className="col-span-3">
+                    <Textarea id="features" {...register('features')} placeholder="e.g., Bluetooth 5.2, 30-hour battery" />
+                 </div>
+              </div>
+
+               <div className="grid grid-cols-4 items-start gap-4">
+                <Label htmlFor="description" className="text-right pt-2">Description</Label>
                 <div className="col-span-3">
                   <Textarea id="description" {...register('description')} />
                   {errors.description && <p className="text-sm text-destructive mt-1">{errors.description.message}</p>}
+                  <Button type="button" variant="outline" size="sm" onClick={handleGenerateDescription} disabled={isGenerating || !productName || !features} className="mt-2">
+                    {isGenerating ? <><Loader2 className="mr-2 animate-spin"/> Generating...</> : <><Bot className="mr-2"/> Generate with AI</>}
+                  </Button>
                 </div>
               </div>
+
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="price" className="text-right">Price</Label>
                 <div className="col-span-3">
@@ -250,9 +314,14 @@ export default function AdminProductsPage() {
                        <Input type="file" accept="image/*" ref={fileInputRef} onChange={handleFileChange} />
                     </TabsContent>
                     <TabsContent value="camera" className="mt-2 space-y-2">
-                        <div className="w-full aspect-video bg-muted rounded-md overflow-hidden flex items-center justify-center">
+                        <div className="w-full aspect-video bg-muted rounded-md overflow-hidden flex items-center justify-center relative">
                             <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
                             <canvas ref={canvasRef} className="hidden" />
+                            {stream && (
+                               <Button type="button" variant="ghost" size="icon" onClick={handleToggleFacingMode} className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white">
+                                  <SwitchCamera />
+                               </Button>
+                            )}
                         </div>
                          {hasCameraPermission === false && (
                             <Alert variant="destructive">
@@ -329,3 +398,4 @@ export default function AdminProductsPage() {
   );
 }
 
+    
