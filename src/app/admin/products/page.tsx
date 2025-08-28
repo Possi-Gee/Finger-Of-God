@@ -6,7 +6,8 @@ import Image from 'next/image';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { products as initialProducts, categories, type Product } from '@/lib/products';
+import { categories, type Product } from '@/lib/products';
+import { useProduct } from '@/hooks/use-product';
 import { generateProductDescription } from '@/ai/flows/generate-product-description';
 
 import { Button } from '@/components/ui/button';
@@ -50,7 +51,8 @@ const productSchema = z.object({
 type ProductFormValues = z.infer<typeof productSchema>;
 
 export default function AdminProductsPage() {
-  const [products, setProducts] = useState<Product[]>(initialProducts);
+  const { state: productState, dispatch: productDispatch } = useProduct();
+  const { products } = productState;
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
 
@@ -138,12 +140,12 @@ export default function AdminProductsPage() {
   }, [stopCamera]);
 
   useEffect(() => {
-    if (open && imageTab === 'camera' && !imageSrc) {
-      startCamera(facingMode);
+    if (open && imageTab === 'camera') {
+        startCamera(facingMode);
     } else {
-      stopCamera();
+        stopCamera();
     }
-  }, [open, imageTab, facingMode, startCamera, stopCamera, imageSrc]);
+  }, [open, imageTab, facingMode, startCamera, stopCamera]);
 
 
   useEffect(() => {
@@ -193,6 +195,7 @@ export default function AdminProductsPage() {
   const handleRetake = () => {
     setImageSrc(null);
     setValue('image', '');
+    startCamera(facingMode);
   };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -219,7 +222,7 @@ export default function AdminProductsPage() {
 
   const onSubmit = (data: ProductFormValues) => {
     const newProduct: Product = {
-      id: products.length + 1,
+      id: Date.now(), // Use a more unique ID
       name: data.name,
       description: data.description,
       price: data.price,
@@ -227,7 +230,7 @@ export default function AdminProductsPage() {
       image: data.image,
       dataAiHint: `${data.category.toLowerCase()} product`
     };
-    setProducts([...products, newProduct]);
+    productDispatch({ type: 'ADD_PRODUCT', payload: newProduct });
     toast({
       title: 'Product Added',
       description: `${data.name} has been successfully added.`,
@@ -346,11 +349,10 @@ export default function AdminProductsPage() {
                                   </AlertDescription>
                               </Alert>
                            )}
-                           {imageSrc && (
+                           {imageSrc ? (
                               <Button type="button" onClick={handleRetake}>Retake</Button>
-                           )}
-                           {hasCameraPermission && !imageSrc && (
-                            <Button type="button" onClick={captureImage}>Capture</Button>
+                           ) : (
+                            hasCameraPermission && <Button type="button" onClick={captureImage}>Capture</Button>
                            )}
                       </TabsContent>
                     </Tabs>

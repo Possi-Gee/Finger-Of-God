@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { ThemeProvider } from '@/context/theme-provider';
 import { CartProvider } from '@/context/cart-context';
 import { WishlistProvider } from '@/context/wishlist-context';
+import { ProductProvider } from '@/context/product-context';
 import { Toaster } from '@/components/ui/toaster';
 import './globals.css';
 
@@ -24,12 +25,14 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <WishlistProvider>
-            <CartProvider>
-              {children}
-              <Toaster />
-            </CartProvider>
-          </WishlistProvider>
+          <ProductProvider>
+            <WishlistProvider>
+              <CartProvider>
+                {children}
+                <Toaster />
+              </CartProvider>
+            </WishlistProvider>
+          </ProductProvider>
         </ThemeProvider>
       </body>
     </html>

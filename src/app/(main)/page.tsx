@@ -1,13 +1,17 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { products, categories } from '@/lib/products';
+import { categories } from '@/lib/products';
 import { ProductCard } from '@/components/product-card';
 import { Search } from 'lucide-react';
+import { useProduct } from '@/hooks/use-product';
 
 export default function HomePage() {
+  const { state: productState } = useProduct();
+  const { products } = productState;
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
 
@@ -17,7 +21,7 @@ export default function HomePage() {
       const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
       return matchesCategory && matchesSearch;
     });
-  }, [searchTerm, selectedCategory]);
+  }, [products, searchTerm, selectedCategory]);
 
   return (
     <div className="container mx-auto px-4 py-8">
