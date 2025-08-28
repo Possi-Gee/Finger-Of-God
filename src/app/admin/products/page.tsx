@@ -71,7 +71,7 @@ export default function AdminProductsPage() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
-  const [stream, setStream] = useState<MediaStream | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('environment');
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -112,21 +112,21 @@ export default function AdminProductsPage() {
   };
 
   const stopCamera = useCallback(() => {
-    if (stream) {
-      stream.getTracks().forEach(track => track.stop());
-      setStream(null);
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+      if (videoRef.current) {
+        videoRef.current.srcObject = null;
+      }
     }
-  }, [stream]);
+  }, []);
 
   const startCamera = useCallback(async (currentFacingMode: 'user' | 'environment') => {
-    // Stop any existing stream before starting a new one
-    if (stream) {
-      stream.getTracks().forEach(track => track.stop());
-    }
+    stopCamera();
     try {
       const newStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: currentFacingMode } });
       setHasCameraPermission(true);
-      setStream(newStream);
+      streamRef.current = newStream;
       if (videoRef.current) {
         videoRef.current.srcObject = newStream;
       }
@@ -134,8 +134,7 @@ export default function AdminProductsPage() {
       console.error('Error accessing camera:', error);
       setHasCameraPermission(false);
     }
-  }, [stream]);
-
+  }, [stopCamera]);
 
   useEffect(() => {
     if (open && imageTab === 'camera') {
@@ -143,11 +142,14 @@ export default function AdminProductsPage() {
     } else {
       stopCamera();
     }
+  }, [open, imageTab, facingMode, startCamera, stopCamera]);
 
+
+  useEffect(() => {
     return () => {
       stopCamera();
     };
-  }, [open, imageTab, facingMode, startCamera, stopCamera]);
+  }, [stopCamera]);
 
 
   const handleTabChange = (value: string) => {
@@ -321,7 +323,7 @@ export default function AdminProductsPage() {
                         <div className="w-full aspect-video bg-muted rounded-md overflow-hidden flex items-center justify-center relative">
                             <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
                             <canvas ref={canvasRef} className="hidden" />
-                            {stream && (
+                            {streamRef.current && (
                                <Button type="button" variant="ghost" size="icon" onClick={handleToggleFacingMode} className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white">
                                   <SwitchCamera />
                                </Button>
@@ -336,10 +338,10 @@ export default function AdminProductsPage() {
                                 </AlertDescription>
                             </Alert>
                          )}
-                         {hasCameraPermission && !stream && imageSrc && (
+                         {hasCameraPermission && !streamRef.current && imageSrc && (
                             <Button type="button" onClick={() => startCamera(facingMode)}>Retake</Button>
                          )}
-                        {hasCameraPermission && stream && (
+                        {hasCameraPermission && streamRef.current && (
                           <Button type="button" onClick={captureImage}>Capture</Button>
                         )}
                     </TabsContent>
