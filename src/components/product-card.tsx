@@ -1,3 +1,4 @@
+
 'use client';
 
 import Image from 'next/image';
@@ -53,7 +54,7 @@ export function ProductCard({ product }: ProductCardProps) {
 
   return (
      <Link href={`/product/${product.id}`} className="group block">
-        <Card className="flex h-full flex-col overflow-hidden transition-all duration-300 group-hover:shadow-lg group-hover:-translate-y-1">
+        <Card className="flex flex-col overflow-hidden transition-all duration-300 group-hover:shadow-lg group-hover:-translate-y-1">
           <CardHeader className="p-0">
             <div className="relative aspect-square w-full">
               <Image
@@ -66,11 +67,11 @@ export function ProductCard({ product }: ProductCardProps) {
               />
             </div>
           </CardHeader>
-          <CardContent className="p-4 flex-grow">
+          <CardContent className="p-4">
             <p className="text-xs text-muted-foreground">{product.category}</p>
             <CardTitle className="mt-1 text-base font-semibold leading-tight">{product.name}</CardTitle>
           </CardContent>
-          <CardFooter className="flex flex-wrap justify-between items-center gap-2 p-4 pt-0">
+          <CardFooter className="flex flex-wrap justify-between items-center gap-2 p-4 pt-0 mt-auto">
             <p className="text-lg font-bold text-primary">${product.price.toFixed(2)}</p>
             <div className="flex items-center space-x-1">
               <Button variant="ghost" size="icon" onClick={handleToggleWishlist}>
