@@ -47,7 +47,7 @@ const initialState: HomepageState = {
     { id: 3, type: 'image', content: 'https://picsum.photos/1200/400?random=2', alt: 'Promotion 2', dataAiHint: 'new arrivals' },
     { id: 4, type: 'image', content: 'https://picsum.photos/1200/400?random=3', alt: 'Promotion 3', dataAiHint: 'electronics promotion' },
   ],
-  flashSale: { endDate: '2024-12-31T23:59:59' },
+  flashSale: { endDate: '2024-12-31T23:59' },
 };
 
 const homepageReducer = (state: HomepageState, action: HomepageAction): HomepageState => {

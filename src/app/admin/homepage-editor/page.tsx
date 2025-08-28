@@ -31,7 +31,7 @@ const editorSchema = z.object({
   }),
   promotions: z.array(promotionSchema),
   flashSale: z.object({
-    endDate: z.string().refine((val) => !isNaN(Date.parse(val)), {
+    endDate: z.string().refine((val) => /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(val) && !isNaN(Date.parse(val)), {
       message: "Please enter a valid date and time.",
     }),
   }),
