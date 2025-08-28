@@ -10,13 +10,14 @@ import { useWishlist } from '@/hooks/use-wishlist';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { Heart, ShoppingCart } from 'lucide-react';
+import { Heart, ShoppingCart, Minus, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { ProductCard } from '@/components/product-card';
 import type { ProductVariant } from '@/lib/products';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Input } from '@/components/ui/input';
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -31,6 +32,7 @@ export default function ProductDetailPage() {
   const product = products.find(p => p.id.toString() === id);
 
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | undefined>(product?.variants[0]);
+  const [quantity, setQuantity] = useState(1);
 
   const relatedProducts = product
     ? products.filter(p => p.category === product.category && p.id !== product.id).slice(0, 4)
@@ -59,10 +61,18 @@ export default function ProductDetailPage() {
         });
         return;
     }
-    cartDispatch({ type: 'ADD_ITEM', payload: { product, variant: selectedVariant } });
+    if (quantity <= 0) {
+       toast({
+            title: 'Invalid quantity',
+            description: 'Please enter a quantity greater than zero.',
+            variant: 'destructive',
+        });
+        return;
+    }
+    cartDispatch({ type: 'ADD_ITEM', payload: { product, variant: selectedVariant, quantity } });
     toast({
       title: 'Added to cart',
-      description: `${product.name} (${selectedVariant.name}) has been added to your cart.`,
+      description: `${quantity} x ${product.name} (${selectedVariant.name}) has been added to your cart.`,
     });
   };
 
@@ -86,6 +96,11 @@ export default function ProductDetailPage() {
   const handleVariantChange = (variantId: string) => {
     const newVariant = product.variants.find(v => v.id.toString() === variantId);
     setSelectedVariant(newVariant);
+    setQuantity(1); // Reset quantity when variant changes
+  }
+  
+  const handleQuantityChange = (change: number) => {
+    setQuantity(prev => Math.max(1, prev + change));
   }
 
   return (
@@ -117,14 +132,14 @@ export default function ProductDetailPage() {
                 <RadioGroup 
                     defaultValue={selectedVariant?.id.toString()}
                     onValueChange={handleVariantChange}
-                    className="flex flex-wrap gap-3"
+                    className="grid grid-cols-2 gap-3"
                 >
                     {product.variants.map(variant => (
                         <div key={variant.id}>
                             <RadioGroupItem value={variant.id.toString()} id={`v-${variant.id}`} className="sr-only peer"/>
                             <Label 
                                 htmlFor={`v-${variant.id}`}
-                                className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-transparent p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
+                                className="flex flex-col text-center items-center justify-between rounded-md border-2 border-muted bg-transparent p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
                             >
                                 <span className="font-semibold">{variant.name}</span>
                                 <span className="text-sm text-muted-foreground">${variant.price.toFixed(2)}</span>
@@ -134,6 +149,26 @@ export default function ProductDetailPage() {
                 </RadioGroup>
             </div>
           )}
+
+          <div className="mb-6">
+            <Label htmlFor="quantity" className="text-lg font-semibold mb-2 block">Quantity</Label>
+            <div className="flex items-center gap-2">
+                 <Button variant="outline" size="icon" onClick={() => handleQuantityChange(-1)}>
+                    <Minus className="h-4 w-4" />
+                </Button>
+                <Input 
+                    id="quantity"
+                    type="number"
+                    min="1"
+                    value={quantity}
+                    onChange={(e) => setQuantity(parseInt(e.target.value, 10) || 1)}
+                    className="h-10 w-20 text-center"
+                />
+                 <Button variant="outline" size="icon" onClick={() => handleQuantityChange(1)}>
+                    <Plus className="h-4 w-4" />
+                </Button>
+            </div>
+          </div>
           
 
           <div>

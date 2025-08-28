@@ -503,7 +503,7 @@ export default function AdminProductsPage() {
                     <div>
                         <h3 className="text-lg font-medium">Product Variants</h3>
                         <p className="text-sm text-muted-foreground">Add different options for this product, like sizes, colors, or pack quantities.</p>
-                        {errors.variants && <p className="text-sm text-destructive mt-1">{errors.variants.message}</p>}
+                        {errors.variants && <p className="text-sm text-destructive mt-1">{typeof errors.variants.message === 'string' ? errors.variants.message : 'Please check variant details.'}</p>}
                     </div>
 
                     <div className="space-y-4">
@@ -521,8 +521,8 @@ export default function AdminProductsPage() {
                                     {errors.variants?.[index]?.price && <p className="text-sm text-destructive mt-1">{errors.variants?.[index]?.price?.message}</p>}
                                 </div>
                                 <div>
-                                    <Label>Original Price</Label>
-                                    <Input type="number" {...register(`variants.${index}.originalPrice`)} step="0.01" placeholder="Optional" />
+                                    <Label>Original Price (Optional)</Label>
+                                    <Input type="number" {...register(`variants.${index}.originalPrice`)} step="0.01" />
                                 </div>
                                 <div>
                                     <Label>Stock</Label>

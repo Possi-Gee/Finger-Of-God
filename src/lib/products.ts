@@ -11,8 +11,6 @@ export type Product = {
   id: number;
   name: string;
   description: string;
-  // price: number; // This will be replaced by variants
-  // originalPrice?: number;
   category: string;
   image: string;
   rating: number;
@@ -200,9 +198,10 @@ export const products: Product[] = [
     isOfficialStore: true,
     dataAiHint: "water bottle",
     variants: [
-      { id: 17, name: "Quarter Pack (25 bottles)", price: 10.00, stock: 40 },
-      { id: 18, name: "Half Pack (50 bottles)", price: 18.00, stock: 20 },
-      { id: 19, name: "Full Pack (100 bottles)", price: 32.00, stock: 10 },
+      { id: 17, name: "1 Bottle", price: 0.50, stock: 1000 },
+      { id: 18, name: "Quarter Pack (25 bottles)", price: 10.00, stock: 40 },
+      { id: 19, name: "Half Pack (50 bottles)", price: 18.00, stock: 20 },
+      { id: 20, name: "Full Pack (100 bottles)", price: 32.00, stock: 10 },
     ],
   }
 ];
