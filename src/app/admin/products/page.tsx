@@ -12,12 +12,12 @@ import { generateProductDescription } from '@/ai/flows/generate-product-descript
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
-  DialogTrigger,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -111,31 +111,30 @@ export default function AdminProductsPage() {
     }
   };
 
-
   const stopCamera = useCallback(() => {
     if (stream) {
       stream.getTracks().forEach(track => track.stop());
       setStream(null);
-      if(videoRef.current) {
-        videoRef.current.srcObject = null;
-      }
     }
   }, [stream]);
 
   const startCamera = useCallback(async (currentFacingMode: 'user' | 'environment') => {
-      stopCamera();
-      try {
-        const newStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: currentFacingMode } });
-        setHasCameraPermission(true);
-        setStream(newStream);
-        if (videoRef.current) {
-          videoRef.current.srcObject = newStream;
-        }
-      } catch (error) {
-        console.error('Error accessing camera:', error);
-        setHasCameraPermission(false);
+    // Stop any existing stream before starting a new one
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+    }
+    try {
+      const newStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: currentFacingMode } });
+      setHasCameraPermission(true);
+      setStream(newStream);
+      if (videoRef.current) {
+        videoRef.current.srcObject = newStream;
       }
-    }, [stopCamera]);
+    } catch (error) {
+      console.error('Error accessing camera:', error);
+      setHasCameraPermission(false);
+    }
+  }, [stream]);
 
 
   useEffect(() => {
@@ -144,10 +143,10 @@ export default function AdminProductsPage() {
     } else {
       stopCamera();
     }
-    
+
     return () => {
-        stopCamera();
-    }
+      stopCamera();
+    };
   }, [open, imageTab, facingMode, startCamera, stopCamera]);
 
 
@@ -159,13 +158,14 @@ export default function AdminProductsPage() {
   
   const handleToggleFacingMode = () => {
       setFacingMode(prev => prev === 'user' ? 'environment' : 'user');
-  }
+  };
 
   useEffect(() => {
     if (!open) {
       stopCamera();
       reset();
       setImageSrc(null);
+      setHasCameraPermission(null);
     }
   }, [open, reset, stopCamera]);
 
@@ -339,7 +339,9 @@ export default function AdminProductsPage() {
                          {hasCameraPermission && !stream && imageSrc && (
                             <Button type="button" onClick={() => startCamera(facingMode)}>Retake</Button>
                          )}
-                        <Button type="button" onClick={captureImage} disabled={!stream}>Capture</Button>
+                        {hasCameraPermission && stream && (
+                          <Button type="button" onClick={captureImage}>Capture</Button>
+                        )}
                     </TabsContent>
                   </Tabs>
                    {errors.image && <p className="text-sm text-destructive mt-1">{errors.image.message}</p>}
