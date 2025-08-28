@@ -52,7 +52,9 @@ export function ProductCard({ product }: ProductCardProps) {
   };
 
   const wishlisted = isWishlisted(product.id);
-  const discount = product.originalPrice ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100) : 0;
+  const discount = product.originalPrice && product.originalPrice > product.price 
+    ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100) 
+    : 0;
 
   return (
      <Link href={`/product/${product.id}`} className="group block h-full">
@@ -80,7 +82,7 @@ export function ProductCard({ product }: ProductCardProps) {
             <p className="text-sm font-medium leading-tight flex-grow">{product.name}</p>
             <div className="mt-2 flex items-center gap-2">
                 <p className="text-lg font-bold text-foreground">${product.price.toFixed(2)}</p>
-                {product.originalPrice && (
+                {product.originalPrice && product.originalPrice > product.price && (
                     <p className="text-sm text-muted-foreground line-through">${product.originalPrice.toFixed(2)}</p>
                 )}
             </div>
