@@ -52,8 +52,8 @@ export function ProductCard({ product }: ProductCardProps) {
   };
 
   const wishlisted = isWishlisted(product.id);
-  const discount = product.originalPrice && product.originalPrice > product.price 
-    ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100) 
+  const discount = (product.originalPrice && product.originalPrice > product.price)
+    ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
     : 0;
 
   return (
