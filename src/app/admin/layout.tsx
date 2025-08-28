@@ -36,11 +36,6 @@ export default function AdminLayout({
       icon: Package,
     },
     {
-      href: '/admin/generate-description',
-      label: 'AI Descriptions',
-      icon: Bot,
-    },
-    {
       href: '/admin/homepage-editor',
       label: 'Homepage Editor',
       icon: LayoutDashboard,
