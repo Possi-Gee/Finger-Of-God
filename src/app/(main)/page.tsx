@@ -8,6 +8,9 @@ import { categories } from '@/lib/products';
 import { ProductCard } from '@/components/product-card';
 import { Search } from 'lucide-react';
 import { useProduct } from '@/hooks/use-product';
+import { CallToAction } from '@/components/call-to-action';
+import { PromotionalCarousel } from '@/components/promotional-carousel';
+import { FlashSales } from '@/components/flash-sales';
 
 export default function HomePage() {
   const { state: productState } = useProduct();
@@ -25,6 +28,9 @@ export default function HomePage() {
 
   return (
     <>
+      <CallToAction />
+      <PromotionalCarousel />
+      <FlashSales />
       <div className="container mx-auto px-4 py-8">
         <header className="text-center mb-12">
           <h1 className="text-4xl font-bold tracking-tight text-primary lg:text-5xl">Welcome to ShopWave</h1>
