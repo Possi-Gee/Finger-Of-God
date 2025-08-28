@@ -34,6 +34,7 @@ import {
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { PlusCircle, Camera, Upload, Link as LinkIcon, AlertTriangle, Loader2, Bot, SwitchCamera } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -43,9 +44,13 @@ const productSchema = z.object({
   name: z.string().min(3, 'Product name is required'),
   description: z.string().min(10, 'Description is required'),
   price: z.coerce.number().min(0.01, 'Price must be greater than 0'),
+  originalPrice: z.coerce.number().optional(),
   category: z.string().min(1, 'Category is required'),
   image: z.string().url('A valid image is required'),
   features: z.string().optional(),
+  rating: z.coerce.number().min(0).max(5, 'Rating must be between 0 and 5').default(0),
+  reviews: z.coerce.number().min(0).default(0),
+  isOfficialStore: z.boolean().default(false),
 });
 
 type ProductFormValues = z.infer<typeof productSchema>;
@@ -66,6 +71,11 @@ export default function AdminProductsPage() {
     formState: { errors, isSubmitting },
   } = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
+    defaultValues: {
+      isOfficialStore: false,
+      rating: 0,
+      reviews: 0,
+    }
   });
 
   const [imageSrc, setImageSrc] = useState<string | null>(null);
@@ -195,7 +205,9 @@ export default function AdminProductsPage() {
   const handleRetake = () => {
     setImageSrc(null);
     setValue('image', '');
-    startCamera(facingMode);
+    if (imageTab === 'camera') {
+      startCamera(facingMode);
+    }
   };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -222,12 +234,8 @@ export default function AdminProductsPage() {
 
   const onSubmit = (data: ProductFormValues) => {
     const newProduct: Product = {
-      id: Date.now(), // Use a more unique ID
-      name: data.name,
-      description: data.description,
-      price: data.price,
-      category: data.category,
-      image: data.image,
+      id: Date.now(),
+      ...data,
       dataAiHint: `${data.category.toLowerCase()} product`
     };
     productDispatch({ type: 'ADD_PRODUCT', payload: newProduct });
@@ -292,6 +300,13 @@ export default function AdminProductsPage() {
                   </div>
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="originalPrice" className="text-right">Original Price</Label>
+                  <div className="col-span-3">
+                    <Input id="originalPrice" type="number" step="0.01" {...register('originalPrice')} placeholder="Optional, for discounts" />
+                    {errors.originalPrice && <p className="text-sm text-destructive mt-1">{errors.originalPrice.message}</p>}
+                  </div>
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="category" className="text-right">Category</Label>
                   <div className="col-span-3">
                       <Controller
@@ -313,6 +328,38 @@ export default function AdminProductsPage() {
                     {errors.category && <p className="text-sm text-destructive mt-1">{errors.category.message}</p>}
                   </div>
                 </div>
+
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="rating" className="text-right">Rating (0-5)</Label>
+                  <div className="col-span-3">
+                    <Input id="rating" type="number" step="0.1" {...register('rating')} />
+                    {errors.rating && <p className="text-sm text-destructive mt-1">{errors.rating.message}</p>}
+                  </div>
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="reviews" className="text-right">Reviews</Label>
+                  <div className="col-span-3">
+                    <Input id="reviews" type="number" {...register('reviews')} />
+                    {errors.reviews && <p className="text-sm text-destructive mt-1">{errors.reviews.message}</p>}
+                  </div>
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="isOfficialStore" className="text-right">Official Store</Label>
+                  <div className="col-span-3">
+                    <Controller
+                        name="isOfficialStore"
+                        control={control}
+                        render={({ field }) => (
+                            <Switch
+                                id="isOfficialStore"
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                            />
+                        )}
+                    />
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-4 items-start gap-4">
                   <Label className="text-right pt-2">Image</Label>
                   <div className="col-span-3">
@@ -352,7 +399,7 @@ export default function AdminProductsPage() {
                            {imageSrc ? (
                               <Button type="button" onClick={handleRetake}>Retake</Button>
                            ) : (
-                            hasCameraPermission && <Button type="button" onClick={captureImage}>Capture</Button>
+                            hasCameraPermission && streamRef.current && <Button type="button" onClick={captureImage}>Capture</Button>
                            )}
                       </TabsContent>
                     </Tabs>
@@ -418,3 +465,5 @@ export default function AdminProductsPage() {
     </div>
   );
 }
+
+    
