@@ -12,6 +12,7 @@ import { Separator } from '@/components/ui/separator';
 import { Heart, ShoppingCart } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
+import { ProductCard } from '@/components/product-card';
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -24,6 +25,10 @@ export default function ProductDetailPage() {
   const { toast } = useToast();
 
   const product = products.find(p => p.id.toString() === id);
+
+  const relatedProducts = product
+    ? products.filter(p => p.category === product.category && p.id !== product.id).slice(0, 4)
+    : [];
 
   if (!product) {
     return (
@@ -105,6 +110,18 @@ export default function ProductDetailPage() {
           </div>
         </div>
       </div>
+
+      {relatedProducts.length > 0 && (
+        <div className="mt-16">
+          <Separator />
+          <h2 className="text-2xl font-bold mt-8 mb-6">Related Products</h2>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {relatedProducts.map(relatedProduct => (
+              <ProductCard key={relatedProduct.id} product={relatedProduct} />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
