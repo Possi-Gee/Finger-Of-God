@@ -12,6 +12,7 @@ import { generateProductDescription } from '@/ai/flows/generate-product-descript
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
+  DialogTrigger,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -397,5 +398,7 @@ export default function AdminProductsPage() {
     </div>
   );
 }
+
+    
 
     
