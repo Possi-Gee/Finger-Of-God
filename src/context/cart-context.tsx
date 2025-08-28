@@ -1,19 +1,30 @@
 
 'use client';
 
-import type { Product } from '@/lib/products';
+import type { Product, ProductVariant } from '@/lib/products';
 import React, { createContext, useReducer, useEffect, type ReactNode } from 'react';
 
-export interface CartItem extends Product {
+export interface CartItem {
+  id: number; // This is now productId_variantId
+  productId: number;
+  name: string;
+  image: string;
   quantity: number;
+  variant: ProductVariant;
 }
 
 type CartState = {
   items: CartItem[];
 };
 
+type AddItemPayload = {
+    product: Omit<Product, 'variants'>,
+    variant: ProductVariant,
+    quantity?: number
+}
+
 type CartAction =
-  | { type: 'ADD_ITEM'; payload: Product }
+  | { type: 'ADD_ITEM'; payload: AddItemPayload }
   | { type: 'REMOVE_ITEM'; payload: { id: number } }
   | { type: 'UPDATE_QUANTITY'; payload: { id: number; quantity: number } }
   | { type: 'SET_STATE'; payload: CartState }
@@ -26,20 +37,30 @@ const initialState: CartState = {
 const cartReducer = (state: CartState, action: CartAction): CartState => {
   switch (action.type) {
     case 'ADD_ITEM': {
-      const existingItem = state.items.find(item => item.id === action.payload.id);
+      const { product, variant, quantity = 1 } = action.payload;
+      const cartItemId = product.id * 1000 + variant.id; // Create a unique ID for the cart item
+      const existingItem = state.items.find(item => item.id === cartItemId);
+      
       if (existingItem) {
         return {
           ...state,
           items: state.items.map(item =>
-            item.id === action.payload.id
-              ? { ...item, quantity: item.quantity + 1 }
+            item.id === cartItemId
+              ? { ...item, quantity: item.quantity + quantity }
               : item
           ),
         };
       }
       return {
         ...state,
-        items: [...state.items, { ...action.payload, quantity: 1 }],
+        items: [...state.items, { 
+            id: cartItemId,
+            productId: product.id,
+            name: product.name,
+            image: product.image,
+            quantity,
+            variant
+        }],
       };
     }
     case 'REMOVE_ITEM': {

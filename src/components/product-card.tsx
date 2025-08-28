@@ -2,7 +2,7 @@
 'use client';
 
 import Image from 'next/image';
-import { Heart, Star } from 'lucide-react';
+import { Heart, Star, ShoppingCart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import type { Product } from '@/lib/products';
@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
+import { useRouter } from 'next/navigation';
 
 interface ProductCardProps {
   product: Product;
@@ -21,11 +22,18 @@ export function ProductCard({ product }: ProductCardProps) {
   const { dispatch: cartDispatch } = useCart();
   const { dispatch: wishlistDispatch, isWishlisted } = useWishlist();
   const { toast } = useToast();
+  const router = useRouter();
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    cartDispatch({ type: 'ADD_ITEM', payload: product });
+    // For products with variants, redirect to product page to select one
+    if (product.variants.length > 1) {
+        router.push(`/product/${product.id}`);
+        return;
+    }
+    const itemToAdd = { ...product, variant: product.variants[0] };
+    cartDispatch({ type: 'ADD_ITEM', payload: itemToAdd });
     toast({
       title: 'Added to cart',
       description: `${product.name} has been added to your cart.`,
@@ -52,8 +60,17 @@ export function ProductCard({ product }: ProductCardProps) {
   };
 
   const wishlisted = isWishlisted(product.id);
-  const discount = (product.originalPrice && product.originalPrice > product.price)
-    ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
+  
+  const lowestPrice = product.variants.length > 0 
+    ? Math.min(...product.variants.map(v => v.price))
+    : 0;
+
+  const originalPrice = product.variants.length > 0 && product.variants[0].originalPrice 
+    ? product.variants[0].originalPrice
+    : 0;
+  
+  const discount = (originalPrice && originalPrice > lowestPrice)
+    ? Math.round(((originalPrice - lowestPrice) / originalPrice) * 100)
     : 0;
 
   return (
@@ -81,9 +98,11 @@ export function ProductCard({ product }: ProductCardProps) {
              {product.isOfficialStore && <Badge className="bg-cyan-600 hover:bg-cyan-700 w-fit mb-2">Official Store</Badge>}
             <p className="text-sm font-medium leading-tight flex-grow">{product.name}</p>
             <div className="mt-2 flex items-baseline gap-2 flex-wrap">
-                <p className="text-lg font-bold text-foreground">${product.price.toFixed(2)}</p>
-                {product.originalPrice && product.originalPrice > product.price && (
-                    <p className="text-sm text-muted-foreground line-through">${product.originalPrice.toFixed(2)}</p>
+                <p className="text-lg font-bold text-foreground">
+                  {product.variants.length > 1 ? 'From ' : ''}${lowestPrice.toFixed(2)}
+                </p>
+                {originalPrice > 0 && (
+                    <p className="text-sm text-muted-foreground line-through">${originalPrice.toFixed(2)}</p>
                 )}
             </div>
             <div className="flex items-center gap-1 mt-1">
@@ -95,7 +114,8 @@ export function ProductCard({ product }: ProductCardProps) {
                 <span className="text-xs text-muted-foreground">({product.reviews})</span>
             </div>
             <Button size="sm" onClick={handleAddToCart} className="w-full mt-4">
-                Add to Cart
+                <ShoppingCart className="mr-2 h-4 w-4" />
+                {product.variants.length > 1 ? 'Select Options' : 'Add to Cart'}
             </Button>
           </CardContent>
         </Card>

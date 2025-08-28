@@ -1,6 +1,7 @@
 
 'use client';
 
+import { useState } from 'react';
 import { useParams } from 'next/navigation';
 import Image from 'next/image';
 import { useProduct } from '@/hooks/use-product';
@@ -13,6 +14,9 @@ import { Heart, ShoppingCart } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { ProductCard } from '@/components/product-card';
+import type { ProductVariant } from '@/lib/products';
+import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -25,6 +29,8 @@ export default function ProductDetailPage() {
   const { toast } = useToast();
 
   const product = products.find(p => p.id.toString() === id);
+
+  const [selectedVariant, setSelectedVariant] = useState<ProductVariant | undefined>(product?.variants[0]);
 
   const relatedProducts = product
     ? products.filter(p => p.category === product.category && p.id !== product.id).slice(0, 4)
@@ -45,10 +51,18 @@ export default function ProductDetailPage() {
   const wishlisted = isWishlisted(product.id);
 
   const handleAddToCart = () => {
-    cartDispatch({ type: 'ADD_ITEM', payload: product });
+    if (!selectedVariant) {
+        toast({
+            title: 'Please select an option',
+            description: 'You must select a variant before adding to cart.',
+            variant: 'destructive',
+        });
+        return;
+    }
+    cartDispatch({ type: 'ADD_ITEM', payload: { product, variant: selectedVariant } });
     toast({
       title: 'Added to cart',
-      description: `${product.name} has been added to your cart.`,
+      description: `${product.name} (${selectedVariant.name}) has been added to your cart.`,
     });
   };
 
@@ -69,6 +83,10 @@ export default function ProductDetailPage() {
     }
   };
 
+  const handleVariantChange = (variantId: string) => {
+    const newVariant = product.variants.find(v => v.id.toString() === variantId);
+    setSelectedVariant(newVariant);
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -88,10 +106,35 @@ export default function ProductDetailPage() {
           <div>
             <p className="text-sm font-medium text-primary">{product.category}</p>
             <h1 className="text-3xl lg:text-4xl font-bold mt-2">{product.name}</h1>
-            <p className="text-3xl font-bold text-primary mt-4">${product.price.toFixed(2)}</p>
+            <p className="text-3xl font-bold text-primary mt-4">${selectedVariant?.price.toFixed(2)}</p>
           </div>
           
           <Separator className="my-6" />
+
+           {product.variants.length > 1 && (
+            <div className="mb-6">
+                <Label className="text-lg font-semibold mb-2 block">Select Option</Label>
+                <RadioGroup 
+                    defaultValue={selectedVariant?.id.toString()}
+                    onValueChange={handleVariantChange}
+                    className="flex flex-wrap gap-3"
+                >
+                    {product.variants.map(variant => (
+                        <div key={variant.id}>
+                            <RadioGroupItem value={variant.id.toString()} id={`v-${variant.id}`} className="sr-only peer"/>
+                            <Label 
+                                htmlFor={`v-${variant.id}`}
+                                className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-transparent p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
+                            >
+                                <span className="font-semibold">{variant.name}</span>
+                                <span className="text-sm text-muted-foreground">${variant.price.toFixed(2)}</span>
+                            </Label>
+                        </div>
+                    ))}
+                </RadioGroup>
+            </div>
+          )}
+          
 
           <div>
              <h2 className="text-xl font-semibold">Description</h2>
@@ -100,7 +143,7 @@ export default function ProductDetailPage() {
          
           <div className="mt-auto pt-6">
              <div className="flex items-center gap-4">
-                <Button size="lg" className="flex-grow" onClick={handleAddToCart}>
+                <Button size="lg" className="flex-grow" onClick={handleAddToCart} disabled={!selectedVariant}>
                     <ShoppingCart className="mr-2" /> Add to Cart
                 </Button>
                 <Button variant="outline" size="icon" className="w-12 h-12" onClick={handleToggleWishlist}>

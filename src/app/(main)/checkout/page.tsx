@@ -74,7 +74,7 @@ export default function CheckoutPage() {
     }
   });
 
-  const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const subtotal = items.reduce((sum, item) => sum + item.variant.price * item.quantity, 0);
   const tax = subtotal * 0.08;
   const deliveryFee = subtotal > 0 ? 5.00 : 0;
   const total = subtotal + tax + deliveryFee;
@@ -350,12 +350,12 @@ export default function CheckoutPage() {
                 <ul className="divide-y mb-6">
                   {items.map(item => (
                     <li key={item.id} className="flex items-center py-3">
-                       <Image src={item.image} alt={item.name} width={48} height={48} className="rounded-md" data-ai-hint={item.dataAiHint} />
+                       <Image src={item.image} alt={item.name} width={48} height={48} className="rounded-md" />
                       <div className="ml-4 flex-grow">
-                        <p className="font-semibold text-sm">{item.name}</p>
+                        <p className="font-semibold text-sm">{item.name} <span className="text-muted-foreground">({item.variant.name})</span></p>
                          <p className="text-sm text-muted-foreground">Qty: {item.quantity}</p>
                       </div>
-                      <span className="font-medium">${(item.price * item.quantity).toFixed(2)}</span>
+                      <span className="font-medium">${(item.variant.price * item.quantity).toFixed(2)}</span>
                     </li>
                   ))}
                 </ul>

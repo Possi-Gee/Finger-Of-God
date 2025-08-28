@@ -23,7 +23,7 @@ export default function CartPage() {
     dispatch({ type: 'REMOVE_ITEM', payload: { id: item.id } });
   };
 
-  const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const subtotal = items.reduce((sum, item) => sum + item.variant.price * item.quantity, 0);
   const tax = subtotal * 0.08; // 8% tax
   const deliveryFee = subtotal > 0 ? 5.00 : 0;
   const total = subtotal + tax + deliveryFee;
@@ -51,10 +51,11 @@ export default function CartPage() {
               <ul className="divide-y">
                 {items.map(item => (
                   <li key={item.id} className="flex items-center p-4">
-                    <Image src={item.image} alt={item.name} width={80} height={80} className="rounded-md" data-ai-hint={item.dataAiHint} />
+                    <Image src={item.image} alt={item.name} width={80} height={80} className="rounded-md" />
                     <div className="ml-4 flex-grow">
                       <p className="font-semibold">{item.name}</p>
-                      <p className="text-sm text-muted-foreground">${item.price.toFixed(2)}</p>
+                      <p className="text-sm text-muted-foreground">{item.variant.name}</p>
+                      <p className="text-sm text-muted-foreground">${item.variant.price.toFixed(2)}</p>
                     </div>
                     <div className="flex items-center gap-4">
                       <Input

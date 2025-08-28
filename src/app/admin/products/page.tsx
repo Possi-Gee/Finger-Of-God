@@ -3,7 +3,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import Image from 'next/image';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm, Controller, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { categories, type Product } from '@/lib/products';
@@ -51,18 +51,26 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
+
+const variantSchema = z.object({
+  id: z.number().optional(),
+  name: z.string().min(1, 'Variant name is required'),
+  price: z.coerce.number().min(0.01, 'Price must be greater than 0'),
+  originalPrice: z.coerce.number().optional(),
+  stock: z.coerce.number().min(0, 'Stock cannot be negative'),
+});
 
 const productSchema = z.object({
   name: z.string().min(3, 'Product name is required'),
   description: z.string().min(10, 'Description is required'),
-  price: z.coerce.number().min(0.01, 'Price must be greater than 0'),
-  originalPrice: z.coerce.number().optional(),
   category: z.string().min(1, 'Category is required'),
   image: z.string().url('A valid image is required'),
   features: z.string().optional(),
   rating: z.coerce.number().min(0).max(5, 'Rating must be between 0 and 5').default(0),
   reviews: z.coerce.number().min(0).default(0),
   isOfficialStore: z.boolean().default(false),
+  variants: z.array(variantSchema).min(1, 'At least one product variant is required.'),
 });
 
 type ProductFormValues = z.infer<typeof productSchema>;
@@ -90,7 +98,13 @@ export default function AdminProductsPage() {
       isOfficialStore: false,
       rating: 0,
       reviews: 0,
+      variants: [{ name: 'Standard', price: 0, stock: 0 }],
     }
+  });
+  
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: "variants"
   });
 
   const [imageSrc, setImageSrc] = useState<string | null>(null);
@@ -192,7 +206,17 @@ export default function AdminProductsPage() {
 
   const resetDialog = useCallback(() => {
     stopCamera();
-    reset();
+    reset({
+      isOfficialStore: false,
+      rating: 0,
+      reviews: 0,
+      variants: [{ name: 'Standard', price: 0, stock: 0 }],
+      name: '',
+      description: '',
+      category: '',
+      image: '',
+      features: '',
+    });
     setImageSrc(null);
     setHasCameraPermission(null);
     setEditingProduct(null);
@@ -254,10 +278,15 @@ export default function AdminProductsPage() {
 
 
   const onSubmit = (data: ProductFormValues) => {
+    const productData = {
+      ...data,
+      variants: data.variants.map(v => ({...v, id: v.id || Date.now() + Math.random()}))
+    }
+
     if (editingProduct) {
       const updatedProduct: Product = {
         ...editingProduct,
-        ...data,
+        ...productData,
       };
       productDispatch({ type: 'UPDATE_PRODUCT', payload: updatedProduct });
       toast({
@@ -267,7 +296,7 @@ export default function AdminProductsPage() {
     } else {
       const newProduct: Product = {
         id: Date.now(),
-        ...data,
+        ...productData,
         dataAiHint: `${data.category.toLowerCase()} product`
       };
       productDispatch({ type: 'ADD_PRODUCT', payload: newProduct });
@@ -304,6 +333,20 @@ export default function AdminProductsPage() {
     setProductToDelete(null);
   };
 
+  const getProductPrice = (product: Product) => {
+    if (!product.variants || product.variants.length === 0) {
+      return 'N/A';
+    }
+    const prices = product.variants.map(v => v.price);
+    const minPrice = Math.min(...prices);
+    const maxPrice = Math.max(...prices);
+
+    if (minPrice === maxPrice) {
+      return `$${minPrice.toFixed(2)}`;
+    }
+    return `$${minPrice.toFixed(2)} - $${maxPrice.toFixed(2)}`;
+  }
+
 
   return (
     <div className="space-y-6">
@@ -316,7 +359,7 @@ export default function AdminProductsPage() {
               Add Product
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[600px] grid-rows-[auto_minmax(0,1fr)_auto] p-0 max-h-[90vh]">
+          <DialogContent className="sm:max-w-2xl grid-rows-[auto_minmax(0,1fr)_auto] p-0 max-h-[90vh]">
             <DialogHeader className="p-6 pb-0">
               <DialogTitle>{editingProduct ? 'Edit Product' : 'Add New Product'}</DialogTitle>
               <DialogDescription>
@@ -324,117 +367,97 @@ export default function AdminProductsPage() {
               </DialogDescription>
             </DialogHeader>
             <ScrollArea className="overflow-y-auto">
-              <form onSubmit={handleSubmit(onSubmit)} id="product-form" className="px-6 py-4 grid gap-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="name" className="text-right">Name</Label>
-                  <div className="col-span-3">
-                    <Input id="name" {...register('name')} />
-                    {errors.name && <p className="text-sm text-destructive mt-1">{errors.name.message}</p>}
-                  </div>
-                </div>
+              <form onSubmit={handleSubmit(onSubmit)} id="product-form" className="px-6 py-4 grid gap-6">
                 
-                <div className="grid grid-cols-4 items-start gap-4">
-                   <Label htmlFor="features" className="text-right pt-2">Features</Label>
-                   <div className="col-span-3">
-                      <Textarea id="features" {...register('features')} placeholder="e.g., Bluetooth 5.2, 30-hour battery" />
-                   </div>
-                </div>
+                {/* Product Details Section */}
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="name">Name</Label>
+                      <Input id="name" {...register('name')} />
+                      {errors.name && <p className="text-sm text-destructive mt-1">{errors.name.message}</p>}
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="category">Category</Label>
+                        <Controller
+                            name="category"
+                            control={control}
+                            render={({ field }) => (
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <SelectTrigger>
+                                <SelectValue placeholder="Select a category" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                {categories.filter(c => c !== 'All').map(category => (
+                                    <SelectItem key={category} value={category}>{category}</SelectItem>
+                                ))}
+                                </SelectContent>
+                            </Select>
+                            )}
+                        />
+                      {errors.category && <p className="text-sm text-destructive mt-1">{errors.category.message}</p>}
+                    </div>
+                  </div>
 
-                 <div className="grid grid-cols-4 items-start gap-4">
-                  <Label htmlFor="description" className="text-right pt-2">Description</Label>
-                  <div className="col-span-3">
+                  <div className="space-y-2">
+                     <Label htmlFor="features">Features</Label>
+                     <Textarea id="features" {...register('features')} placeholder="e.g., Bluetooth 5.2, 30-hour battery" />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="description">Description</Label>
                     <Textarea id="description" {...register('description')} />
                     {errors.description && <p className="text-sm text-destructive mt-1">{errors.description.message}</p>}
                     <Button type="button" variant="outline" size="sm" onClick={handleGenerateDescription} disabled={isGenerating || !productName || !features} className="mt-2">
                       {isGenerating ? <><Loader2 className="mr-2 animate-spin"/> Generating...</> : <><Bot className="mr-2"/> Generate with AI</>}
                     </Button>
                   </div>
-                </div>
-
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="price" className="text-right">Price</Label>
-                  <div className="col-span-3">
-                    <Input id="price" type="number" step="0.01" {...register('price')} />
-                    {errors.price && <p className="text-sm text-destructive mt-1">{errors.price.message}</p>}
-                  </div>
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="originalPrice" className="text-right">Original Price</Label>
-                  <div className="col-span-3">
-                    <Input id="originalPrice" type="number" step="0.01" {...register('originalPrice')} placeholder="Optional, for discounts" />
-                    {errors.originalPrice && <p className="text-sm text-destructive mt-1">{errors.originalPrice.message}</p>}
-                  </div>
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="category" className="text-right">Category</Label>
-                  <div className="col-span-3">
-                      <Controller
-                          name="category"
-                          control={control}
-                          render={({ field }) => (
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                              <SelectTrigger>
-                              <SelectValue placeholder="Select a category" />
-                              </SelectTrigger>
-                              <SelectContent>
-                              {categories.filter(c => c !== 'All').map(category => (
-                                  <SelectItem key={category} value={category}>{category}</SelectItem>
-                              ))}
-                              </SelectContent>
-                          </Select>
-                          )}
-                      />
-                    {errors.category && <p className="text-sm text-destructive mt-1">{errors.category.message}</p>}
+                  
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="space-y-2">
+                          <Label htmlFor="rating">Rating (0-5)</Label>
+                          <Input id="rating" type="number" step="0.1" {...register('rating')} />
+                          {errors.rating && <p className="text-sm text-destructive mt-1">{errors.rating.message}</p>}
+                      </div>
+                       <div className="space-y-2">
+                          <Label htmlFor="reviews">Reviews</Label>
+                          <Input id="reviews" type="number" {...register('reviews')} />
+                          {errors.reviews && <p className="text-sm text-destructive mt-1">{errors.reviews.message}</p>}
+                      </div>
+                      <div className="flex items-center space-x-2 pt-6">
+                        <Controller
+                            name="isOfficialStore"
+                            control={control}
+                            render={({ field }) => (
+                                <Switch
+                                    id="isOfficialStore"
+                                    checked={field.value}
+                                    onCheckedChange={field.onChange}
+                                />
+                            )}
+                        />
+                         <Label htmlFor="isOfficialStore">Official Store</Label>
+                      </div>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="rating" className="text-right">Rating (0-5)</Label>
-                  <div className="col-span-3">
-                    <Input id="rating" type="number" step="0.1" {...register('rating')} />
-                    {errors.rating && <p className="text-sm text-destructive mt-1">{errors.rating.message}</p>}
-                  </div>
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="reviews" className="text-right">Reviews</Label>
-                  <div className="col-span-3">
-                    <Input id="reviews" type="number" {...register('reviews')} />
-                    {errors.reviews && <p className="text-sm text-destructive mt-1">{errors.reviews.message}</p>}
-                  </div>
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="isOfficialStore" className="text-right">Official Store</Label>
-                  <div className="col-span-3">
-                    <Controller
-                        name="isOfficialStore"
-                        control={control}
-                        render={({ field }) => (
-                            <Switch
-                                id="isOfficialStore"
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                            />
-                        )}
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-4 items-start gap-4">
-                  <Label className="text-right pt-2">Image</Label>
-                  <div className="col-span-3">
-                    <Tabs value={imageTab} onValueChange={handleTabChange} className="w-full">
+                {/* Image Section */}
+                <div className="space-y-2">
+                  <Label>Image</Label>
+                  <Card className="p-4">
+                     <Tabs value={imageTab} onValueChange={handleTabChange} className="w-full">
                       <TabsList className="grid w-full grid-cols-3">
                         <TabsTrigger value="url"><LinkIcon className="mr-1" /> URL</TabsTrigger>
                         <TabsTrigger value="upload"><Upload className="mr-1" /> Upload</TabsTrigger>
                         <TabsTrigger value="camera"><Camera className="mr-1" /> Camera</TabsTrigger>
                       </TabsList>
-                      <TabsContent value="url" className="mt-2">
+                      <TabsContent value="url" className="mt-4">
                         <Input placeholder="https://example.com/image.jpg" onChange={handleUrlChange} />
                       </TabsContent>
-                      <TabsContent value="upload" className="mt-2">
+                      <TabsContent value="upload" className="mt-4">
                          <Input type="file" accept="image/*" ref={fileInputRef} onChange={handleFileChange} />
                       </TabsContent>
-                      <TabsContent value="camera" className="mt-2 space-y-2">
+                      <TabsContent value="camera" className="mt-4 space-y-2">
                           {!imageSrc && (
                             <div className="w-full aspect-video bg-muted rounded-md overflow-hidden flex items-center justify-center relative">
                                 <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
@@ -455,11 +478,13 @@ export default function AdminProductsPage() {
                                   </AlertDescription>
                               </Alert>
                            )}
+                           <div className="flex gap-2">
                            {imageSrc ? (
                               <Button type="button" onClick={handleRetake}>Retake</Button>
                            ) : (
                             hasCameraPermission && streamRef.current && <Button type="button" onClick={captureImage}>Capture</Button>
                            )}
+                           </div>
                       </TabsContent>
                     </Tabs>
                      {errors.image && <p className="text-sm text-destructive mt-1">{errors.image.message}</p>}
@@ -469,11 +494,67 @@ export default function AdminProductsPage() {
                           <Image src={imageSrc} alt="Preview" width={100} height={100} className="rounded-md object-cover" />
                       </div>
                       )}
-                  </div>
+                  </Card>
+                </div>
+
+                {/* Variants Section */}
+                <div className="space-y-4">
+                    <Separator />
+                    <div>
+                        <h3 className="text-lg font-medium">Product Variants</h3>
+                        <p className="text-sm text-muted-foreground">Add different options for this product, like sizes, colors, or pack quantities.</p>
+                        {errors.variants && <p className="text-sm text-destructive mt-1">{errors.variants.message}</p>}
+                    </div>
+
+                    <div className="space-y-4">
+                    {fields.map((field, index) => (
+                        <Card key={field.id} className="p-4 bg-muted/20 relative">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                <div className="lg:col-span-4">
+                                    <Label>Variant Name</Label>
+                                    <Input {...register(`variants.${index}.name`)} placeholder="e.g., Large, Red, 12-Pack" />
+                                    {errors.variants?.[index]?.name && <p className="text-sm text-destructive mt-1">{errors.variants?.[index]?.name?.message}</p>}
+                                </div>
+                                <div>
+                                    <Label>Price</Label>
+                                    <Input type="number" {...register(`variants.${index}.price`)} step="0.01" />
+                                    {errors.variants?.[index]?.price && <p className="text-sm text-destructive mt-1">{errors.variants?.[index]?.price?.message}</p>}
+                                </div>
+                                <div>
+                                    <Label>Original Price</Label>
+                                    <Input type="number" {...register(`variants.${index}.originalPrice`)} step="0.01" placeholder="Optional" />
+                                </div>
+                                <div>
+                                    <Label>Stock</Label>
+                                    <Input type="number" {...register(`variants.${index}.stock`)} />
+                                    {errors.variants?.[index]?.stock && <p className="text-sm text-destructive mt-1">{errors.variants?.[index]?.stock?.message}</p>}
+                                </div>
+                            </div>
+                             <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="absolute top-2 right-2 text-destructive hover:bg-destructive/10"
+                                onClick={() => remove(index)}
+                                disabled={fields.length <= 1}
+                            >
+                                <Trash2 className="h-4 w-4" />
+                            </Button>
+                        </Card>
+                    ))}
+                    </div>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => append({ name: '', price: 0, stock: 0})}
+                    >
+                        <PlusCircle className="mr-2" />
+                        Add Variant
+                    </Button>
                 </div>
               </form>
             </ScrollArea>
-            <DialogFooter className="p-6 pt-0">
+            <DialogFooter className="p-6 pt-0 border-t">
               <Button type="button" variant="ghost" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
               <Button type="submit" form="product-form" disabled={isSubmitting}>
                 {isSubmitting && <Loader2 className="mr-2 animate-spin" />}
@@ -485,7 +566,7 @@ export default function AdminProductsPage() {
       </div>
 
       <Card>
-        <CardContent>
+        <CardContent className="p-0">
           <Table>
             <TableHeader>
               <TableRow>
@@ -511,7 +592,7 @@ export default function AdminProductsPage() {
                   </TableCell>
                   <TableCell className="font-medium">{product.name}</TableCell>
                   <TableCell>{product.category}</TableCell>
-                  <TableCell>${product.price.toFixed(2)}</TableCell>
+                  <TableCell>{getProductPrice(product)}</TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
