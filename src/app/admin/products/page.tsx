@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import Image from 'next/image';
 import { useForm, Controller, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -41,12 +41,12 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, Camera, Upload, Link as LinkIcon, AlertTriangle, Loader2, Bot, SwitchCamera, Edit, Trash2 } from 'lucide-react';
+import { PlusCircle, Camera, Upload, Link as LinkIcon, AlertTriangle, Loader2, Bot, SwitchCamera, Edit, Trash2, Search } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -83,6 +83,11 @@ export default function AdminProductsPage() {
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
   const { toast } = useToast();
+
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterCategory, setFilterCategory] = useState('All');
+  const [sortBy, setSortBy] = useState('name-asc');
+
 
   const {
     register,
@@ -379,12 +384,46 @@ export default function AdminProductsPage() {
     }
     return `GH₵${minPrice.toFixed(2)} - GH₵${maxPrice.toFixed(2)}`;
   }
+  
+  const filteredAndSortedProducts = useMemo(() => {
+    let filtered = [...products];
+
+    if (searchTerm) {
+      filtered = filtered.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()));
+    }
+
+    if (filterCategory !== 'All') {
+      filtered = filtered.filter(p => p.category === filterCategory);
+    }
+    
+    filtered.sort((a, b) => {
+      switch (sortBy) {
+        case 'name-asc':
+          return a.name.localeCompare(b.name);
+        case 'name-desc':
+          return b.name.localeCompare(a.name);
+        case 'price-asc':
+          return Math.min(...a.variants.map(v => v.price)) - Math.min(...b.variants.map(v => v.price));
+        case 'price-desc':
+          return Math.max(...b.variants.map(v => v.price)) - Math.max(...a.variants.map(v => v.price));
+        default:
+          return 0;
+      }
+    });
+
+    return filtered;
+
+  }, [products, searchTerm, filterCategory, sortBy]);
+
 
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Products</h2>
+         <div>
+          <h2 className="text-3xl font-bold">Products</h2>
+          <p className="text-muted-foreground">Manage your product inventory.</p>
+        </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button>
@@ -631,7 +670,46 @@ export default function AdminProductsPage() {
         </Dialog>
       </div>
 
-      <Card>
+       <Card>
+         <CardHeader>
+            <CardTitle>Inventory</CardTitle>
+            <CardDescription>
+                Filter, sort, and manage all your products.
+            </CardDescription>
+            <div className="pt-4 flex flex-col md:flex-row gap-4">
+                <div className="relative flex-grow">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                    <Input
+                    type="text"
+                    placeholder="Search product name..."
+                    className="w-full pl-10"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </div>
+                <Select value={filterCategory} onValueChange={setFilterCategory}>
+                    <SelectTrigger className="w-full md:w-[180px]">
+                    <SelectValue placeholder="All Categories" />
+                    </SelectTrigger>
+                    <SelectContent>
+                    {categories.map(category => (
+                        <SelectItem key={category} value={category}>{category}</SelectItem>
+                    ))}
+                    </SelectContent>
+                </Select>
+                 <Select value={sortBy} onValueChange={setSortBy}>
+                    <SelectTrigger className="w-full md:w-[180px]">
+                    <SelectValue placeholder="Sort by" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="name-asc">Name: A-Z</SelectItem>
+                        <SelectItem value="name-desc">Name: Z-A</SelectItem>
+                        <SelectItem value="price-asc">Price: Low to High</SelectItem>
+                        <SelectItem value="price-desc">Price: High to Low</SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
+         </CardHeader>
         <CardContent className="p-0">
           <Table>
             <TableHeader>
@@ -644,7 +722,7 @@ export default function AdminProductsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {products.map((product) => (
+              {filteredAndSortedProducts.length > 0 ? filteredAndSortedProducts.map((product) => (
                 <TableRow key={product.id}>
                   <TableCell>
                     <Image
@@ -680,7 +758,13 @@ export default function AdminProductsPage() {
                     </DropdownMenu>
                   </TableCell>
                 </TableRow>
-              ))}
+              )) : (
+                <TableRow>
+                    <TableCell colSpan={5} className="h-24 text-center">
+                        No products found.
+                    </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </CardContent>
@@ -706,3 +790,5 @@ export default function AdminProductsPage() {
     </div>
   );
 }
+
+    
