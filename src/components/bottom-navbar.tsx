@@ -14,7 +14,7 @@ const navItems = [
   { href: '/wishlist', label: 'Wishlist', icon: Heart },
   { href: '/orders', label: 'Orders', icon: History },
   { href: '/cart', label: 'Cart', icon: ShoppingCart },
-  { href: '/login', label: 'Profile', icon: User },
+  { href: '/profile', label: 'Profile', icon: User },
 ];
 
 export function BottomNavbar() {
