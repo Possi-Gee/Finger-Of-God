@@ -34,6 +34,7 @@ export type FooterSettings = {
 
 export type SiteSettingsState = {
   appName: string;
+  logoUrl: string;
   taxRate: number;
   shippingFee: number;
   theme: SiteTheme;
@@ -42,7 +43,7 @@ export type SiteSettingsState = {
 
 type SiteSettingsAction =
   | { type: 'SET_STATE'; payload: SiteSettingsState }
-  | { type: 'UPDATE_APP_NAME'; payload: { appName: string } }
+  | { type: 'UPDATE_GENERAL_SETTINGS'; payload: { appName: string; logoUrl: string } }
   | { type: 'UPDATE_COMMERCE'; payload: { taxRate: number; shippingFee: number } }
   | { type: 'UPDATE_THEME'; payload: SiteTheme }
   | { type: 'UPDATE_FOOTER'; payload: FooterSettings };
@@ -50,6 +51,7 @@ type SiteSettingsAction =
 
 const initialState: SiteSettingsState = {
   appName: 'ShopWave',
+  logoUrl: '',
   taxRate: 8,
   shippingFee: 5,
   theme: {
@@ -110,8 +112,8 @@ const initialState: SiteSettingsState = {
 
 const settingsReducer = (state: SiteSettingsState, action: SiteSettingsAction): SiteSettingsState => {
   switch (action.type) {
-    case 'UPDATE_APP_NAME':
-      return { ...state, appName: action.payload.appName };
+    case 'UPDATE_GENERAL_SETTINGS':
+      return { ...state, appName: action.payload.appName, logoUrl: action.payload.logoUrl };
     case 'UPDATE_COMMERCE':
        return { ...state, taxRate: action.payload.taxRate, shippingFee: action.payload.shippingFee };
     case 'UPDATE_THEME':

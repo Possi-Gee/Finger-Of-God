@@ -10,10 +10,14 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Trash2, PlusCircle, Palette, Text, Link as LinkIcon, Percent, Landmark } from 'lucide-react';
+import { Trash2, PlusCircle, Palette, Text, Link as LinkIcon, Percent, Landmark, Image as ImageIcon } from 'lucide-react';
+import Image from 'next/image';
 
 // Schemas for each form section
-const appNameSchema = z.object({ appName: z.string().min(1, 'App name is required') });
+const generalSchema = z.object({ 
+  appName: z.string().min(1, 'App name is required'),
+  logoUrl: z.string().url().or(z.literal('')) 
+});
 const commerceSchema = z.object({
   taxRate: z.coerce.number().min(0, 'Tax rate must be a positive number'),
   shippingFee: z.coerce.number().min(0, 'Shipping fee must be a positive number'),
@@ -55,7 +59,7 @@ export default function SiteSettingsPage() {
   const { toast } = useToast();
 
   const createSubmitHandler = (
-      actionType: 'UPDATE_APP_NAME' | 'UPDATE_COMMERCE' | 'UPDATE_THEME' | 'UPDATE_FOOTER',
+      actionType: 'UPDATE_GENERAL_SETTINGS' | 'UPDATE_COMMERCE' | 'UPDATE_THEME' | 'UPDATE_FOOTER',
       toastTitle: string
     ) => (data: any) => {
     dispatch({ type: actionType, payload: data as any });
@@ -72,7 +76,7 @@ export default function SiteSettingsPage() {
         <p className="text-muted-foreground mt-2">Manage the global settings for your application.</p>
       </div>
       
-      <GeneralSettingsForm onSubmit={createSubmitHandler('UPDATE_APP_NAME', 'App Name Updated')} defaultValues={{ appName: state.appName }} />
+      <GeneralSettingsForm onSubmit={createSubmitHandler('UPDATE_GENERAL_SETTINGS', 'General Settings Updated')} defaultValues={{ appName: state.appName, logoUrl: state.logoUrl }} />
       <CommerceSettingsForm onSubmit={createSubmitHandler('UPDATE_COMMERCE', 'Commerce Settings Updated')} defaultValues={{ taxRate: state.taxRate, shippingFee: state.shippingFee }} />
       <ThemeSettingsForm onSubmit={createSubmitHandler('UPDATE_THEME', 'Theme Updated')} defaultValues={state.theme} />
       <FooterSettingsForm onSubmit={createSubmitHandler('UPDATE_FOOTER', 'Footer Updated')} defaultValues={state.footer} />
@@ -82,19 +86,32 @@ export default function SiteSettingsPage() {
 }
 
 // Sub-components for each form
-function GeneralSettingsForm({ onSubmit, defaultValues }: { onSubmit: (data: z.infer<typeof appNameSchema>) => void; defaultValues: z.infer<typeof appNameSchema> }) {
-  const { register, handleSubmit, formState: { errors } } = useForm({ resolver: zodResolver(appNameSchema), defaultValues });
+function GeneralSettingsForm({ onSubmit, defaultValues }: { onSubmit: (data: z.infer<typeof generalSchema>) => void; defaultValues: z.infer<typeof generalSchema> }) {
+  const { register, handleSubmit, formState: { errors }, watch } = useForm({ resolver: zodResolver(generalSchema), defaultValues });
+  const logoUrl = watch('logoUrl');
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><Text /> General</CardTitle>
-          <CardDescription>Basic application settings.</CardDescription>
+          <CardDescription>Basic application settings like name and logo.</CardDescription>
         </CardHeader>
-        <CardContent>
-          <Label htmlFor="appName">App Name</Label>
-          <Input id="appName" {...register('appName')} />
-          {errors.appName && <p className="text-sm text-destructive mt-1">{errors.appName.message}</p>}
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="appName">App Name</Label>
+            <Input id="appName" {...register('appName')} />
+            {errors.appName && <p className="text-sm text-destructive mt-1">{errors.appName.message}</p>}
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="logoUrl">Logo URL</Label>
+            <Input id="logoUrl" {...register('logoUrl')} placeholder="https://example.com/logo.png" />
+            {errors.logoUrl && <p className="text-sm text-destructive mt-1">{errors.logoUrl.message}</p>}
+             {logoUrl && (
+              <div className="mt-4 p-4 border rounded-md bg-muted/50 flex items-center justify-center">
+                <Image src={logoUrl} alt="Logo Preview" width={100} height={40} style={{ objectFit: 'contain' }} />
+              </div>
+            )}
+          </div>
         </CardContent>
         <CardFooter>
           <Button type="submit">Save Changes</Button>

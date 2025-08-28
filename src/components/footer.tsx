@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { useSiteSettings } from '@/hooks/use-site-settings';
 import { ShoppingBag } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 const TwitterIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg fill="currentColor" viewBox="0 0 24 24" {...props}>
@@ -34,8 +35,11 @@ export function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8">
           <div className="col-span-2 lg:col-span-1">
             <Link href="/" className="flex items-center space-x-2 mb-4">
-              <ShoppingBag className="h-8 w-8 text-primary" />
-              <span className="text-xl font-bold">{settings.appName}</span>
+               {settings.logoUrl ? (
+                <Image src={settings.logoUrl} alt={settings.appName} width={120} height={40} style={{objectFit: 'contain', filter: 'brightness(0.1)'}} />
+              ) : (
+                 <span className="text-xl font-bold">{settings.appName}</span>
+              )}
             </Link>
             <p className="text-sm text-muted-foreground">
               Your one-stop shop for everything you need.

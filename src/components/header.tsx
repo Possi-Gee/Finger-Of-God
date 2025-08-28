@@ -7,12 +7,15 @@ import { useTheme } from '@/context/theme-provider';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/hooks/use-cart';
 import { useWishlist } from '@/hooks/use-wishlist';
+import { useSiteSettings } from '@/hooks/use-site-settings';
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 
 export function Header() {
   const { theme, setTheme } = useTheme();
   const { state: cartState } = useCart();
   const { state: wishlistState } = useWishlist();
+  const { state: settings } = useSiteSettings();
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
@@ -26,8 +29,14 @@ export function Header() {
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-14 max-w-screen-2xl items-center">
         <Link href="/" className="mr-6 flex items-center space-x-2">
-          <Package className="h-6 w-6 text-primary" />
-          <span className="font-bold sm:inline-block">ShopWave</span>
+           {settings.logoUrl ? (
+            <Image src={settings.logoUrl} alt={settings.appName} width={100} height={30} style={{objectFit: 'contain'}} />
+          ) : (
+            <>
+              <Package className="h-6 w-6 text-primary" />
+              <span className="font-bold sm:inline-block">{settings.appName}</span>
+            </>
+          )}
         </Link>
         <nav className="flex items-center gap-4 text-sm lg:gap-6">
           <Link
