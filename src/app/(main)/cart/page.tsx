@@ -10,10 +10,13 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { Separator } from '@/components/ui/separator';
 import { Trash2, ShoppingBag } from 'lucide-react';
 import type { CartItem } from '@/context/cart-context';
+import { useSiteSettings } from '@/hooks/use-site-settings';
 
 export default function CartPage() {
   const { state, dispatch } = useCart();
   const { items } = state;
+  const { state: settings } = useSiteSettings();
+
 
   const handleUpdateQuantity = (item: CartItem, quantity: number) => {
     // Prevent NaN values from being dispatched
@@ -28,8 +31,8 @@ export default function CartPage() {
   };
 
   const subtotal = items.reduce((sum, item) => sum + item.variant.price * item.quantity, 0);
-  const tax = subtotal * 0.08; // 8% tax
-  const deliveryFee = subtotal > 0 ? 5.00 : 0;
+  const tax = subtotal * (settings.taxRate / 100);
+  const deliveryFee = subtotal > 0 ? settings.shippingFee : 0;
   const total = subtotal + tax + deliveryFee;
 
   if (items.length === 0) {
@@ -92,7 +95,7 @@ export default function CartPage() {
                   <span>${subtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Tax (8%)</span>
+                  <span>Tax ({settings.taxRate}%)</span>
                   <span>${tax.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">

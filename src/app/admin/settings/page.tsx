@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Trash2, PlusCircle, Palette, Text, Link as LinkIcon } from 'lucide-react';
+import { Trash2, PlusCircle, Palette, Text, Link as LinkIcon, DollarSign, Percent } from 'lucide-react';
 
 const linkSchema = z.object({
   id: z.number(),
@@ -26,6 +26,8 @@ const footerColumnSchema = z.object({
 
 const settingsSchema = z.object({
   appName: z.string().min(1, 'App name is required'),
+  taxRate: z.coerce.number().min(0, 'Tax rate must be a positive number'),
+  shippingFee: z.coerce.number().min(0, 'Shipping fee must be a positive number'),
   theme: z.object({
     background: z.string().min(1),
     foreground: z.string().min(1),
@@ -93,6 +95,31 @@ export default function SiteSettingsPage() {
             <Input id="appName" {...register('appName')} />
             {errors.appName && <p className="text-sm text-destructive mt-1">{errors.appName.message}</p>}
           </CardContent>
+        </Card>
+        
+        <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2"><DollarSign /> Commerce Settings</CardTitle>
+                <CardDescription>Manage tax rates and shipping fees.</CardDescription>
+            </CardHeader>
+            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                    <Label htmlFor="taxRate">Tax Rate (%)</Label>
+                    <div className="relative">
+                        <Input id="taxRate" type="number" {...register('taxRate')} className="pl-8" />
+                        <Percent className="absolute left-2 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                    </div>
+                    {errors.taxRate && <p className="text-sm text-destructive mt-1">{errors.taxRate.message}</p>}
+                </div>
+                 <div className="space-y-2">
+                    <Label htmlFor="shippingFee">Shipping Fee ($)</Label>
+                     <div className="relative">
+                        <Input id="shippingFee" type="number" {...register('shippingFee')} className="pl-8" />
+                        <DollarSign className="absolute left-2 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                     </div>
+                    {errors.shippingFee && <p className="text-sm text-destructive mt-1">{errors.shippingFee.message}</p>}
+                </div>
+            </CardContent>
         </Card>
 
         <Card>

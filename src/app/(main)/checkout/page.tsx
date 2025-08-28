@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useCart } from '@/hooks/use-cart';
 import { useToast } from '@/hooks/use-toast';
+import { useSiteSettings } from '@/hooks/use-site-settings';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -50,6 +51,7 @@ type CheckoutFormValues = z.infer<typeof checkoutSchema>;
 
 export default function CheckoutPage() {
   const { state: cartState, dispatch: cartDispatch } = useCart();
+  const { state: settings } = useSiteSettings();
   const { items } = cartState;
   const { toast } = useToast();
   const router = useRouter();
@@ -75,8 +77,8 @@ export default function CheckoutPage() {
   });
 
   const subtotal = items.reduce((sum, item) => sum + item.variant.price * item.quantity, 0);
-  const tax = subtotal * 0.08;
-  const deliveryFee = subtotal > 0 ? 5.00 : 0;
+  const tax = subtotal * (settings.taxRate / 100);
+  const deliveryFee = subtotal > 0 ? settings.shippingFee : 0;
   const total = subtotal + tax + deliveryFee;
 
   const onSubmit = (data: CheckoutFormValues) => {
@@ -366,7 +368,7 @@ export default function CheckoutPage() {
                     <span>${subtotal.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span>Taxes</span>
+                    <span>Taxes ({settings.taxRate}%)</span>
                     <span>${tax.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-sm">

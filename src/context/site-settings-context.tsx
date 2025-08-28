@@ -8,6 +8,8 @@ type FooterColumn = { id: number; title: string; links: Link[] };
 
 export type SiteSettingsState = {
   appName: string;
+  taxRate: number;
+  shippingFee: number;
   theme: {
     background: string;
     foreground: string;
@@ -39,6 +41,8 @@ type SiteSettingsAction =
 
 const initialState: SiteSettingsState = {
   appName: 'ShopWave',
+  taxRate: 8,
+  shippingFee: 5,
   theme: {
     background: '197 93% 94%',
     foreground: '222 47% 11%',
@@ -122,7 +126,7 @@ export const SiteSettingsProvider = ({ children }: { children: ReactNode }) => {
       if (storedState) {
         const parsedState = JSON.parse(storedState);
         // Basic validation
-        if (parsedState.appName && parsedState.theme && parsedState.footer) {
+        if (parsedState.appName && parsedState.theme && parsedState.footer && parsedState.taxRate !== undefined && parsedState.shippingFee !== undefined) {
             dispatch({ type: 'SET_STATE', payload: parsedState });
         }
       }
