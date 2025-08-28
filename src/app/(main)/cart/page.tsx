@@ -16,6 +16,10 @@ export default function CartPage() {
   const { items } = state;
 
   const handleUpdateQuantity = (item: CartItem, quantity: number) => {
+    // Prevent NaN values from being dispatched
+    if (isNaN(quantity)) {
+      return;
+    }
     dispatch({ type: 'UPDATE_QUANTITY', payload: { id: item.id, quantity } });
   };
 
