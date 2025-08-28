@@ -189,6 +189,12 @@ export default function AdminProductsPage() {
     }
   };
 
+  const handleRetake = () => {
+    setImageSrc(null);
+    setValue('image', '');
+    startCamera(facingMode);
+  };
+
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -339,7 +345,7 @@ export default function AdminProductsPage() {
                             </Alert>
                          )}
                          {hasCameraPermission && !streamRef.current && imageSrc && (
-                            <Button type="button" onClick={() => startCamera(facingMode)}>Retake</Button>
+                            <Button type="button" onClick={handleRetake}>Retake</Button>
                          )}
                         {hasCameraPermission && streamRef.current && (
                           <Button type="button" onClick={captureImage}>Capture</Button>
