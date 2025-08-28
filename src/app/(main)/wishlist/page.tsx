@@ -1,3 +1,4 @@
+
 'use client';
 
 import Image from 'next/image';
@@ -48,7 +49,7 @@ export default function WishlistPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-6">Your Wishlist</h1>
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {items.map(product => (
           <Card key={product.id} className="flex flex-col overflow-hidden">
             <CardHeader className="p-0">
