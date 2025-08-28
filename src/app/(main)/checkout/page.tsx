@@ -57,8 +57,18 @@ export default function CheckoutPage() {
   const form = useForm<CheckoutFormValues>({
     resolver: zodResolver(checkoutSchema),
     defaultValues: {
+      fullName: '',
+      address: '',
+      city: '',
+      state: '',
+      zip: '',
       country: 'USA',
       paymentMethod: 'card',
+      cardNumber: '',
+      expiryDate: '',
+      cvv: '',
+      mobileMoneyNumber: '',
+      mobileMoneyProvider: undefined,
     }
   });
 
