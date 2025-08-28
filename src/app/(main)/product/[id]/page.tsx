@@ -31,7 +31,13 @@ export default function ProductDetailPage() {
 
   const product = products.find(p => p.id.toString() === id);
 
-  const [selectedVariant, setSelectedVariant] = useState<ProductVariant | undefined>(product?.variants[0]);
+  const getDefaultVariant = () => {
+    if (!product) return undefined;
+    const singleVariant = product.variants.find(v => v.name.toLowerCase().includes('single') || v.name.toLowerCase().includes('standard'));
+    return singleVariant || product.variants[0];
+  }
+
+  const [selectedVariant, setSelectedVariant] = useState<ProductVariant | undefined>(getDefaultVariant());
   const [quantity, setQuantity] = useState(1);
 
   const relatedProducts = product
@@ -131,7 +137,7 @@ export default function ProductDetailPage() {
           
           <Separator className="my-6" />
 
-           {product.variants.length > 1 && (
+           {product.variants.length > 0 && (
             <div className="mb-6">
                 <Label className="text-lg font-semibold mb-2 block">Select Option</Label>
                 <RadioGroup 
