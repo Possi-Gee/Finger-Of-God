@@ -61,12 +61,14 @@ export function ProductCard({ product }: ProductCardProps) {
 
   const wishlisted = isWishlisted(product.id);
   
-  const lowestPrice = product.variants.length > 0 
-    ? Math.min(...product.variants.map(v => v.price))
+  const productVariants = product.variants || [];
+
+  const lowestPrice = productVariants.length > 0 
+    ? Math.min(...productVariants.map(v => v.price))
     : 0;
 
-  const originalPrice = product.variants.length > 0 && product.variants[0].originalPrice 
-    ? product.variants[0].originalPrice
+  const originalPrice = productVariants.length > 0 && productVariants[0].originalPrice 
+    ? productVariants[0].originalPrice
     : 0;
   
   const discount = (originalPrice && originalPrice > lowestPrice)
@@ -99,7 +101,7 @@ export function ProductCard({ product }: ProductCardProps) {
             <p className="text-sm font-medium leading-tight flex-grow">{product.name}</p>
             <div className="mt-2 flex items-baseline gap-2 flex-wrap">
                 <p className="text-lg font-bold text-foreground">
-                  {product.variants.length > 1 ? 'From ' : ''}${lowestPrice.toFixed(2)}
+                  {productVariants.length > 1 ? 'From ' : ''}${lowestPrice.toFixed(2)}
                 </p>
                 {originalPrice > 0 && (
                     <p className="text-sm text-muted-foreground line-through">${originalPrice.toFixed(2)}</p>
@@ -115,7 +117,7 @@ export function ProductCard({ product }: ProductCardProps) {
             </div>
             <Button size="sm" onClick={handleAddToCart} className="w-full mt-4">
                 <ShoppingCart className="mr-2 h-4 w-4" />
-                {product.variants.length > 1 ? 'Select Options' : 'Add to Cart'}
+                {productVariants.length > 1 ? 'Select Options' : 'Add to Cart'}
             </Button>
           </CardContent>
         </Card>
