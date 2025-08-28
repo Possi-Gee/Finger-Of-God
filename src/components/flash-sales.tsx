@@ -5,8 +5,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Zap } from 'lucide-react';
 
-export function FlashSales() {
-  const calculateTimeLeft = () => {
+const calculateTimeLeft = () => {
     const difference = +new Date("2024-12-31T23:59:59") - +new Date();
     let timeLeft = {
       hours: '00',
@@ -22,17 +21,48 @@ export function FlashSales() {
       };
     }
     return timeLeft;
-  };
+};
 
-  const [timeLeft, setTimeLeft] = useState(calculateTimeLeft());
+
+export function FlashSales() {
+  const [isClient, setIsClient] = useState(false);
+  const [timeLeft, setTimeLeft] = useState({ hours: '00', minutes: '00', seconds: '00' });
 
   useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isClient) return;
+
+    setTimeLeft(calculateTimeLeft());
+
     const timer = setInterval(() => {
       setTimeLeft(calculateTimeLeft());
     }, 1000);
 
     return () => clearInterval(timer);
-  }, []);
+  }, [isClient]);
+
+  if (!isClient) {
+    return (
+        <div className="bg-red-600 text-white p-2 flex items-center justify-between">
+            <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                    <Zap className="h-6 w-6 text-yellow-300" />
+                    <span className="text-lg font-bold">Flash Sales</span>
+                </div>
+                 <div className="text-sm">
+                    <span>TIME LEFT: </span>
+                    <span className="font-bold">--h : --m : --s</span>
+                </div>
+            </div>
+             <Link href="/sales" className="text-sm font-semibold hover:underline">
+                See All
+            </Link>
+        </div>
+    );
+  }
 
   return (
     <div className="bg-red-600 text-white p-2 flex items-center justify-between">
