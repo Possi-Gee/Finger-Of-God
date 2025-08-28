@@ -123,11 +123,11 @@ function CommerceSettingsForm({ onSubmit, defaultValues }: { onSubmit: (data: z.
                 {errors.taxRate && <p className="text-sm text-destructive mt-1">{errors.taxRate.message}</p>}
             </div>
              <div className="space-y-2">
-                <Label htmlFor="shippingFee">Shipping Fee (GH₵)</Label>
-                 <div className="relative">
-                    <Input id="shippingFee" type="number" {...register('shippingFee')} className="pl-10" />
-                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground">GH₵</span>
-                 </div>
+                <Label htmlFor="shippingFee">Shipping Fee</Label>
+                <div className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
+                    <span className="text-muted-foreground mr-2">GH₵</span>
+                    <input {...register('shippingFee')} className="w-full bg-transparent p-0 outline-none placeholder:text-muted-foreground" placeholder='0.00'/>
+                </div>
                 {errors.shippingFee && <p className="text-sm text-destructive mt-1">{errors.shippingFee.message}</p>}
             </div>
         </CardContent>
@@ -226,3 +226,5 @@ function FieldArrayLinks({ colIndex, control, register }: { colIndex: number; co
     </div>
   );
 }
+
+    
