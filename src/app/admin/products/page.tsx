@@ -20,6 +20,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -36,9 +46,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, Camera, Upload, Link as LinkIcon, AlertTriangle, Loader2, Bot, SwitchCamera } from 'lucide-react';
+import { PlusCircle, Camera, Upload, Link as LinkIcon, AlertTriangle, Loader2, Bot, SwitchCamera, Edit, Trash2 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { MoreHorizontal } from 'lucide-react';
 
 const productSchema = z.object({
   name: z.string().min(3, 'Product name is required'),
@@ -58,7 +70,10 @@ type ProductFormValues = z.infer<typeof productSchema>;
 export default function AdminProductsPage() {
   const { state: productState, dispatch: productDispatch } = useProduct();
   const { products } = productState;
-  const [open, setOpen] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
   const { toast } = useToast();
 
   const {
@@ -150,12 +165,12 @@ export default function AdminProductsPage() {
   }, [stopCamera]);
 
   useEffect(() => {
-    if (open && imageTab === 'camera') {
+    if (isDialogOpen && imageTab === 'camera') {
         startCamera(facingMode);
     } else {
         stopCamera();
     }
-  }, [open, imageTab, facingMode, startCamera, stopCamera]);
+  }, [isDialogOpen, imageTab, facingMode, startCamera, stopCamera]);
 
 
   useEffect(() => {
@@ -175,14 +190,20 @@ export default function AdminProductsPage() {
       setFacingMode(prev => prev === 'user' ? 'environment' : 'user');
   };
 
+  const resetDialog = useCallback(() => {
+    stopCamera();
+    reset();
+    setImageSrc(null);
+    setHasCameraPermission(null);
+    setEditingProduct(null);
+    setImageTab('url');
+  }, [reset, stopCamera]);
+
   useEffect(() => {
-    if (!open) {
-      stopCamera();
-      reset();
-      setImageSrc(null);
-      setHasCameraPermission(null);
+    if (!isDialogOpen) {
+      resetDialog();
     }
-  }, [open, reset, stopCamera]);
+  }, [isDialogOpen, resetDialog]);
 
 
   const captureImage = () => {
@@ -233,24 +254,62 @@ export default function AdminProductsPage() {
 
 
   const onSubmit = (data: ProductFormValues) => {
-    const newProduct: Product = {
-      id: Date.now(),
-      ...data,
-      dataAiHint: `${data.category.toLowerCase()} product`
-    };
-    productDispatch({ type: 'ADD_PRODUCT', payload: newProduct });
-    toast({
-      title: 'Product Added',
-      description: `${data.name} has been successfully added.`,
-    });
-    setOpen(false);
+    if (editingProduct) {
+      const updatedProduct: Product = {
+        ...editingProduct,
+        ...data,
+      };
+      productDispatch({ type: 'UPDATE_PRODUCT', payload: updatedProduct });
+      toast({
+        title: 'Product Updated',
+        description: `${data.name} has been successfully updated.`,
+      });
+    } else {
+      const newProduct: Product = {
+        id: Date.now(),
+        ...data,
+        dataAiHint: `${data.category.toLowerCase()} product`
+      };
+      productDispatch({ type: 'ADD_PRODUCT', payload: newProduct });
+      toast({
+        title: 'Product Added',
+        description: `${data.name} has been successfully added.`,
+      });
+    }
+    setIsDialogOpen(false);
   };
+  
+  const handleEditClick = (product: Product) => {
+    setEditingProduct(product);
+    reset(product);
+    setImageSrc(product.image);
+    setIsDialogOpen(true);
+  };
+
+  const handleDeleteClick = (product: Product) => {
+    setProductToDelete(product);
+    setIsDeleteConfirmOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (productToDelete) {
+      productDispatch({ type: 'DELETE_PRODUCT', payload: { id: productToDelete.id } });
+      toast({
+        title: 'Product Deleted',
+        description: `${productToDelete.name} has been deleted.`,
+        variant: 'destructive',
+      });
+    }
+    setIsDeleteConfirmOpen(false);
+    setProductToDelete(null);
+  };
+
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold">Products</h2>
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button>
               <PlusCircle className="mr-2" />
@@ -259,13 +318,13 @@ export default function AdminProductsPage() {
           </DialogTrigger>
           <DialogContent className="sm:max-w-[600px] grid-rows-[auto_minmax(0,1fr)_auto] p-0 max-h-[90vh]">
             <DialogHeader className="p-6 pb-0">
-              <DialogTitle>Add New Product</DialogTitle>
+              <DialogTitle>{editingProduct ? 'Edit Product' : 'Add New Product'}</DialogTitle>
               <DialogDescription>
-                Fill in the details below to add a new product to your store.
+                {editingProduct ? 'Update the details below.' : 'Fill in the details below to add a new product.'}
               </DialogDescription>
             </DialogHeader>
             <ScrollArea className="overflow-y-auto">
-              <form onSubmit={handleSubmit(onSubmit)} id="add-product-form" className="px-6 py-4 grid gap-4">
+              <form onSubmit={handleSubmit(onSubmit)} id="product-form" className="px-6 py-4 grid gap-4">
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="name" className="text-right">Name</Label>
                   <div className="col-span-3">
@@ -415,10 +474,10 @@ export default function AdminProductsPage() {
               </form>
             </ScrollArea>
             <DialogFooter className="p-6 pt-0">
-              <Button type="button" variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
-              <Button type="submit" form="add-product-form" disabled={isSubmitting}>
+              <Button type="button" variant="ghost" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
+              <Button type="submit" form="product-form" disabled={isSubmitting}>
                 {isSubmitting && <Loader2 className="mr-2 animate-spin" />}
-                Add Product
+                {editingProduct ? 'Update Product' : 'Add Product'}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -434,7 +493,7 @@ export default function AdminProductsPage() {
                 <TableHead>Name</TableHead>
                 <TableHead>Category</TableHead>
                 <TableHead>Price</TableHead>
-                <TableHead>Actions</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -453,8 +512,25 @@ export default function AdminProductsPage() {
                   <TableCell className="font-medium">{product.name}</TableCell>
                   <TableCell>{product.category}</TableCell>
                   <TableCell>${product.price.toFixed(2)}</TableCell>
-                  <TableCell>
-                    {/* Action buttons can be added here */}
+                  <TableCell className="text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="h-8 w-8 p-0">
+                          <span className="sr-only">Open menu</span>
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleEditClick(product)}>
+                          <Edit className="mr-2 h-4 w-4" />
+                          <span>Edit</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleDeleteClick(product)} className="text-destructive">
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          <span>Delete</span>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </TableCell>
                 </TableRow>
               ))}
@@ -462,8 +538,24 @@ export default function AdminProductsPage() {
           </Table>
         </CardContent>
       </Card>
+      
+      <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the product
+              "{productToDelete?.name}".
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className={buttonVariants({ variant: 'destructive'})}>
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
-
-    

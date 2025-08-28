@@ -11,6 +11,8 @@ type ProductState = {
 
 type ProductAction =
   | { type: 'ADD_PRODUCT'; payload: Product }
+  | { type: 'UPDATE_PRODUCT'; payload: Product }
+  | { type: 'DELETE_PRODUCT'; payload: { id: number } }
   | { type: 'SET_STATE'; payload: ProductState };
 
 const initialState: ProductState = {
@@ -23,6 +25,18 @@ const productReducer = (state: ProductState, action: ProductAction): ProductStat
       return {
         ...state,
         products: [action.payload, ...state.products],
+      };
+    }
+     case 'UPDATE_PRODUCT': {
+      return {
+        ...state,
+        products: state.products.map(p => p.id === action.payload.id ? action.payload : p),
+      };
+    }
+    case 'DELETE_PRODUCT': {
+      return {
+        ...state,
+        products: state.products.filter(p => p.id !== action.payload.id),
       };
     }
     case 'SET_STATE': {
@@ -60,9 +74,7 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     try {
-      if (state.products.length > initialProducts.length) {
-         localStorage.setItem('shopwave_products', JSON.stringify(state));
-      }
+       localStorage.setItem('shopwave_products', JSON.stringify(state));
     } catch (error) {
       console.error("Failed to save products to localStorage", error);
     }
