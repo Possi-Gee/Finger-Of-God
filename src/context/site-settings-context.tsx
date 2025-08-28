@@ -6,38 +6,47 @@ import React, { createContext, useReducer, useEffect, type ReactNode } from 'rea
 type Link = { id: number; label: string; url: string };
 type FooterColumn = { id: number; title: string; links: Link[] };
 
+export type SiteTheme = {
+  background: string;
+  foreground: string;
+  primary: string;
+  'primary-foreground': string;
+  accent: string;
+  'accent-foreground': string;
+  card: string;
+  'card-foreground': string;
+  popover: string;
+  'popover-foreground': string;
+  border: string;
+  input: string;
+  ring: string;
+};
+
+export type FooterSettings = {
+  columns: FooterColumn[];
+  socialLinks: {
+    twitter?: string;
+    facebook?: string;
+    instagram?: string;
+  };
+};
+
+
 export type SiteSettingsState = {
   appName: string;
   taxRate: number;
   shippingFee: number;
-  theme: {
-    background: string;
-    foreground: string;
-    primary: string;
-    'primary-foreground': string;
-    accent: string;
-    'accent-foreground': string;
-    card: string;
-    'card-foreground': string;
-    popover: string;
-    'popover-foreground': string;
-    border: string;
-    input: string;
-    ring: string;
-  };
-  footer: {
-    columns: FooterColumn[];
-    socialLinks: {
-      twitter?: string;
-      facebook?: string;
-      instagram?: string;
-    };
-  };
+  theme: SiteTheme;
+  footer: FooterSettings;
 };
 
 type SiteSettingsAction =
   | { type: 'SET_STATE'; payload: SiteSettingsState }
-  | { type: 'UPDATE_SETTINGS'; payload: SiteSettingsState };
+  | { type: 'UPDATE_APP_NAME'; payload: { appName: string } }
+  | { type: 'UPDATE_COMMERCE'; payload: { taxRate: number; shippingFee: number } }
+  | { type: 'UPDATE_THEME'; payload: SiteTheme }
+  | { type: 'UPDATE_FOOTER'; payload: FooterSettings };
+
 
 const initialState: SiteSettingsState = {
   appName: 'ShopWave',
@@ -101,8 +110,14 @@ const initialState: SiteSettingsState = {
 
 const settingsReducer = (state: SiteSettingsState, action: SiteSettingsAction): SiteSettingsState => {
   switch (action.type) {
-    case 'UPDATE_SETTINGS':
-      return { ...state, ...action.payload };
+    case 'UPDATE_APP_NAME':
+      return { ...state, appName: action.payload.appName };
+    case 'UPDATE_COMMERCE':
+       return { ...state, taxRate: action.payload.taxRate, shippingFee: action.payload.shippingFee };
+    case 'UPDATE_THEME':
+      return { ...state, theme: action.payload };
+    case 'UPDATE_FOOTER':
+        return { ...state, footer: action.payload };
     case 'SET_STATE':
       return action.payload;
     default:
