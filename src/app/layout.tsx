@@ -25,14 +25,9 @@ function AppLayout({ children }: { children: React.ReactNode }) {
     document.title = settings.appName;
     const root = document.documentElement;
     
-    // Light mode colors
-    root.style.setProperty('--theme-background', `${settings.theme.background.h} ${settings.theme.background.s}% ${settings.theme.background.l}%`);
-    root.style.setProperty('--theme-foreground', `${settings.theme.foreground.h} ${settings.theme.foreground.s}% ${settings.theme.foreground.l}%`);
-    root.style.setProperty('--theme-card', `${settings.theme.card.h} ${settings.theme.card.s}% ${settings.theme.card.l}%`);
-    root.style.setProperty('--theme-primary', `${settings.theme.primary.h} ${settings.theme.primary.s}% ${settings.theme.primary.l}%`);
-    root.style.setProperty('--theme-primary-foreground', `${settings.theme['primary-foreground'].h} ${settings.theme['primary-foreground'].s}% ${settings.theme['primary-foreground'].l}%`);
-    root.style.setProperty('--theme-accent', `${settings.theme.accent.h} ${settings.theme.accent.s}% ${settings.theme.accent.l}%`);
-    root.style.setProperty('--theme-accent-foreground', `${settings.theme['accent-foreground'].h} ${settings.theme['accent-foreground'].s}% ${settings.theme['accent-foreground'].l}%`);
+    (Object.keys(settings.theme) as Array<keyof typeof settings.theme>).forEach((key) => {
+      root.style.setProperty(`--${key}`, settings.theme[key]);
+    });
 
   }, [settings]);
 

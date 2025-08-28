@@ -24,22 +24,20 @@ const footerColumnSchema = z.object({
   links: z.array(linkSchema),
 });
 
-const themeColorSchema = z.object({
-  h: z.number().min(0).max(360),
-  s: z.number().min(0).max(100),
-  l: z.number().min(0).max(100),
-});
-
 const settingsSchema = z.object({
   appName: z.string().min(1, 'App name is required'),
   theme: z.object({
-    background: themeColorSchema,
-    foreground: themeColorSchema,
-    primary: themeColorSchema,
-    'primary-foreground': themeColorSchema,
-    accent: themeColorSchema,
-    'accent-foreground': themeColorSchema,
-    card: themeColorSchema,
+    background: z.string().min(1),
+    foreground: z.string().min(1),
+    primary: z.string().min(1),
+    'primary-foreground': z.string().min(1),
+    accent: z.string().min(1),
+    'accent-foreground': z.string().min(1),
+    card: z.string().min(1),
+    'card-foreground': z.string().min(1),
+    border: z.string().min(1),
+    input: z.string().min(1),
+    ring: z.string().min(1),
   }),
   footer: z.object({
     columns: z.array(footerColumnSchema),
@@ -98,27 +96,14 @@ export default function SiteSettingsPage() {
         <Card>
           <CardHeader>
             <CardTitle  className="flex items-center gap-2"><Palette /> Theme Colors</CardTitle>
-            <CardDescription>Customize the look and feel of your app. Enter HSL values (Hue, Saturation, Lightness).</CardDescription>
+            <CardDescription>Customize the look and feel of your app. Enter HSL values as `H S% L%` (e.g., `222 47% 11%`) or other valid CSS colors.</CardDescription>
           </CardHeader>
           <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {(Object.keys(state.theme) as Array<keyof typeof state.theme>).map((key) => (
-              <div key={key} className="space-y-2 p-4 border rounded-md">
-                <h4 className="font-semibold capitalize">{key.replace('-', ' ')}</h4>
-                <div className="grid grid-cols-3 gap-2">
-                  <div>
-                    <Label>H</Label>
-                    <Input type="number" {...register(`theme.${key}.h`, { valueAsNumber: true })} />
-                  </div>
-                  <div>
-                    <Label>S</Label>
-                    <Input type="number" {...register(`theme.${key}.s`, { valueAsNumber: true })} />
-                  </div>
-                  <div>
-                    <Label>L</Label>
-                    <Input type="number" {...register(`theme.${key}.l`, { valueAsNumber: true })} />
-                  </div>
-                </div>
-                 {errors.theme?.[key] && <p className="text-sm text-destructive mt-1 col-span-3">Invalid HSL values</p>}
+              <div key={key} className="space-y-2">
+                 <Label htmlFor={`theme-${key}`} className="capitalize">{key.replace('-', ' ')}</Label>
+                 <Input id={`theme-${key}`} {...register(`theme.${key}`)} />
+                 {errors.theme?.[key] && <p className="text-sm text-destructive mt-1">{errors.theme[key]?.message}</p>}
               </div>
             ))}
           </CardContent>

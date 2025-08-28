@@ -3,21 +3,23 @@
 
 import React, { createContext, useReducer, useEffect, type ReactNode } from 'react';
 
-type ThemeColor = { h: number; s: number; l: number };
-
 type Link = { id: number; label: string; url: string };
 type FooterColumn = { id: number; title: string; links: Link[] };
 
 export type SiteSettingsState = {
   appName: string;
   theme: {
-    background: ThemeColor;
-    foreground: ThemeColor;
-    primary: ThemeColor;
-    'primary-foreground': ThemeColor;
-    accent: ThemeColor;
-    'accent-foreground': ThemeColor;
-    card: ThemeColor;
+    background: string;
+    foreground: string;
+    primary: string;
+    'primary-foreground': string;
+    accent: string;
+    'accent-foreground': string;
+    card: string;
+    'card-foreground': string;
+    border: string;
+    input: string;
+    ring: string;
   };
   footer: {
     columns: FooterColumn[];
@@ -36,13 +38,17 @@ type SiteSettingsAction =
 const initialState: SiteSettingsState = {
   appName: 'ShopWave',
   theme: {
-    background: { h: 197, s: 93, l: 94 },
-    foreground: { h: 222, s: 47, l: 11 },
-    card: { h: 197, s: 93, l: 98 },
-    primary: { h: 197, s: 78, l: 52 },
-    'primary-foreground': { h: 0, s: 0, l: 98 },
-    accent: { h: 291, s: 64, l: 42 },
-    'accent-foreground': { h: 0, s: 0, l: 98 },
+    background: '197 93% 94%',
+    foreground: '222 47% 11%',
+    card: '0 0% 100%',
+    'card-foreground': '222 47% 11%',
+    primary: '197 78% 52%',
+    'primary-foreground': '0 0% 98%',
+    accent: '291 64% 42%',
+    'accent-foreground': '0 0% 98%',
+    border: "214.3 31.8% 91.4%",
+    input: "214.3 31.8% 91.4%",
+    ring: "197 78% 52%",
   },
   footer: {
     columns: [
