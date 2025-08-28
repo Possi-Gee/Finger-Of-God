@@ -63,16 +63,17 @@ export function ProductCard({ product }: ProductCardProps) {
   
   const productVariants = product.variants || [];
 
-  const lowestPrice = productVariants.length > 0 
-    ? Math.min(...productVariants.map(v => v.price))
-    : 0;
-
-  const originalPrice = productVariants.length > 0 && productVariants[0].originalPrice 
-    ? productVariants[0].originalPrice
-    : 0;
+  const standardVariant = productVariants.find(v => v.name === 'Standard');
   
-  const discount = (originalPrice && originalPrice > lowestPrice)
-    ? Math.round(((originalPrice - lowestPrice) / originalPrice) * 100)
+  const displayPrice = standardVariant 
+    ? standardVariant.price 
+    : (productVariants.length > 0 ? Math.min(...productVariants.map(v => v.price)) : 0);
+
+  const originalPrice = standardVariant?.originalPrice 
+    || (productVariants.length > 0 && productVariants[0].originalPrice ? productVariants[0].originalPrice : 0);
+  
+  const discount = (originalPrice && originalPrice > displayPrice)
+    ? Math.round(((originalPrice - displayPrice) / originalPrice) * 100)
     : 0;
 
   return (
@@ -101,7 +102,7 @@ export function ProductCard({ product }: ProductCardProps) {
             <p className="text-sm font-medium leading-tight flex-grow">{product.name}</p>
             <div className="mt-2 flex items-baseline gap-2 flex-wrap">
                 <p className="text-lg font-bold text-foreground">
-                  {productVariants.length > 1 ? 'From ' : ''}${lowestPrice.toFixed(2)}
+                  {!standardVariant && productVariants.length > 1 ? 'From ' : ''}${displayPrice.toFixed(2)}
                 </p>
                 {originalPrice > 0 && (
                     <p className="text-sm text-muted-foreground line-through">${originalPrice.toFixed(2)}</p>
