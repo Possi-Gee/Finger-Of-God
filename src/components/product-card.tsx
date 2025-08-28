@@ -80,7 +80,7 @@ export function ProductCard({ product }: ProductCardProps) {
           <CardContent className="flex flex-col flex-grow p-3">
              {product.isOfficialStore && <Badge className="bg-cyan-600 hover:bg-cyan-700 w-fit mb-2">Official Store</Badge>}
             <p className="text-sm font-medium leading-tight flex-grow">{product.name}</p>
-            <div className="mt-2 flex items-center gap-2">
+            <div className="mt-2 flex items-baseline gap-2 flex-wrap">
                 <p className="text-lg font-bold text-foreground">${product.price.toFixed(2)}</p>
                 {product.originalPrice && product.originalPrice > product.price && (
                     <p className="text-sm text-muted-foreground line-through">${product.originalPrice.toFixed(2)}</p>
@@ -89,7 +89,7 @@ export function ProductCard({ product }: ProductCardProps) {
             <div className="flex items-center gap-1 mt-1">
                 <div className="flex items-center">
                     {[...Array(5)].map((_, i) => (
-                        <Star key={i} className={cn("h-4 w-4", i < Math.round(product.rating) ? "text-yellow-400 fill-yellow-400" : "text-gray-300")} />
+                        <Star key={i} className={cn("h-4 w-4", i < Math.round(product.rating || 0) ? "text-yellow-400 fill-yellow-400" : "text-gray-300")} />
                     ))}
                 </div>
                 <span className="text-xs text-muted-foreground">({product.reviews})</span>
