@@ -152,13 +152,22 @@ export default function AdminOrderDetailPage() {
                     <CardTitle className="flex items-center gap-2"><User /> Customer Details</CardTitle>
                 </CardHeader>
                 <CardContent>
-                     <h4 className="font-semibold">Shipping Address</h4>
-                     <address className="not-italic text-muted-foreground">
-                         {order.shippingAddress.fullName}<br />
-                         {order.shippingAddress.address}<br />
-                         {order.shippingAddress.city}, {order.shippingAddress.state} {order.shippingAddress.zip}<br />
-                         {order.shippingAddress.country}
-                     </address>
+                    {order.deliveryMethod === 'delivery' ? (
+                        <>
+                            <h4 className="font-semibold">Shipping Address</h4>
+                            <address className="not-italic text-muted-foreground">
+                                {order.shippingAddress.fullName}<br />
+                                {order.shippingAddress.address}<br />
+                                {order.shippingAddress.city}, {order.shippingAddress.state} {order.shippingAddress.zip}<br />
+                                {order.shippingAddress.country}
+                            </address>
+                        </>
+                    ) : (
+                        <div>
+                            <h4 className="font-semibold">Customer</h4>
+                            <p className="text-muted-foreground">This order is for in-store pickup.</p>
+                        </div>
+                    )}
                      <Separator className="my-4" />
                       <h4 className="font-semibold">Payment Information</h4>
                      <p className="text-muted-foreground">Method: {getPaymentMethodName(order.paymentMethod)}</p>

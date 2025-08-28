@@ -22,34 +22,43 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Order } from '@/context/order-context';
 
-const shippingSchema = z.object({
-  fullName: z.string().min(3, 'Full name is required'),
-  address: z.string().min(5, 'Address is required'),
-  city: z.string().min(2, 'City is required'),
-  state: z.string().min(2, 'State is required'),
-  zip: z.string().min(5, 'A valid ZIP code is required'),
-  country: z.string().min(2, 'Country is required'),
-});
-
-const checkoutSchema = z.object({
-  deliveryMethod: z.enum(['delivery', 'pickup']),
-  paymentMethod: z.enum(['card', 'mobile_money', 'on_delivery']),
-}).and(shippingSchema).and(z.union([
+const checkoutSchema = z.discriminatedUnion("deliveryMethod", [
     z.object({
-        paymentMethod: z.literal('card'),
-        cardNumber: z.string().regex(/^\d{16}$/, 'Card number must be 16 digits'),
-        expiryDate: z.string().regex(/^(0[1-9]|1[0-2])\/\d{2}$/, 'Expiry date must be in MM/YY format'),
-        cvv: z.string().regex(/^\d{3,4}$/, 'CVV must be 3 or 4 digits'),
+        deliveryMethod: z.literal('delivery'),
+        fullName: z.string().min(3, 'Full name is required'),
+        address: z.string().min(5, 'Address is required'),
+        city: z.string().min(2, 'City is required'),
+        state: z.string().min(2, 'State is required'),
+        zip: z.string().min(5, 'A valid ZIP code is required'),
+        country: z.string().min(2, 'Country is required'),
     }),
     z.object({
-        paymentMethod: z.literal('mobile_money'),
-        mobileMoneyProvider: z.enum(["mtn", "telecel"], { required_error: "Please select a provider" }),
-        mobileMoneyNumber: z.string().min(10, 'Please enter a valid phone number'),
-    }),
-    z.object({
-        paymentMethod: z.literal('on_delivery'),
-    }),
-]));
+        deliveryMethod: z.literal('pickup'),
+        fullName: z.string().optional(),
+        address: z.string().optional(),
+        city: z.string().optional(),
+        state: z.string().optional(),
+        zip: z.string().optional(),
+        country: z.string().optional(),
+    })
+]).and(
+    z.discriminatedUnion("paymentMethod", [
+        z.object({
+            paymentMethod: z.literal('card'),
+            cardNumber: z.string().regex(/^\d{16}$/, 'Card number must be 16 digits'),
+            expiryDate: z.string().regex(/^(0[1-9]|1[0-2])\/\d{2}$/, 'Expiry date must be in MM/YY format'),
+            cvv: z.string().regex(/^\d{3,4}$/, 'CVV must be 3 or 4 digits'),
+        }),
+        z.object({
+            paymentMethod: z.literal('mobile_money'),
+            mobileMoneyProvider: z.enum(["mtn", "telecel"], { required_error: "Please select a provider" }),
+            mobileMoneyNumber: z.string().min(10, 'Please enter a valid phone number'),
+        }),
+        z.object({
+            paymentMethod: z.literal('on_delivery'),
+        }),
+    ])
+);
 
 
 type CheckoutFormValues = z.infer<typeof checkoutSchema>;
@@ -68,14 +77,14 @@ export default function CheckoutPage() {
   const form = useForm<CheckoutFormValues>({
     resolver: zodResolver(checkoutSchema),
     defaultValues: {
+      paymentMethod: 'card',
+      deliveryMethod: 'delivery',
       fullName: '',
       address: '',
       city: '',
       state: '',
       zip: '',
       country: 'USA',
-      paymentMethod: 'card',
-      deliveryMethod: 'delivery',
       // @ts-ignore
       cardNumber: '',
       expiryDate: '',
@@ -90,7 +99,7 @@ export default function CheckoutPage() {
   const total = subtotal + tax + deliveryFee;
 
   const onSubmit = (data: CheckoutFormValues) => {
-    const { fullName, address, city, state, zip, country, paymentMethod, deliveryMethod } = data;
+    const { paymentMethod, deliveryMethod } = data;
     
     const newOrder: Order = {
       id: Date.now(),
@@ -100,7 +109,14 @@ export default function CheckoutPage() {
       tax,
       shippingFee: deliveryFee,
       total,
-      shippingAddress: { fullName, address, city, state, zip, country },
+      shippingAddress: data.deliveryMethod === 'delivery' ? { 
+        fullName: data.fullName!, 
+        address: data.address!, 
+        city: data.city!, 
+        state: data.state!, 
+        zip: data.zip!, 
+        country: data.country! 
+      } : { fullName: 'In-store Pickup', address: '', city: '', state: '', zip: '', country: '' },
       paymentMethod,
       deliveryMethod,
       status: 'Pending',

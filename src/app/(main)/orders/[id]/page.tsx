@@ -117,15 +117,17 @@ export default function OrderDetailPage() {
                 </CardHeader>
                 <CardContent>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <h4 className="font-semibold">Shipping Address</h4>
-                            <address className="not-italic text-muted-foreground">
-                                {order.shippingAddress.fullName}<br />
-                                {order.shippingAddress.address}<br />
-                                {order.shippingAddress.city}, {order.shippingAddress.state} {order.shippingAddress.zip}<br />
-                                {order.shippingAddress.country}
-                            </address>
-                        </div>
+                        {order.deliveryMethod === 'delivery' && (
+                            <div>
+                                <h4 className="font-semibold">Shipping Address</h4>
+                                <address className="not-italic text-muted-foreground">
+                                    {order.shippingAddress.fullName}<br />
+                                    {order.shippingAddress.address}<br />
+                                    {order.shippingAddress.city}, {order.shippingAddress.state} {order.shippingAddress.zip}<br />
+                                    {order.shippingAddress.country}
+                                </address>
+                            </div>
+                        )}
                         <div>
                              <h4 className="font-semibold">Payment Method</h4>
                              <p className="text-muted-foreground">{getPaymentMethodName(order.paymentMethod)}</p>
