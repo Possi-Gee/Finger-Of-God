@@ -22,7 +22,7 @@ const productReducer = (state: ProductState, action: ProductAction): ProductStat
     case 'ADD_PRODUCT': {
       return {
         ...state,
-        products: [...state.products, action.payload],
+        products: [action.payload, ...state.products],
       };
     }
     case 'SET_STATE': {
