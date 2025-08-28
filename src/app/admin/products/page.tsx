@@ -138,12 +138,12 @@ export default function AdminProductsPage() {
   }, [stopCamera]);
 
   useEffect(() => {
-    if (open && imageTab === 'camera') {
+    if (open && imageTab === 'camera' && !imageSrc) {
       startCamera(facingMode);
     } else {
       stopCamera();
     }
-  }, [open, imageTab, facingMode, startCamera, stopCamera]);
+  }, [open, imageTab, facingMode, startCamera, stopCamera, imageSrc]);
 
 
   useEffect(() => {
@@ -193,9 +193,6 @@ export default function AdminProductsPage() {
   const handleRetake = () => {
     setImageSrc(null);
     setValue('image', '');
-    if (imageTab === 'camera') {
-      startCamera(facingMode);
-    }
   };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -329,15 +326,17 @@ export default function AdminProductsPage() {
                          <Input type="file" accept="image/*" ref={fileInputRef} onChange={handleFileChange} />
                       </TabsContent>
                       <TabsContent value="camera" className="mt-2 space-y-2">
-                          <div className="w-full aspect-video bg-muted rounded-md overflow-hidden flex items-center justify-center relative">
-                              <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
-                              <canvas ref={canvasRef} className="hidden" />
-                              {streamRef.current && (
-                                 <Button type="button" variant="ghost" size="icon" onClick={handleToggleFacingMode} className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white">
-                                    <SwitchCamera />
-                                 </Button>
-                              )}
-                          </div>
+                          {!imageSrc && (
+                            <div className="w-full aspect-video bg-muted rounded-md overflow-hidden flex items-center justify-center relative">
+                                <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
+                                <canvas ref={canvasRef} className="hidden" />
+                                {streamRef.current && (
+                                   <Button type="button" variant="ghost" size="icon" onClick={handleToggleFacingMode} className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white">
+                                      <SwitchCamera />
+                                   </Button>
+                                )}
+                            </div>
+                          )}
                            {hasCameraPermission === false && (
                               <Alert variant="destructive">
                                   <AlertTriangle className="h-4 w-4" />
@@ -347,12 +346,12 @@ export default function AdminProductsPage() {
                                   </AlertDescription>
                               </Alert>
                            )}
-                           {hasCameraPermission && imageSrc && (
+                           {imageSrc && (
                               <Button type="button" onClick={handleRetake}>Retake</Button>
                            )}
-                          {hasCameraPermission && streamRef.current && !imageSrc && (
+                           {hasCameraPermission && !imageSrc && (
                             <Button type="button" onClick={captureImage}>Capture</Button>
-                          )}
+                           )}
                       </TabsContent>
                     </Tabs>
                      {errors.image && <p className="text-sm text-destructive mt-1">{errors.image.message}</p>}
