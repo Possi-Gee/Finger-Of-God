@@ -1,7 +1,8 @@
+
 'use client';
 
 import Link from 'next/link';
-import { Package, ShoppingCart, Heart, Sun, Moon, User, Bot } from 'lucide-react';
+import { Package, ShoppingCart, Heart, Sun, Moon, User, Bot, Wrench } from 'lucide-react';
 import { useTheme } from '@/context/theme-provider';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/hooks/use-cart';
@@ -36,10 +37,10 @@ export function Header() {
             Home
           </Link>
           <Link
-            href="/admin/generate-description"
+            href="/admin/products"
             className="flex items-center gap-1 text-foreground/60 transition-colors hover:text-foreground/80"
           >
-            <Bot className="h-4 w-4" />
+            <Wrench className="h-4 w-4" />
             Admin
           </Link>
         </nav>

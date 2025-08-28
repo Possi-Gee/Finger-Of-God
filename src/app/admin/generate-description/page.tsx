@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -68,10 +69,9 @@ export default function GenerateDescriptionPage() {
   };
 
   return (
-    <div className="container mx-auto max-w-4xl py-12">
-      <div className="text-center mb-8">
-        <Bot className="mx-auto h-12 w-12 text-primary" />
-        <h1 className="text-3xl font-bold mt-4">AI Product Description Generator</h1>
+    <div className="space-y-6">
+      <div className="text-center">
+        <h1 className="text-3xl font-bold">AI Product Description Generator</h1>
         <p className="text-muted-foreground mt-2">Create compelling product descriptions in seconds.</p>
       </div>
 
@@ -143,3 +143,4 @@ export default function GenerateDescriptionPage() {
     </div>
   );
 }
+
