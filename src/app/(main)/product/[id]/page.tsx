@@ -61,7 +61,7 @@ export default function ProductDetailPage() {
         });
         return;
     }
-    if (quantity <= 0) {
+    if (quantity <= 0 || isNaN(quantity)) {
        toast({
             title: 'Invalid quantity',
             description: 'Please enter a quantity greater than zero.',
@@ -101,6 +101,11 @@ export default function ProductDetailPage() {
   
   const handleQuantityChange = (change: number) => {
     setQuantity(prev => Math.max(1, prev + change));
+  }
+
+  const handleQuantityInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value, 10);
+    setQuantity(isNaN(value) ? 1 : value);
   }
 
   return (
@@ -153,7 +158,7 @@ export default function ProductDetailPage() {
           <div className="mb-6">
             <Label htmlFor="quantity" className="text-lg font-semibold mb-2 block">Quantity</Label>
             <div className="flex items-center gap-2">
-                 <Button variant="outline" size="icon" onClick={() => handleQuantityChange(-1)}>
+                 <Button variant="outline" size="icon" onClick={() => handleQuantityChange(-1)} disabled={!selectedVariant}>
                     <Minus className="h-4 w-4" />
                 </Button>
                 <Input 
@@ -161,10 +166,11 @@ export default function ProductDetailPage() {
                     type="number"
                     min="1"
                     value={quantity}
-                    onChange={(e) => setQuantity(parseInt(e.target.value, 10) || 1)}
+                    onChange={handleQuantityInputChange}
                     className="h-10 w-20 text-center"
+                    disabled={!selectedVariant}
                 />
-                 <Button variant="outline" size="icon" onClick={() => handleQuantityChange(1)}>
+                 <Button variant="outline" size="icon" onClick={() => handleQuantityChange(1)} disabled={!selectedVariant}>
                     <Plus className="h-4 w-4" />
                 </Button>
             </div>
