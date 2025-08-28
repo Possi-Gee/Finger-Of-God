@@ -51,7 +51,7 @@ export default function WishlistPage() {
       <h1 className="text-3xl font-bold mb-6">Your Wishlist</h1>
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {items.map(product => (
-          <Card key={product.id} className="flex flex-col overflow-hidden">
+          <Card key={product.id} className="flex h-full flex-col overflow-hidden">
             <CardHeader className="p-0">
               <div className="relative aspect-square w-full">
                 <Image
