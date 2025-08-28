@@ -33,7 +33,7 @@ export default function ProductDetailPage() {
 
   const getDefaultVariant = () => {
     if (!product) return undefined;
-    const singleVariant = product.variants.find(v => v.name.toLowerCase().includes('single') || v.name.toLowerCase().includes('standard'));
+    const singleVariant = product.variants.find(v => v.name.toLowerCase() === 'single' || v.name.toLowerCase() === 'standard');
     return singleVariant || product.variants[0];
   }
 
@@ -215,3 +215,4 @@ export default function ProductDetailPage() {
     </div>
   );
 }
+

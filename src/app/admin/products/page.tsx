@@ -91,6 +91,7 @@ export default function AdminProductsPage() {
     setValue,
     reset,
     watch,
+    getValues,
     formState: { errors, isSubmitting },
   } = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
@@ -102,7 +103,7 @@ export default function AdminProductsPage() {
     }
   });
   
-  const { fields, append, remove } = useFieldArray({
+  const { fields, append, remove, update } = useFieldArray({
     control,
     name: "variants"
   });
@@ -119,6 +120,33 @@ export default function AdminProductsPage() {
 
   const productName = watch('name');
   const features = watch('features');
+  const variants = watch('variants');
+  const singleItemVariantIndex = variants.findIndex(v => v.name === 'Single');
+  const isSoldAsSingleItem = singleItemVariantIndex !== -1;
+
+  const handleToggleSingleItemSale = (checked: boolean) => {
+    if (checked) {
+      // Add a 'Single' variant if it doesn't exist
+      if (!isSoldAsSingleItem) {
+        append({ name: 'Single', price: 0, stock: 0, originalPrice: 0 });
+      }
+    } else {
+      // Remove the 'Single' variant if it exists
+      if (isSoldAsSingleItem) {
+        // Prevent removal if it's the last variant
+        if (getValues('variants').length > 1) {
+            remove(singleItemVariantIndex);
+        } else {
+            toast({
+                title: "Cannot Remove",
+                description: "You must have at least one variant for a product.",
+                variant: 'destructive',
+            })
+        }
+      }
+    }
+  };
+
 
   const handleGenerateDescription = async () => {
     if (!productName || !features) {
@@ -310,7 +338,12 @@ export default function AdminProductsPage() {
   
   const handleEditClick = (product: Product) => {
     setEditingProduct(product);
-    reset(product);
+    // Ensure variants have unique IDs for the form field array
+    const productWithVariantIds = {
+        ...product,
+        variants: product.variants.map(v => ({ ...v, id: v.id || Math.random() }))
+    };
+    reset(productWithVariantIds);
     setImageSrc(product.image);
     setIsDialogOpen(true);
   };
@@ -444,7 +477,7 @@ export default function AdminProductsPage() {
                 {/* Image Section */}
                 <div className="space-y-2">
                   <Label>Image</Label>
-                  <Card className="p-4">
+                  <Card className="p-4 bg-background">
                      <Tabs value={imageTab} onValueChange={handleTabChange} className="w-full">
                       <TabsList className="grid w-full grid-cols-3">
                         <TabsTrigger value="url"><LinkIcon className="mr-1" /> URL</TabsTrigger>
@@ -501,47 +534,80 @@ export default function AdminProductsPage() {
                 <div className="space-y-4">
                     <Separator />
                     <div>
-                        <h3 className="text-lg font-medium">Product Variants</h3>
-                        <p className="text-sm text-muted-foreground">Add different options for this product, like sizes, colors, or pack quantities.</p>
+                        <h3 className="text-lg font-medium">Product Options</h3>
+                         <p className="text-sm text-muted-foreground">Define how this product can be purchased.</p>
                         {errors.variants && <p className="text-sm text-destructive mt-1">{typeof errors.variants.message === 'string' ? errors.variants.message : 'Please check variant details.'}</p>}
                     </div>
+                    
+                    <Card className="p-4 bg-muted/20">
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="single-item-sale" className="font-medium">Sell as individual item</Label>
+                        <Switch
+                          id="single-item-sale"
+                          checked={isSoldAsSingleItem}
+                          onCheckedChange={handleToggleSingleItemSale}
+                        />
+                      </div>
+                      {isSoldAsSingleItem && (
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4 pt-4 border-t">
+                            <input type="hidden" {...register(`variants.${singleItemVariantIndex}.name`)} value="Single" />
+                             <div>
+                                <Label>Price</Label>
+                                <Input type="number" {...register(`variants.${singleItemVariantIndex}.price`)} step="0.01" />
+                                {errors.variants?.[singleItemVariantIndex]?.price && <p className="text-sm text-destructive mt-1">{errors.variants[singleItemVariantIndex]?.price?.message}</p>}
+                            </div>
+                            <div>
+                                <Label>Original Price (Optional)</Label>
+                                <Input type="number" {...register(`variants.${singleItemVariantIndex}.originalPrice`)} step="0.01" />
+                            </div>
+                            <div>
+                                <Label>Stock</Label>
+                                <Input type="number" {...register(`variants.${singleItemVariantIndex}.stock`)} />
+                                 {errors.variants?.[singleItemVariantIndex]?.stock && <p className="text-sm text-destructive mt-1">{errors.variants[singleItemVariantIndex]?.stock?.message}</p>}
+                            </div>
+                        </div>
+                      )}
+                    </Card>
 
                     <div className="space-y-4">
-                    {fields.map((field, index) => (
-                        <Card key={field.id} className="p-4 bg-muted/20 relative">
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                                <div className="lg:col-span-4">
-                                    <Label>Variant Name</Label>
-                                    <Input {...register(`variants.${index}.name`)} placeholder="e.g., Large, Red, 12-Pack" />
-                                    {errors.variants?.[index]?.name && <p className="text-sm text-destructive mt-1">{errors.variants?.[index]?.name?.message}</p>}
+                        <h4 className="font-medium">Add Packs or Bundles</h4>
+                        {fields.map((field, index) => {
+                            if (field.name === 'Single') return null;
+                            return (
+                            <Card key={field.id} className="p-4 bg-muted/20 relative">
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                    <div className="lg:col-span-4">
+                                        <Label>Pack/Bundle Name</Label>
+                                        <Input {...register(`variants.${index}.name`)} placeholder="e.g., Large, Red, 12-Pack" />
+                                        {errors.variants?.[index]?.name && <p className="text-sm text-destructive mt-1">{errors.variants?.[index]?.name?.message}</p>}
+                                    </div>
+                                    <div>
+                                        <Label>Price</Label>
+                                        <Input type="number" {...register(`variants.${index}.price`)} step="0.01" />
+                                        {errors.variants?.[index]?.price && <p className="text-sm text-destructive mt-1">{errors.variants?.[index]?.price?.message}</p>}
+                                    </div>
+                                    <div>
+                                        <Label>Original Price (Optional)</Label>
+                                        <Input type="number" {...register(`variants.${index}.originalPrice`)} step="0.01" />
+                                    </div>
+                                    <div>
+                                        <Label>Stock</Label>
+                                        <Input type="number" {...register(`variants.${index}.stock`)} />
+                                        {errors.variants?.[index]?.stock && <p className="text-sm text-destructive mt-1">{errors.variants?.[index]?.stock?.message}</p>}
+                                    </div>
                                 </div>
-                                <div>
-                                    <Label>Price</Label>
-                                    <Input type="number" {...register(`variants.${index}.price`)} step="0.01" />
-                                    {errors.variants?.[index]?.price && <p className="text-sm text-destructive mt-1">{errors.variants?.[index]?.price?.message}</p>}
-                                </div>
-                                <div>
-                                    <Label>Original Price (Optional)</Label>
-                                    <Input type="number" {...register(`variants.${index}.originalPrice`)} step="0.01" />
-                                </div>
-                                <div>
-                                    <Label>Stock</Label>
-                                    <Input type="number" {...register(`variants.${index}.stock`)} />
-                                    {errors.variants?.[index]?.stock && <p className="text-sm text-destructive mt-1">{errors.variants?.[index]?.stock?.message}</p>}
-                                </div>
-                            </div>
-                             <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                className="absolute top-2 right-2 text-destructive hover:bg-destructive/10"
-                                onClick={() => remove(index)}
-                                disabled={fields.length <= 1}
-                            >
-                                <Trash2 className="h-4 w-4" />
-                            </Button>
-                        </Card>
-                    ))}
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="absolute top-2 right-2 text-destructive hover:bg-destructive/10"
+                                    onClick={() => remove(index)}
+                                    disabled={fields.filter(f => f.name !== 'Single').length <= 0 && !isSoldAsSingleItem}
+                                >
+                                    <Trash2 className="h-4 w-4" />
+                                </Button>
+                            </Card>
+                        )})}
                     </div>
                     <Button
                         type="button"
@@ -549,7 +615,7 @@ export default function AdminProductsPage() {
                         onClick={() => append({ name: '', price: 0, stock: 0})}
                     >
                         <PlusCircle className="mr-2" />
-                        Add Variant
+                        Add Pack/Bundle
                     </Button>
                 </div>
               </form>
@@ -601,7 +667,7 @@ export default function AdminProductsPage() {
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
+                      <DropdownMenuContent align="end" className="bg-popover">
                         <DropdownMenuItem onClick={() => handleEditClick(product)}>
                           <Edit className="mr-2 h-4 w-4" />
                           <span>Edit</span>
@@ -640,3 +706,4 @@ export default function AdminProductsPage() {
     </div>
   );
 }
+
