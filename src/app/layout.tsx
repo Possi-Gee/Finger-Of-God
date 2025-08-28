@@ -26,7 +26,9 @@ function AppLayout({ children }: { children: React.ReactNode }) {
     const root = document.documentElement;
     
     (Object.keys(settings.theme) as Array<keyof typeof settings.theme>).forEach((key) => {
-      root.style.setProperty(`--${key}`, settings.theme[key]);
+      const value = settings.theme[key];
+      // For HSL values, we don't need to do anything special. For other values, they are set as-is.
+      root.style.setProperty(`--${key}`, value);
     });
 
   }, [settings]);

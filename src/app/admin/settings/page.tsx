@@ -35,6 +35,8 @@ const settingsSchema = z.object({
     'accent-foreground': z.string().min(1),
     card: z.string().min(1),
     'card-foreground': z.string().min(1),
+    popover: z.string().min(1),
+    'popover-foreground': z.string().min(1),
     border: z.string().min(1),
     input: z.string().min(1),
     ring: z.string().min(1),

@@ -17,6 +17,8 @@ export type SiteSettingsState = {
     'accent-foreground': string;
     card: string;
     'card-foreground': string;
+    popover: string;
+    'popover-foreground': string;
     border: string;
     input: string;
     ring: string;
@@ -42,6 +44,8 @@ const initialState: SiteSettingsState = {
     foreground: '222 47% 11%',
     card: '0 0% 100%',
     'card-foreground': '222 47% 11%',
+    popover: '0 0% 100%',
+    'popover-foreground': '222 47% 11%',
     primary: '197 78% 52%',
     'primary-foreground': '0 0% 98%',
     accent: '291 64% 42%',
