@@ -17,6 +17,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import Image from 'next/image';
 import { CreditCard, Truck, Smartphone } from 'lucide-react';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 const shippingSchema = z.object({
   fullName: z.string().min(3, 'Full name is required'),
@@ -51,6 +52,7 @@ export default function CheckoutPage() {
   const { state: cartState, dispatch: cartDispatch } = useCart();
   const { items } = cartState;
   const { toast } = useToast();
+  const router = useRouter();
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'card' | 'mobile_money' | 'on_delivery'>('card');
 
 
@@ -83,9 +85,20 @@ export default function CheckoutPage() {
       title: 'Order Placed!',
       description: 'Thank you for your purchase. Your order is being processed.',
     });
-    // Here you would typically send the data to a backend and clear the cart
-    // For now, we'll just log it.
+    cartDispatch({ type: 'CLEAR_CART' });
+    router.push('/');
   };
+
+  if (items.length === 0) {
+    return (
+        <div className="container mx-auto px-4 py-8 text-center">
+            <h1 className="text-2xl font-semibold">Your cart is empty.</h1>
+            <p className="mt-2 text-muted-foreground">You can't proceed to checkout without any items.</p>
+            <Button onClick={() => router.push('/')} className="mt-6">Continue Shopping</Button>
+        </div>
+    )
+  }
+
 
   return (
     <div className="container mx-auto px-4 py-8">

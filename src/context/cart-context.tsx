@@ -1,3 +1,4 @@
+
 'use client';
 
 import type { Product } from '@/lib/products';
@@ -15,7 +16,8 @@ type CartAction =
   | { type: 'ADD_ITEM'; payload: Product }
   | { type: 'REMOVE_ITEM'; payload: { id: number } }
   | { type: 'UPDATE_QUANTITY'; payload: { id: number; quantity: number } }
-  | { type: 'SET_STATE'; payload: CartState };
+  | { type: 'SET_STATE'; payload: CartState }
+  | { type: 'CLEAR_CART' };
 
 const initialState: CartState = {
   items: [],
@@ -61,6 +63,9 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
             : item
         ),
       };
+    }
+    case 'CLEAR_CART': {
+      return { ...state, items: [] };
     }
     case 'SET_STATE': {
       return action.payload;
