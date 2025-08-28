@@ -116,13 +116,16 @@ export default function AdminProductsPage() {
     if (stream) {
       stream.getTracks().forEach(track => track.stop());
       setStream(null);
+      if(videoRef.current) {
+        videoRef.current.srcObject = null;
+      }
     }
   }, [stream]);
-  
-  const startCamera = useCallback(async () => {
+
+  const startCamera = useCallback(async (currentFacingMode: 'user' | 'environment') => {
       stopCamera();
       try {
-        const newStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode } });
+        const newStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: currentFacingMode } });
         setHasCameraPermission(true);
         setStream(newStream);
         if (videoRef.current) {
@@ -132,22 +135,20 @@ export default function AdminProductsPage() {
         console.error('Error accessing camera:', error);
         setHasCameraPermission(false);
       }
-    }, [facingMode, stopCamera]);
+    }, [stopCamera]);
 
 
   useEffect(() => {
     if (open && imageTab === 'camera') {
-      startCamera();
+      startCamera(facingMode);
     } else {
       stopCamera();
     }
-
+    
     return () => {
-        if (open) {
-         stopCamera();
-        }
+        stopCamera();
     }
-  }, [open, imageTab, startCamera, stopCamera]);
+  }, [open, imageTab, facingMode, startCamera, stopCamera]);
 
 
   const handleTabChange = (value: string) => {
@@ -398,7 +399,3 @@ export default function AdminProductsPage() {
     </div>
   );
 }
-
-    
-
-    
