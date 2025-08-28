@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { categories } from '@/lib/products';
@@ -17,6 +17,11 @@ export default function HomePage() {
   const { products } = productState;
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const filteredProducts = useMemo(() => {
     return products.filter(product => {
@@ -29,7 +34,7 @@ export default function HomePage() {
   return (
     <>
       <CallToAction />
-      <PromotionalCarousel />
+      {isClient && <PromotionalCarousel />}
       <FlashSales />
       <div className="container mx-auto px-4 py-8">
         <header className="text-center mb-12">

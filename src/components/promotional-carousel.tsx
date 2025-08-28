@@ -21,17 +21,11 @@ const promotions = [
 ];
 
 export function PromotionalCarousel() {
-  const plugin = React.useRef(
-    Autoplay({ delay: 3000, stopOnInteraction: true })
-  )
-
   return (
     <div className="w-full bg-white py-4">
         <Carousel
-        plugins={[plugin.current]}
+        plugins={[Autoplay({ delay: 3000, stopOnInteraction: true })]}
         className="w-full max-w-6xl mx-auto"
-        onMouseEnter={plugin.current.stop}
-        onMouseLeave={plugin.current.reset}
         >
         <CarouselContent>
             {promotions.map((promo) => (
