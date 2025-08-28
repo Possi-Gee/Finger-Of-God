@@ -70,11 +70,11 @@ export function ProductCard({ product }: ProductCardProps) {
                 data-ai-hint={product.dataAiHint}
               />
             </div>
-            <Button variant="ghost" size="icon" onClick={handleToggleWishlist} className="absolute top-2 right-2 bg-white/80 hover:bg-white rounded-full h-8 w-8">
-                <Heart className={cn('h-5 w-5', wishlisted ? 'text-red-500 fill-current' : 'text-foreground')} />
+            <Button variant="ghost" size="icon" onClick={handleToggleWishlist} className="absolute bottom-2 right-2 bg-black/20 hover:bg-black/40 text-white rounded-full h-8 w-8">
+                <Heart className={cn('h-5 w-5', wishlisted ? 'text-red-500 fill-current' : '')} />
             </Button>
             {discount > 0 && (
-                <Badge variant="destructive" className="absolute top-2 left-2">-{discount}%</Badge>
+                <Badge variant="destructive" className="absolute top-0 right-0 rounded-none rounded-bl-md">-{discount}%</Badge>
             )}
           </CardHeader>
           <CardContent className="flex flex-col flex-grow p-3">
