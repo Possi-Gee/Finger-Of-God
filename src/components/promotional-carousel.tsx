@@ -3,41 +3,52 @@
 
 import * as React from "react"
 import Image from "next/image";
+import Link from 'next/link';
 import Autoplay from "embla-carousel-autoplay"
 
 import { Card, CardContent } from "@/components/ui/card"
+import { Button } from '@/components/ui/button';
 import {
   Carousel,
   CarouselContent,
   CarouselItem,
   CarouselDots,
 } from "@/components/ui/carousel"
-
-const promotions = [
-    { id: 1, image: 'https://picsum.photos/1200/400?random=1', alt: 'Promotion 1', dataAiHint: 'sale discount' },
-    { id: 2, image: 'https://picsum.photos/1200/400?random=2', alt: 'Promotion 2', dataAiHint: 'new arrivals' },
-    { id: 3, image: 'https://picsum.photos/1200/400?random=3', alt: 'Promotion 3', dataAiHint: 'electronics promotion' },
-    { id: 4, image: 'https://picsum.photos/1200/400?random=4', alt: 'Promotion 4', dataAiHint: 'fashion sale' },
-];
+import { useHomepage } from '@/hooks/use-homepage';
 
 export function PromotionalCarousel() {
+  const { state } = useHomepage();
+  const { promotions } = state;
+
   return (
     <div className="w-full bg-white py-4">
         <Carousel
-        plugins={[Autoplay({ delay: 3000, stopOnInteraction: true })]}
+        plugins={[Autoplay({ delay: 5000, stopOnInteraction: true })]}
         className="w-full max-w-6xl mx-auto"
         >
         <CarouselContent>
             {promotions.map((promo) => (
-            <CarouselItem key={promo.id}>
-                <div className="p-1">
-                <Card>
-                    <CardContent className="relative flex aspect-[3/1] items-center justify-center p-0 overflow-hidden rounded-lg">
-                        <Image src={promo.image} alt={promo.alt} fill className="object-cover" data-ai-hint={promo.dataAiHint} />
-                    </CardContent>
-                </Card>
-                </div>
-            </CarouselItem>
+              <CarouselItem key={promo.id}>
+                  <div className="p-1">
+                    <Card>
+                      <CardContent className="relative flex aspect-[3/1] items-center justify-center p-0 overflow-hidden rounded-lg">
+                        {promo.type === 'image' ? (
+                          <Image src={promo.content} alt={promo.alt || 'Promotion'} fill className="object-cover" data-ai-hint={promo.dataAiHint} />
+                        ) : (
+                          <div className="flex flex-col items-center justify-center text-center bg-gray-100 dark:bg-gray-800 w-full h-full p-8">
+                            <h2 className="text-3xl md:text-4xl font-bold text-primary">{promo.title}</h2>
+                            <p className="mt-2 text-lg text-muted-foreground">{promo.subtitle}</p>
+                            {promo.buttonText && promo.buttonLink && (
+                              <Button asChild className="mt-6">
+                                <Link href={promo.buttonLink}>{promo.buttonText}</Link>
+                              </Button>
+                            )}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </div>
+              </CarouselItem>
             ))}
         </CarouselContent>
         <CarouselDots />

@@ -1,10 +1,14 @@
 
 'use client';
 
+import { useHomepage } from '@/hooks/use-homepage';
+
 export function CallToAction() {
+  const { state } = useHomepage();
+
   return (
     <div className="bg-purple-600 text-white text-center p-2 font-bold">
-      Call to Order: 030 274 0642
+      {state.callToAction.text}
     </div>
   );
 }

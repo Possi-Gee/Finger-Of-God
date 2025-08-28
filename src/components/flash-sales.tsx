@@ -4,29 +4,30 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Zap } from 'lucide-react';
+import { useHomepage } from '@/hooks/use-homepage';
 
-const calculateTimeLeft = () => {
-    const difference = +new Date("2024-12-31T23:59:59") - +new Date();
-    let timeLeft = {
+export function FlashSales() {
+  const { state } = useHomepage();
+  const [isClient, setIsClient] = useState(false);
+  const [timeLeft, setTimeLeft] = useState({ hours: '00', minutes: '00', seconds: '00' });
+
+  const calculateTimeLeft = () => {
+    const difference = +new Date(state.flashSale.endDate) - +new Date();
+    let newTimeLeft = {
       hours: '00',
       minutes: '00',
       seconds: '00'
     };
 
     if (difference > 0) {
-      timeLeft = {
+      newTimeLeft = {
         hours: Math.floor((difference / (1000 * 60 * 60)) % 24).toString().padStart(2, '0'),
         minutes: Math.floor((difference / 1000 / 60) % 60).toString().padStart(2, '0'),
         seconds: Math.floor((difference / 1000) % 60).toString().padStart(2, '0')
       };
     }
-    return timeLeft;
-};
-
-
-export function FlashSales() {
-  const [isClient, setIsClient] = useState(false);
-  const [timeLeft, setTimeLeft] = useState({ hours: '00', minutes: '00', seconds: '00' });
+    return newTimeLeft;
+  };
 
   useEffect(() => {
     setIsClient(true);
@@ -42,9 +43,10 @@ export function FlashSales() {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [isClient]);
+  }, [isClient, state.flashSale.endDate]);
 
   if (!isClient) {
+    // Render a placeholder on the server to avoid hydration mismatch
     return (
         <div className="bg-red-600 text-white p-2 flex items-center justify-between">
             <div className="flex items-center gap-4">

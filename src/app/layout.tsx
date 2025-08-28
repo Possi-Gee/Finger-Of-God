@@ -1,8 +1,10 @@
+
 import type { Metadata } from 'next';
 import { ThemeProvider } from '@/context/theme-provider';
 import { CartProvider } from '@/context/cart-context';
 import { WishlistProvider } from '@/context/wishlist-context';
 import { ProductProvider } from '@/context/product-context';
+import { HomepageProvider } from '@/context/homepage-context';
 import { Toaster } from '@/components/ui/toaster';
 import './globals.css';
 
@@ -28,8 +30,10 @@ export default function RootLayout({
           <ProductProvider>
             <WishlistProvider>
               <CartProvider>
-                {children}
-                <Toaster />
+                <HomepageProvider>
+                  {children}
+                  <Toaster />
+                </HomepageProvider>
               </CartProvider>
             </WishlistProvider>
           </ProductProvider>
