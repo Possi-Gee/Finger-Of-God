@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import Image from 'next/image';
-import { ArrowLeft, Package, Truck, User, MoreVertical } from 'lucide-react';
+import { ArrowLeft, Package, Truck, User, MoreVertical, Store } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useMemo } from 'react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -31,6 +31,10 @@ const getPaymentMethodName = (method: string) => {
         on_delivery: 'Pay on Delivery',
     };
     return names[method] || 'Unknown';
+}
+
+const getDeliveryMethodName = (method: Order['deliveryMethod']) => {
+    return method === 'delivery' ? 'Home Delivery' : 'In-store Pickup';
 }
 
 const statuses: OrderStatus[] = ['Pending', 'Shipped', 'Delivered', 'Cancelled'];
@@ -158,6 +162,12 @@ export default function AdminOrderDetailPage() {
                      <Separator className="my-4" />
                       <h4 className="font-semibold">Payment Information</h4>
                      <p className="text-muted-foreground">Method: {getPaymentMethodName(order.paymentMethod)}</p>
+                     <Separator className="my-4" />
+                      <h4 className="font-semibold">Delivery Method</h4>
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        {order.deliveryMethod === 'delivery' ? <Truck className="h-5 w-5" /> : <Store className="h-5 w-5" />}
+                        <span>{getDeliveryMethodName(order.deliveryMethod)}</span>
+                     </div>
 
                 </CardContent>
             </Card>

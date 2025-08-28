@@ -17,7 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import Image from 'next/image';
-import { CreditCard, Truck, Smartphone } from 'lucide-react';
+import { CreditCard, Truck, Smartphone, Store } from 'lucide-react';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Order } from '@/context/order-context';
@@ -46,7 +46,9 @@ const checkoutSchema = z.discriminatedUnion("paymentMethod", [
   z.object({
     paymentMethod: z.literal("on_delivery"),
   }),
-]).and(shippingSchema);
+]).and(z.object({
+  deliveryMethod: z.enum(['delivery', 'pickup']),
+})).and(shippingSchema);
 
 
 type CheckoutFormValues = z.infer<typeof checkoutSchema>;
@@ -59,6 +61,7 @@ export default function CheckoutPage() {
   const { toast } = useToast();
   const router = useRouter();
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'card' | 'mobile_money' | 'on_delivery'>('card');
+  const [deliveryMethod, setDeliveryMethod] = useState<'delivery' | 'pickup'>('delivery');
 
 
   const form = useForm<CheckoutFormValues>({
@@ -71,6 +74,7 @@ export default function CheckoutPage() {
       zip: '',
       country: 'USA',
       paymentMethod: 'card',
+      deliveryMethod: 'delivery',
       cardNumber: '',
       expiryDate: '',
       cvv: '',
@@ -78,14 +82,14 @@ export default function CheckoutPage() {
       mobileMoneyProvider: undefined,
     }
   });
-
+  
   const subtotal = items.reduce((sum, item) => sum + item.variant.price * item.quantity, 0);
   const tax = subtotal * (settings.taxRate / 100);
-  const deliveryFee = subtotal > 0 ? settings.shippingFee : 0;
+  const deliveryFee = deliveryMethod === 'delivery' && subtotal > 0 ? settings.shippingFee : 0;
   const total = subtotal + tax + deliveryFee;
 
   const onSubmit = (data: CheckoutFormValues) => {
-    const { fullName, address, city, state, zip, country, paymentMethod } = data;
+    const { fullName, address, city, state, zip, country, paymentMethod, deliveryMethod } = data;
     
     const newOrder: Order = {
       id: Date.now(),
@@ -97,6 +101,7 @@ export default function CheckoutPage() {
       total,
       shippingAddress: { fullName, address, city, state, zip, country },
       paymentMethod,
+      deliveryMethod,
       status: 'Pending',
     };
 
@@ -127,101 +132,145 @@ export default function CheckoutPage() {
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 lg:grid-cols-3 lg:gap-8">
           <div className="lg:col-span-2 space-y-8">
-            <Card>
+             <Card>
               <CardHeader>
-                <CardTitle>Shipping Address</CardTitle>
+                <CardTitle>Delivery Method</CardTitle>
+                <CardDescription>Choose how you'd like to receive your order.</CardDescription>
               </CardHeader>
-              <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
+              <CardContent>
+                 <FormField
                   control={form.control}
-                  name="fullName"
-                  render={({ field }) => (
-                    <FormItem className="md:col-span-2">
-                      <FormLabel>Full Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="John Doe" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="address"
-                  render={({ field }) => (
-                    <FormItem className="md:col-span-2">
-                      <FormLabel>Address</FormLabel>
-                      <FormControl>
-                        <Input placeholder="123 Main St" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="city"
+                  name="deliveryMethod"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>City</FormLabel>
-                      <FormControl>
-                        <Input placeholder="New York" {...field} />
-                      </FormControl>
-                      <FormMessage />
+                       <FormControl>
+                          <RadioGroup
+                            onValueChange={(value) => {
+                              field.onChange(value);
+                              setDeliveryMethod(value as any);
+                            }}
+                            defaultValue={field.value}
+                            className="grid grid-cols-1 md:grid-cols-2 gap-4"
+                          >
+                            <FormItem>
+                              <Label className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer">
+                                <RadioGroupItem value="delivery" id="delivery" className="peer sr-only" />
+                                <Truck className="mb-3 h-6 w-6" />
+                                Home Delivery
+                              </Label>
+                            </FormItem>
+                            <FormItem>
+                              <Label className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer">
+                                <RadioGroupItem value="pickup" id="pickup" className="peer sr-only" />
+                                <Store className="mb-3 h-6 w-6" />
+                                In-store Pickup
+                              </Label>
+                            </FormItem>
+                          </RadioGroup>
+                       </FormControl>
                     </FormItem>
                   )}
-                />
-                <FormField
-                  control={form.control}
-                  name="state"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>State</FormLabel>
-                      <FormControl>
-                        <Input placeholder="NY" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="zip"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>ZIP Code</FormLabel>
-                      <FormControl>
-                        <Input placeholder="10001" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="country"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Country</FormLabel>
-                       <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select a country" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="USA">United States</SelectItem>
-                          <SelectItem value="CAN">Canada</SelectItem>
-                          <SelectItem value="MEX">Mexico</SelectItem>
-                           <SelectItem value="GHA">Ghana</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                 />
               </CardContent>
             </Card>
+
+            {deliveryMethod === 'delivery' && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Shipping Address</CardTitle>
+                </CardHeader>
+                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="fullName"
+                    render={({ field }) => (
+                      <FormItem className="md:col-span-2">
+                        <FormLabel>Full Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="John Doe" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="address"
+                    render={({ field }) => (
+                      <FormItem className="md:col-span-2">
+                        <FormLabel>Address</FormLabel>
+                        <FormControl>
+                          <Input placeholder="123 Main St" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="city"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>City</FormLabel>
+                        <FormControl>
+                          <Input placeholder="New York" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="state"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>State</FormLabel>
+                        <FormControl>
+                          <Input placeholder="NY" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="zip"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>ZIP Code</FormLabel>
+                        <FormControl>
+                          <Input placeholder="10001" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="country"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Country</FormLabel>
+                         <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a country" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="USA">United States</SelectItem>
+                            <SelectItem value="CAN">Canada</SelectItem>
+                            <SelectItem value="MEX">Mexico</SelectItem>
+                             <SelectItem value="GHA">Ghana</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </CardContent>
+              </Card>
+            )}
             
             <Card>
               <CardHeader>

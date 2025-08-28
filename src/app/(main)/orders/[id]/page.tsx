@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowLeft, CheckCircle, Package, Truck, User } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Package, Truck, User, Store } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useMemo } from 'react';
 
@@ -35,6 +35,10 @@ const getPaymentMethodName = (method: string) => {
         on_delivery: 'Pay on Delivery',
     };
     return names[method] || 'Unknown';
+}
+
+const getDeliveryMethodName = (method: Order['deliveryMethod']) => {
+    return method === 'delivery' ? 'Home Delivery' : 'In-store Pickup';
 }
 
 export default function OrderDetailPage() {
@@ -109,7 +113,7 @@ export default function OrderDetailPage() {
            
            <Card>
                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><Truck /> Shipping Information</CardTitle>
+                    <CardTitle className="flex items-center gap-2"><Truck /> Order Details</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -125,6 +129,13 @@ export default function OrderDetailPage() {
                         <div>
                              <h4 className="font-semibold">Payment Method</h4>
                              <p className="text-muted-foreground">{getPaymentMethodName(order.paymentMethod)}</p>
+                        </div>
+                         <div className="md:col-span-2">
+                             <h4 className="font-semibold">Delivery Method</h4>
+                             <div className="flex items-center gap-2 text-muted-foreground">
+                                {order.deliveryMethod === 'delivery' ? <Truck className="h-5 w-5" /> : <Store className="h-5 w-5" />}
+                                <span>{getDeliveryMethodName(order.deliveryMethod)}</span>
+                             </div>
                         </div>
                     </div>
                 </CardContent>

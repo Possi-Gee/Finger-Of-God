@@ -25,6 +25,7 @@ export type Order = {
     total: number;
     shippingAddress: ShippingAddress;
     paymentMethod: string;
+    deliveryMethod: 'delivery' | 'pickup';
     status: OrderStatus;
 };
 
