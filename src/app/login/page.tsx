@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
-import { Lock, User } from 'lucide-react';
+import { Lock, ShoppingBag } from 'lucide-react';
 import Link from 'next/link';
 
 const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -31,8 +31,8 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         <div className="text-center mb-6">
             <Link href="/" className="inline-flex items-center space-x-2">
-                <User className="h-8 w-8 text-primary" />
-                <span className="text-2xl font-bold">ShopWave Account</span>
+                <ShoppingBag className="h-8 w-8 text-primary" />
+                <span className="text-2xl font-bold">ShopWave</span>
             </Link>
         </div>
       <Tabs defaultValue="login" className="w-full">
