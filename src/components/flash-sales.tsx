@@ -27,12 +27,12 @@ export function FlashSales() {
   const [timeLeft, setTimeLeft] = useState(calculateTimeLeft());
 
   useEffect(() => {
-    const timer = setTimeout(() => {
+    const timer = setInterval(() => {
       setTimeLeft(calculateTimeLeft());
     }, 1000);
 
-    return () => clearTimeout(timer);
-  });
+    return () => clearInterval(timer);
+  }, []);
 
   return (
     <div className="bg-red-600 text-white p-2 flex items-center justify-between">
