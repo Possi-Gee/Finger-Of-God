@@ -152,6 +152,8 @@ export default function AdminProductsPage() {
 
 
   const handleTabChange = (value: string) => {
+    setImageSrc(null);
+    setValue('image', '');
     setImageTab(value);
   };
   
@@ -200,7 +202,7 @@ export default function AdminProductsPage() {
 
   const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const url = e.target.value;
-    if (/^(https?:\/\/.*\.(?:png|jpg|jpeg|gif|webp|svg))$/.test(url)) {
+    if (url) {
       setImageSrc(url);
       setValue('image', url, { shouldValidate: true });
     }
@@ -333,6 +335,9 @@ export default function AdminProductsPage() {
                                 Please enable camera permissions in your browser settings.
                                 </AlertDescription>
                             </Alert>
+                         )}
+                         {hasCameraPermission && !stream && imageSrc && (
+                            <Button type="button" onClick={() => startCamera(facingMode)}>Retake</Button>
                          )}
                         <Button type="button" onClick={captureImage} disabled={!stream}>Capture</Button>
                     </TabsContent>
