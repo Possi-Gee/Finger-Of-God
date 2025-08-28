@@ -31,24 +31,25 @@ const shippingSchema = z.object({
   country: z.string().min(2, 'Country is required'),
 });
 
-const checkoutSchema = z.discriminatedUnion("paymentMethod", [
-  z.object({
-    paymentMethod: z.literal("card"),
-    cardNumber: z.string().regex(/^\d{16}$/, 'Card number must be 16 digits'),
-    expiryDate: z.string().regex(/^(0[1-9]|1[0-2])\/\d{2}$/, 'Expiry date must be in MM/YY format'),
-    cvv: z.string().regex(/^\d{3,4}$/, 'CVV must be 3 or 4 digits'),
-  }),
-  z.object({
-    paymentMethod: z.literal("mobile_money"),
-    mobileMoneyProvider: z.enum(["mtn", "telecel"], { required_error: "Please select a provider" }),
-    mobileMoneyNumber: z.string().min(10, 'Please enter a valid phone number'),
-  }),
-  z.object({
-    paymentMethod: z.literal("on_delivery"),
-  }),
-]).and(z.object({
+const checkoutSchema = z.object({
   deliveryMethod: z.enum(['delivery', 'pickup']),
-})).and(shippingSchema);
+  paymentMethod: z.enum(['card', 'mobile_money', 'on_delivery']),
+}).and(shippingSchema).and(z.union([
+    z.object({
+        paymentMethod: z.literal('card'),
+        cardNumber: z.string().regex(/^\d{16}$/, 'Card number must be 16 digits'),
+        expiryDate: z.string().regex(/^(0[1-9]|1[0-2])\/\d{2}$/, 'Expiry date must be in MM/YY format'),
+        cvv: z.string().regex(/^\d{3,4}$/, 'CVV must be 3 or 4 digits'),
+    }),
+    z.object({
+        paymentMethod: z.literal('mobile_money'),
+        mobileMoneyProvider: z.enum(["mtn", "telecel"], { required_error: "Please select a provider" }),
+        mobileMoneyNumber: z.string().min(10, 'Please enter a valid phone number'),
+    }),
+    z.object({
+        paymentMethod: z.literal('on_delivery'),
+    }),
+]));
 
 
 type CheckoutFormValues = z.infer<typeof checkoutSchema>;
@@ -75,11 +76,11 @@ export default function CheckoutPage() {
       country: 'USA',
       paymentMethod: 'card',
       deliveryMethod: 'delivery',
+      // @ts-ignore
       cardNumber: '',
       expiryDate: '',
       cvv: '',
       mobileMoneyNumber: '',
-      mobileMoneyProvider: undefined,
     }
   });
   
