@@ -36,15 +36,13 @@ export function Header() {
           >
             Home
           </Link>
-          <Link
-            href="/admin/products"
-            className="flex items-center gap-1 text-foreground/60 transition-colors hover:text-foreground/80"
-          >
-            <Wrench className="h-4 w-4" />
-            Admin
-          </Link>
         </nav>
         <div className="flex flex-1 items-center justify-end space-x-2">
+           <Button variant="ghost" size="icon" asChild>
+            <Link href="/admin/orders" aria-label="Admin Panel">
+              <Wrench className="h-5 w-5" />
+            </Link>
+          </Button>
           <Button variant="ghost" size="icon" asChild>
             <Link href="/wishlist" aria-label="Wishlist">
               <div className="relative">

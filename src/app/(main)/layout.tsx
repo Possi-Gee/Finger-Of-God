@@ -1,6 +1,7 @@
 
 import { BottomNavbar } from '@/components/bottom-navbar';
 import { Footer } from '@/components/footer';
+import { Header } from '@/components/header';
 
 export default function MainLayout({
   children,
@@ -9,10 +10,13 @@ export default function MainLayout({
 }) {
   return (
     <div className="relative flex min-h-screen flex-col bg-background">
+      <Header />
       <main className="flex-1">{children}</main>
       <Footer />
-      <div className="pb-16"></div>
-      <BottomNavbar />
+      <div className="pb-16 md:pb-0"></div>
+      <div className="md:hidden">
+        <BottomNavbar />
+      </div>
     </div>
   );
 }

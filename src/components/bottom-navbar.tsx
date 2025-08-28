@@ -17,31 +17,23 @@ const navItems = [
   { href: '/login', label: 'Profile', icon: User },
 ];
 
-const adminNavItem = { href: '/admin/orders', label: 'Admin', icon: Wrench };
-
-
 export function BottomNavbar() {
   const pathname = usePathname();
   const { state: cartState } = useCart();
   const { state: wishlistState } = useWishlist();
   const [isClient, setIsClient] = useState(false);
-  const [isAdminPath, setIsAdminPath] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
-    setIsAdminPath(pathname.startsWith('/admin'));
-  }, [pathname]);
+  }, []);
 
   const totalCartItems = cartState.items.reduce((sum, item) => sum + item.quantity, 0);
   const totalWishlistItems = wishlistState.items.length;
 
-  const currentNavItems = isAdminPath ? [adminNavItem, ...navItems.slice(0,4)] : navItems;
-
-
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 max-w-screen-2xl items-center justify-around">
-        {currentNavItems.map((item) => {
+        {navItems.map((item) => {
            const isActive = (item.href === '/' && pathname === item.href) || (item.href !== '/' && pathname.startsWith(item.href));
            return (
             <Link
