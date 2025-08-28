@@ -12,7 +12,7 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from '@/components/ui/sidebar';
-import { Bot, Package, Home, LayoutDashboard } from 'lucide-react';
+import { Bot, Package, Home, LayoutDashboard, Settings } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -38,6 +38,11 @@ export default function AdminLayout({
       href: '/admin/homepage-editor',
       label: 'Homepage Editor',
       icon: LayoutDashboard,
+    },
+    {
+      href: '/admin/settings',
+      label: 'Site Settings',
+      icon: Settings,
     },
      {
       href: '/',

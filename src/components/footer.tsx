@@ -1,6 +1,9 @@
 
+'use client';
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useSiteSettings } from '@/hooks/use-site-settings';
 import { ShoppingBag } from 'lucide-react';
 import Link from 'next/link';
 
@@ -23,6 +26,8 @@ const InstagramIcon = (props: React.SVGProps<SVGSVGElement>) => (
 );
 
 export function Footer() {
+  const { state: settings } = useSiteSettings();
+
   return (
     <footer className="border-t bg-card text-card-foreground">
       <div className="container mx-auto px-4 py-8">
@@ -30,40 +35,25 @@ export function Footer() {
           <div className="col-span-2 lg:col-span-1">
             <Link href="/" className="flex items-center space-x-2 mb-4">
               <ShoppingBag className="h-8 w-8 text-primary" />
-              <span className="text-xl font-bold">ShopWave</span>
+              <span className="text-xl font-bold">{settings.appName}</span>
             </Link>
             <p className="text-sm text-muted-foreground">
               Your one-stop shop for everything you need.
             </p>
           </div>
 
-          <div className="space-y-3">
-            <h4 className="font-semibold">Shop</h4>
-            <ul className="space-y-2 text-sm">
-              <li><Link href="#" className="text-muted-foreground hover:text-primary">Electronics</Link></li>
-              <li><Link href="#" className="text-muted-foreground hover:text-primary">Fashion</Link></li>
-              <li><Link href="#" className="text-muted-foreground hover:text-primary">Home Goods</Link></li>
-              <li><Link href="#" className="text-muted-foreground hover:text-primary">Groceries</Link></li>
-            </ul>
-          </div>
-          <div className="space-y-3">
-            <h4 className="font-semibold">Support</h4>
-            <ul className="space-y-2 text-sm">
-              <li><Link href="#" className="text-muted-foreground hover:text-primary">Contact Us</Link></li>
-              <li><Link href="#" className="text-muted-foreground hover:text-primary">FAQ</Link></li>
-              <li><Link href="#" className="text-muted-foreground hover:text-primary">Shipping & Returns</Link></li>
-              <li><Link href="#" className="text-muted-foreground hover:text-primary">Track Order</Link></li>
-            </ul>
-          </div>
-          <div className="space-y-3">
-            <h4 className="font-semibold">Company</h4>
-            <ul className="space-y-2 text-sm">
-              <li><Link href="#" className="text-muted-foreground hover:text-primary">About Us</Link></li>
-              <li><Link href="#" className="text-muted-foreground hover:text-primary">Careers</Link></li>
-              <li><Link href="#" className="text-muted-foreground hover:text-primary">Press</Link></li>
-              <li><Link href="#" className="text-muted-foreground hover:text-primary">Terms of Service</Link></li>
-            </ul>
-          </div>
+          {settings.footer.columns.map((column) => (
+             <div key={column.id} className="space-y-3">
+                <h4 className="font-semibold">{column.title}</h4>
+                <ul className="space-y-2 text-sm">
+                    {column.links.map((link) => (
+                        <li key={link.id}>
+                            <Link href={link.url} className="text-muted-foreground hover:text-primary">{link.label}</Link>
+                        </li>
+                    ))}
+                </ul>
+            </div>
+          ))}
           
           <div className="col-span-2 md:col-span-4 lg:col-span-1">
              <h4 className="font-semibold">Subscribe to our newsletter</h4>
@@ -75,11 +65,11 @@ export function Footer() {
           </div>
         </div>
         <div className="mt-8 border-t pt-6 flex flex-col sm:flex-row items-center justify-between text-sm text-muted-foreground">
-          <p>&copy; {new Date().getFullYear()} ShopWave. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} {settings.appName}. All rights reserved.</p>
           <div className="flex space-x-4 mt-4 sm:mt-0">
-            <Link href="#" className="hover:text-primary"><TwitterIcon className="h-5 w-5" /></Link>
-            <Link href="#" className="hover:text-primary"><FacebookIcon className="h-5 w-5" /></Link>
-            <Link href="#" className="hover:text-primary"><InstagramIcon className="h-5 w-5" /></Link>
+             {settings.footer.socialLinks.twitter && <Link href={settings.footer.socialLinks.twitter} className="hover:text-primary"><TwitterIcon className="h-5 w-5" /></Link>}
+            {settings.footer.socialLinks.facebook && <Link href={settings.footer.socialLinks.facebook} className="hover:text-primary"><FacebookIcon className="h-5 w-5" /></Link>}
+            {settings.footer.socialLinks.instagram && <Link href={settings.footer.socialLinks.instagram} className="hover:text-primary"><InstagramIcon className="h-5 w-5" /></Link>}
           </div>
         </div>
       </div>
