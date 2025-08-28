@@ -32,7 +32,8 @@ export function ProductCard({ product }: ProductCardProps) {
         router.push(`/product/${product.id}`);
         return;
     }
-    const itemToAdd = { ...product, variant: product.variants[0] };
+    const { variants, ...productDetails } = product;
+    const itemToAdd = { product: productDetails, variant: product.variants[0] };
     cartDispatch({ type: 'ADD_ITEM', payload: itemToAdd });
     toast({
       title: 'Added to cart',
@@ -63,7 +64,7 @@ export function ProductCard({ product }: ProductCardProps) {
   
   const productVariants = product.variants || [];
 
-  const standardVariant = productVariants.find(v => v.name === 'Standard');
+  const standardVariant = productVariants.find(v => v.name === 'Standard' || v.name === 'Single' || v.name === 'Single Bottle');
   
   const displayPrice = standardVariant 
     ? standardVariant.price 
