@@ -2,7 +2,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Home, Heart, ShoppingCart, User, Wrench } from 'lucide-react';
+import { Home, Heart, ShoppingCart, User, Wrench, History } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useCart } from '@/hooks/use-cart';
@@ -12,28 +12,36 @@ import { useEffect, useState } from 'react';
 const navItems = [
   { href: '/', label: 'Home', icon: Home },
   { href: '/wishlist', label: 'Wishlist', icon: Heart },
+  { href: '/orders', label: 'Orders', icon: History },
   { href: '/cart', label: 'Cart', icon: ShoppingCart },
   { href: '/login', label: 'Profile', icon: User },
-  { href: '/admin/products', label: 'Admin', icon: Wrench },
 ];
+
+const adminNavItem = { href: '/admin/orders', label: 'Admin', icon: Wrench };
+
 
 export function BottomNavbar() {
   const pathname = usePathname();
   const { state: cartState } = useCart();
   const { state: wishlistState } = useWishlist();
   const [isClient, setIsClient] = useState(false);
+  const [isAdminPath, setIsAdminPath] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
-  }, []);
+    setIsAdminPath(pathname.startsWith('/admin'));
+  }, [pathname]);
 
   const totalCartItems = cartState.items.reduce((sum, item) => sum + item.quantity, 0);
   const totalWishlistItems = wishlistState.items.length;
 
+  const currentNavItems = isAdminPath ? [adminNavItem, ...navItems.slice(0,4)] : navItems;
+
+
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 max-w-screen-2xl items-center justify-around">
-        {navItems.map((item) => {
+        {currentNavItems.map((item) => {
            const isActive = (item.href === '/' && pathname === item.href) || (item.href !== '/' && pathname.startsWith(item.href));
            return (
             <Link

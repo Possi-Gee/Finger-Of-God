@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { useCart } from '@/hooks/use-cart';
 import { useToast } from '@/hooks/use-toast';
 import { useSiteSettings } from '@/hooks/use-site-settings';
+import { useOrders } from '@/hooks/use-orders';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -19,6 +20,7 @@ import Image from 'next/image';
 import { CreditCard, Truck, Smartphone } from 'lucide-react';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import type { Order } from '@/context/order-context';
 
 const shippingSchema = z.object({
   fullName: z.string().min(3, 'Full name is required'),
@@ -52,6 +54,7 @@ type CheckoutFormValues = z.infer<typeof checkoutSchema>;
 export default function CheckoutPage() {
   const { state: cartState, dispatch: cartDispatch } = useCart();
   const { state: settings } = useSiteSettings();
+  const { dispatch: orderDispatch } = useOrders();
   const { items } = cartState;
   const { toast } = useToast();
   const router = useRouter();
@@ -82,13 +85,29 @@ export default function CheckoutPage() {
   const total = subtotal + tax + deliveryFee;
 
   const onSubmit = (data: CheckoutFormValues) => {
-    console.log('Order submitted', data);
+    const { fullName, address, city, state, zip, country, paymentMethod } = data;
+    
+    const newOrder: Order = {
+      id: Date.now(),
+      date: new Date().toISOString(),
+      items: items,
+      subtotal,
+      tax,
+      shippingFee: deliveryFee,
+      total,
+      shippingAddress: { fullName, address, city, state, zip, country },
+      paymentMethod,
+      status: 'Pending',
+    };
+
+    orderDispatch({ type: 'ADD_ORDER', payload: newOrder });
+
     toast({
       title: 'Order Placed!',
       description: 'Thank you for your purchase. Your order is being processed.',
     });
     cartDispatch({ type: 'CLEAR_CART' });
-    router.push('/');
+    router.push(`/orders/${newOrder.id}`);
   };
 
   if (items.length === 0) {

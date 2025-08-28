@@ -12,7 +12,7 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from '@/components/ui/sidebar';
-import { Bot, Package, Home, LayoutDashboard, Settings } from 'lucide-react';
+import { Bot, Package, Home, LayoutDashboard, Settings, ShoppingCart } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -24,6 +24,11 @@ export default function AdminLayout({
   const pathname = usePathname();
 
   const menuItems = [
+     {
+      href: '/admin/orders',
+      label: 'Orders',
+      icon: ShoppingCart,
+    },
     {
       href: '/admin/products',
       label: 'Products',

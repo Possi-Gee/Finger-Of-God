@@ -12,6 +12,7 @@ import { useSiteSettings } from '@/hooks/use-site-settings';
 import { Toaster } from '@/components/ui/toaster';
 import './globals.css';
 import { useEffect } from 'react';
+import { OrderProvider } from '@/context/order-context';
 
 // export const metadata: Metadata = {
 //   title: 'ShopWave',
@@ -46,8 +47,10 @@ function AppLayout({ children }: { children: React.ReactNode }) {
             <WishlistProvider>
               <CartProvider>
                 <HomepageProvider>
-                  {children}
-                  <Toaster />
+                  <OrderProvider>
+                    {children}
+                    <Toaster />
+                  </OrderProvider>
                 </HomepageProvider>
               </CartProvider>
             </WishlistProvider>

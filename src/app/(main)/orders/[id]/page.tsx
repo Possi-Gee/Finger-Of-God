@@ -1,0 +1,171 @@
+
+'use client';
+
+import { useParams, useRouter } from 'next/navigation';
+import { useOrders, type Order } from '@/hooks/use-orders';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import Image from 'next/image';
+import Link from 'next/link';
+import { ArrowLeft, CheckCircle, Package, Truck, User } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { useMemo } from 'react';
+
+const getStatusClass = (status: Order['status']) => {
+  switch (status) {
+    case 'Pending':
+      return 'bg-yellow-500 text-white';
+    case 'Shipped':
+      return 'bg-blue-500 text-white';
+    case 'Delivered':
+      return 'bg-green-500 text-white';
+    case 'Cancelled':
+      return 'bg-red-500 text-white';
+    default:
+      return 'bg-gray-500 text-white';
+  }
+};
+
+const getPaymentMethodName = (method: string) => {
+    const names: { [key: string]: string } = {
+        card: 'Credit/Debit Card',
+        mobile_money: 'Mobile Money',
+        on_delivery: 'Pay on Delivery',
+    };
+    return names[method] || 'Unknown';
+}
+
+export default function OrderDetailPage() {
+  const params = useParams();
+  const router = useRouter();
+  const { id } = params;
+  const { state } = useOrders();
+
+  const order = useMemo(() => {
+    return state.orders.find((o) => o.id.toString() === id);
+  }, [id, state.orders]);
+  
+  if (!order) {
+    return (
+      <div className="container mx-auto px-4 py-8 text-center">
+        <h1 className="text-2xl font-bold">Order Not Found</h1>
+        <p className="text-muted-foreground mt-2">The order you are looking for does not exist.</p>
+        <Button asChild className="mt-6">
+          <Link href="/orders">Back to My Orders</Link>
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <Button variant="ghost" onClick={() => router.back()} className="mb-4">
+        <ArrowLeft className="mr-2" /> Back
+      </Button>
+
+       <Card className="mb-8">
+        <CardHeader>
+            <div className="flex flex-col sm:flex-row justify-between sm:items-center">
+                <div>
+                     <p className="text-sm text-muted-foreground">Order #{order.id}</p>
+                     <CardTitle className="text-2xl">Thank you for your order!</CardTitle>
+                     <CardDescription>Placed on {new Date(order.date).toLocaleString()}</CardDescription>
+                </div>
+                <div className="text-right mt-4 sm:mt-0">
+                    <p className="text-sm text-muted-foreground">Order Status</p>
+                    <Badge className={cn("text-lg mt-1", getStatusClass(order.status))}>{order.status}</Badge>
+                </div>
+            </div>
+        </CardHeader>
+      </Card>
+      
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2 space-y-8">
+           <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2"><Package/> Items Ordered</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <ul className="divide-y">
+                    {order.items.map((item) => (
+                    <li key={item.id} className="flex items-center py-4">
+                        <Image src={item.image} alt={item.name} width={64} height={64} className="rounded-md" />
+                        <div className="ml-4 flex-grow">
+                            <p className="font-semibold">{item.name}</p>
+                            <p className="text-sm text-muted-foreground">Variant: {item.variant.name}</p>
+                            <p className="text-sm text-muted-foreground">Qty: {item.quantity}</p>
+                        </div>
+                        <div className="text-right">
+                             <p className="font-semibold">${(item.variant.price * item.quantity).toFixed(2)}</p>
+                             <p className="text-sm text-muted-foreground">${item.variant.price.toFixed(2)} each</p>
+                        </div>
+                    </li>
+                    ))}
+                </ul>
+            </CardContent>
+           </Card>
+           
+           <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><Truck /> Shipping Information</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <h4 className="font-semibold">Shipping Address</h4>
+                            <address className="not-italic text-muted-foreground">
+                                {order.shippingAddress.fullName}<br />
+                                {order.shippingAddress.address}<br />
+                                {order.shippingAddress.city}, {order.shippingAddress.state} {order.shippingAddress.zip}<br />
+                                {order.shippingAddress.country}
+                            </address>
+                        </div>
+                        <div>
+                             <h4 className="font-semibold">Payment Method</h4>
+                             <p className="text-muted-foreground">{getPaymentMethodName(order.paymentMethod)}</p>
+                        </div>
+                    </div>
+                </CardContent>
+           </Card>
+
+        </div>
+        <div className="lg:col-span-1">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Order Summary</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="flex justify-between">
+                        <span>Subtotal</span>
+                        <span>${order.subtotal.toFixed(2)}</span>
+                    </div>
+                     <div className="flex justify-between">
+                        <span>Tax</span>
+                        <span>${order.tax.toFixed(2)}</span>
+                    </div>
+                     <div className="flex justify-between">
+                        <span>Shipping</span>
+                        <span>${order.shippingFee.toFixed(2)}</span>
+                    </div>
+                    <Separator />
+                    <div className="flex justify-between font-bold text-lg">
+                        <span>Total</span>
+                        <span>${order.total.toFixed(2)}</span>
+                    </div>
+                </CardContent>
+                <CardFooter className="flex flex-col gap-2">
+                     <Button asChild className="w-full">
+                        <Link href="/">Continue Shopping</Link>
+                     </Button>
+                      <Button variant="outline" className="w-full">
+                        View Invoice
+                     </Button>
+                </CardFooter>
+            </Card>
+        </div>
+      </div>
+    </div>
+  );
+}
