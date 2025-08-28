@@ -70,9 +70,9 @@ export function ProductCard({ product }: ProductCardProps) {
             <p className="text-xs text-muted-foreground">{product.category}</p>
             <CardTitle className="mt-1 text-base font-semibold leading-tight">{product.name}</CardTitle>
           </CardContent>
-          <CardFooter className="flex justify-between items-center p-4 pt-0">
+          <CardFooter className="flex flex-wrap justify-between items-center gap-2 p-4 pt-0">
             <p className="text-lg font-bold text-primary">${product.price.toFixed(2)}</p>
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-1">
               <Button variant="ghost" size="icon" onClick={handleToggleWishlist}>
                 <Heart className={cn('h-5 w-5', wishlisted ? 'text-red-500 fill-current' : 'text-foreground')} />
               </Button>
