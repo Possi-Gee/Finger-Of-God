@@ -32,8 +32,7 @@ export function ProductCard({ product }: ProductCardProps) {
         router.push(`/product/${product.id}`);
         return;
     }
-    const { variants, ...productDetails } = product;
-    const itemToAdd = { product: productDetails, variant: product.variants[0] };
+    const itemToAdd = { product, variant: product.variants[0], quantity: 1 };
     cartDispatch({ type: 'ADD_ITEM', payload: itemToAdd });
     toast({
       title: 'Added to cart',
@@ -103,10 +102,10 @@ export function ProductCard({ product }: ProductCardProps) {
             <p className="text-sm font-medium leading-tight flex-grow">{product.name}</p>
             <div className="mt-2 flex items-baseline gap-2 flex-wrap">
                 <p className="text-lg font-bold text-foreground">
-                  {!standardVariant && productVariants.length > 1 ? 'From ' : ''}${displayPrice.toFixed(2)}
+                  {!standardVariant && productVariants.length > 1 ? 'From ' : ''}GH₵{displayPrice.toFixed(2)}
                 </p>
                 {originalPrice > 0 && (
-                    <p className="text-sm text-muted-foreground line-through">${originalPrice.toFixed(2)}</p>
+                    <p className="text-sm text-muted-foreground line-through">GH₵{originalPrice.toFixed(2)}</p>
                 )}
             </div>
             <div className="flex items-center gap-1 mt-1">

@@ -425,7 +425,7 @@ export default function CheckoutPage() {
                         <p className="font-semibold text-sm">{item.name} <span className="text-muted-foreground">({item.variant.name})</span></p>
                          <p className="text-sm text-muted-foreground">Qty: {item.quantity}</p>
                       </div>
-                      <span className="font-medium">${(item.variant.price * item.quantity).toFixed(2)}</span>
+                      <span className="font-medium">GH₵{(item.variant.price * item.quantity).toFixed(2)}</span>
                     </li>
                   ))}
                 </ul>
@@ -433,20 +433,20 @@ export default function CheckoutPage() {
                 <div className="space-y-2 mt-4">
                   <div className="flex justify-between text-sm">
                     <span>Subtotal</span>
-                    <span>${subtotal.toFixed(2)}</span>
+                    <span>GH₵{subtotal.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span>Taxes ({settings.taxRate}%)</span>
-                    <span>${tax.toFixed(2)}</span>
+                    <span>GH₵{tax.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span>Delivery</span>
-                    <span>${deliveryFee.toFixed(2)}</span>
+                    <span>GH₵{deliveryFee.toFixed(2)}</span>
                   </div>
                   <Separator />
                   <div className="flex justify-between font-bold text-lg">
                     <span>Total</span>
-                    <span>${total.toFixed(2)}</span>
+                    <span>GH₵{total.toFixed(2)}</span>
                   </div>
                 </div>
               </CardContent>

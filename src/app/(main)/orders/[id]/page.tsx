@@ -102,8 +102,8 @@ export default function OrderDetailPage() {
                             <p className="text-sm text-muted-foreground">Qty: {item.quantity}</p>
                         </div>
                         <div className="text-right">
-                             <p className="font-semibold">${(item.variant.price * item.quantity).toFixed(2)}</p>
-                             <p className="text-sm text-muted-foreground">${item.variant.price.toFixed(2)} each</p>
+                             <p className="font-semibold">GH₵{(item.variant.price * item.quantity).toFixed(2)}</p>
+                             <p className="text-sm text-muted-foreground">GH₵{item.variant.price.toFixed(2)} each</p>
                         </div>
                     </li>
                     ))}
@@ -150,20 +150,20 @@ export default function OrderDetailPage() {
                 <CardContent className="space-y-4">
                     <div className="flex justify-between">
                         <span>Subtotal</span>
-                        <span>${order.subtotal.toFixed(2)}</span>
+                        <span>GH₵{order.subtotal.toFixed(2)}</span>
                     </div>
                      <div className="flex justify-between">
                         <span>Tax</span>
-                        <span>${order.tax.toFixed(2)}</span>
+                        <span>GH₵{order.tax.toFixed(2)}</span>
                     </div>
                      <div className="flex justify-between">
                         <span>Shipping</span>
-                        <span>${order.shippingFee.toFixed(2)}</span>
+                        <span>GH₵{order.shippingFee.toFixed(2)}</span>
                     </div>
                     <Separator />
                     <div className="flex justify-between font-bold text-lg">
                         <span>Total</span>
-                        <span>${order.total.toFixed(2)}</span>
+                        <span>GH₵{order.total.toFixed(2)}</span>
                     </div>
                 </CardContent>
                 <CardFooter className="flex flex-col gap-2">

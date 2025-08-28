@@ -64,7 +64,7 @@ export default function MyOrdersPage() {
                              <Package className="h-5 w-5 text-muted-foreground"/>
                             <span className="text-sm text-muted-foreground">{order.items.length} item(s)</span>
                          </div>
-                        <span className="text-lg font-bold">${order.total.toFixed(2)}</span>
+                        <span className="text-lg font-bold">GH₵{order.total.toFixed(2)}</span>
                     </div>
                 </CardContent>
               </Link>

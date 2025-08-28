@@ -123,10 +123,10 @@ function CommerceSettingsForm({ onSubmit, defaultValues }: { onSubmit: (data: z.
                 {errors.taxRate && <p className="text-sm text-destructive mt-1">{errors.taxRate.message}</p>}
             </div>
              <div className="space-y-2">
-                <Label htmlFor="shippingFee">Shipping Fee ($)</Label>
+                <Label htmlFor="shippingFee">Shipping Fee (GH₵)</Label>
                  <div className="relative">
                     <Input id="shippingFee" type="number" {...register('shippingFee')} className="pl-8" />
-                    <DollarSign className="absolute left-2 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground">GH₵</span>
                  </div>
                 {errors.shippingFee && <p className="text-sm text-destructive mt-1">{errors.shippingFee.message}</p>}
             </div>

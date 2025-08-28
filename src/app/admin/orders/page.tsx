@@ -65,7 +65,7 @@ export default function AdminOrdersPage() {
                   <TableCell className="font-medium">#{order.id}</TableCell>
                   <TableCell>{order.shippingAddress.fullName}</TableCell>
                   <TableCell>{new Date(order.date).toLocaleDateString()}</TableCell>
-                  <TableCell>${order.total.toFixed(2)}</TableCell>
+                  <TableCell>GH₵{order.total.toFixed(2)}</TableCell>
                   <TableCell>
                      <Badge className={cn(getStatusClass(order.status))}>{order.status}</Badge>
                   </TableCell>

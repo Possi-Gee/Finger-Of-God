@@ -46,7 +46,7 @@ export default function WishlistPage() {
         router.push(`/product/${product.id}`);
         return;
     }
-    const itemToAdd = { product, variant: product.variants[0] };
+    const itemToAdd = { product, variant: product.variants[0], quantity: 1 };
     cartDispatch({ type: 'ADD_ITEM', payload: itemToAdd });
     wishlistDispatch({ type: 'REMOVE_ITEM', payload: { id: product.id } });
     toast({
@@ -78,7 +78,7 @@ export default function WishlistPage() {
                 <p className="text-xs text-muted-foreground">{product.category}</p>
                 <CardTitle className="mt-1 text-base font-semibold leading-tight">{product.name}</CardTitle>
                  <p className="text-lg font-bold text-primary mt-2">
-                    ${Math.min(...product.variants.map(v => v.price)).toFixed(2)}
+                    GH₵{Math.min(...product.variants.map(v => v.price)).toFixed(2)}
                 </p>
               </CardContent>
             </Link>

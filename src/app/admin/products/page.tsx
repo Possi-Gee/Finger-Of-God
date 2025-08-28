@@ -375,9 +375,9 @@ export default function AdminProductsPage() {
     const maxPrice = Math.max(...prices);
 
     if (minPrice === maxPrice) {
-      return `$${minPrice.toFixed(2)}`;
+      return `GH₵${minPrice.toFixed(2)}`;
     }
-    return `$${minPrice.toFixed(2)} - $${maxPrice.toFixed(2)}`;
+    return `GH₵${minPrice.toFixed(2)} - GH₵${maxPrice.toFixed(2)}`;
   }
 
 
@@ -706,4 +706,3 @@ export default function AdminProductsPage() {
     </div>
   );
 }
-

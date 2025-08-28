@@ -33,7 +33,7 @@ export default function ProductDetailPage() {
 
   const getDefaultVariant = () => {
     if (!product) return undefined;
-    const singleVariant = product.variants.find(v => v.name.toLowerCase() === 'single' || v.name.toLowerCase() === 'standard');
+    const singleVariant = product.variants.find(v => v.name.toLowerCase() === 'single' || v.name.toLowerCase() === 'standard' || v.name.toLowerCase() === 'single bottle');
     return singleVariant || product.variants[0];
   }
 
@@ -132,7 +132,7 @@ export default function ProductDetailPage() {
           <div>
             <p className="text-sm font-medium text-primary">{product.category}</p>
             <h1 className="text-3xl lg:text-4xl font-bold mt-2">{product.name}</h1>
-            <p className="text-3xl font-bold text-primary mt-4">${selectedVariant?.price.toFixed(2)}</p>
+            <p className="text-3xl font-bold text-primary mt-4">GH₵{selectedVariant?.price.toFixed(2)}</p>
           </div>
           
           <Separator className="my-6" />
@@ -153,7 +153,7 @@ export default function ProductDetailPage() {
                                 className="flex flex-col text-center items-center justify-between rounded-md border-2 border-muted bg-transparent p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
                             >
                                 <span className="font-semibold">{variant.name}</span>
-                                <span className="text-sm text-muted-foreground">${variant.price.toFixed(2)}</span>
+                                <span className="text-sm text-muted-foreground">GH₵{variant.price.toFixed(2)}</span>
                             </Label>
                         </div>
                     ))}
@@ -215,4 +215,3 @@ export default function ProductDetailPage() {
     </div>
   );
 }
-
