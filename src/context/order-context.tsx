@@ -27,6 +27,7 @@ export type Order = {
     paymentMethod: string;
     deliveryMethod: 'delivery' | 'pickup';
     status: OrderStatus;
+    orderNotes?: string;
 };
 
 

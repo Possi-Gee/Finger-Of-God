@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import Image from 'next/image';
-import { ArrowLeft, Package, Truck, User, MoreVertical, Store } from 'lucide-react';
+import { ArrowLeft, Package, Truck, User, MoreVertical, Store, MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useMemo } from 'react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -145,6 +145,16 @@ export default function AdminOrderDetailPage() {
                  </div>
             </CardContent>
            </Card>
+            {order.orderNotes && (
+              <Card>
+                  <CardHeader>
+                      <CardTitle className="flex items-center gap-2"><MessageSquare /> Customer Notes</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                      <p className="text-muted-foreground whitespace-pre-wrap">{order.orderNotes}</p>
+                  </CardContent>
+              </Card>
+            )}
         </div>
         <div className="lg:col-span-1">
             <Card>

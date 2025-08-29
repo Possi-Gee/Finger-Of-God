@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowLeft, CheckCircle, Package, Truck, User, Store, CircleDot, FileText } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Package, Truck, User, Store, CircleDot, FileText, MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useMemo } from 'react';
 
@@ -159,6 +159,17 @@ export default function OrderDetailPage() {
                 </ul>
             </CardContent>
            </Card>
+
+            {order.orderNotes && (
+              <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><MessageSquare /> Your Notes</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-muted-foreground whitespace-pre-wrap">{order.orderNotes}</p>
+                </CardContent>
+              </Card>
+            )}
            
            <Card>
                 <CardHeader>

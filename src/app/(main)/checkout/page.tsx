@@ -17,10 +17,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import Image from 'next/image';
-import { CreditCard, Truck, Smartphone, Store } from 'lucide-react';
+import { CreditCard, Truck, Smartphone, Store, MessageSquare } from 'lucide-react';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Order } from '@/context/order-context';
+import { Textarea } from '@/components/ui/textarea';
 
 const checkoutSchema = z.discriminatedUnion("deliveryMethod", [
     z.object({
@@ -58,7 +59,9 @@ const checkoutSchema = z.discriminatedUnion("deliveryMethod", [
             paymentMethod: z.literal('on_delivery'),
         }),
     ])
-);
+).and(z.object({
+  orderNotes: z.string().optional(),
+}));
 
 
 type CheckoutFormValues = z.infer<typeof checkoutSchema>;
@@ -90,6 +93,7 @@ export default function CheckoutPage() {
       expiryDate: '',
       cvv: '',
       mobileMoneyNumber: '',
+      orderNotes: '',
     }
   });
   
@@ -99,7 +103,7 @@ export default function CheckoutPage() {
   const total = subtotal + tax + deliveryFee;
 
   const onSubmit = (data: CheckoutFormValues) => {
-    const { paymentMethod, deliveryMethod } = data;
+    const { paymentMethod, deliveryMethod, orderNotes } = data;
     
     const newOrder: Order = {
       id: Date.now(),
@@ -120,6 +124,7 @@ export default function CheckoutPage() {
       paymentMethod,
       deliveryMethod,
       status: 'Pending',
+      orderNotes: orderNotes
     };
 
     orderDispatch({ type: 'ADD_ORDER', payload: newOrder });
@@ -426,6 +431,36 @@ export default function CheckoutPage() {
                 )}
               </CardContent>
             </Card>
+
+            <Card>
+              <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                      <MessageSquare />
+                      Order Notes (Optional)
+                  </CardTitle>
+                  <CardDescription>
+                      Add any special instructions for your order.
+                  </CardDescription>
+              </CardHeader>
+              <CardContent>
+                  <FormField
+                      control={form.control}
+                      name="orderNotes"
+                      render={({ field }) => (
+                          <FormItem>
+                              <FormControl>
+                                  <Textarea
+                                      placeholder="e.g., Please leave the package at the front door."
+                                      {...field}
+                                  />
+                              </FormControl>
+                              <FormMessage />
+                          </FormItem>
+                      )}
+                  />
+              </CardContent>
+            </Card>
+
           </div>
 
           <div className="mt-8 lg:mt-0">
