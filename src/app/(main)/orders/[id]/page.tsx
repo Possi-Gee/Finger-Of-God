@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowLeft, CheckCircle, Package, Truck, User, Store } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Package, Truck, User, Store, CircleDot } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useMemo } from 'react';
 
@@ -39,6 +39,54 @@ const getPaymentMethodName = (method: string) => {
 
 const getDeliveryMethodName = (method: Order['deliveryMethod']) => {
     return method === 'delivery' ? 'Home Delivery' : 'In-store Pickup';
+}
+
+const OrderStatusTimeline = ({ status, deliveryMethod }: { status: Order['status'], deliveryMethod: Order['deliveryMethod'] }) => {
+    const statuses: Order['status'][] = ['Pending', 'Shipped', 'Delivered'];
+    const currentStatusIndex = statuses.indexOf(status);
+
+    if (status === 'Cancelled' || deliveryMethod === 'pickup') {
+        return null; // Don't show timeline for cancelled or pickup orders
+    }
+
+    const timelineSteps = [
+        { name: 'Pending', icon: Package },
+        { name: 'Shipped', icon: Truck },
+        { name: 'Delivered', icon: CheckCircle },
+    ];
+    
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Order Progress</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <div className="flex justify-between items-start relative">
+                    <div className="absolute top-1/2 left-0 w-full h-0.5 bg-muted -translate-y-4">
+                        <div className="absolute top-0 left-0 h-full bg-primary" style={{ width: `${(currentStatusIndex / (statuses.length - 1)) * 100}%` }}></div>
+                    </div>
+                    {timelineSteps.map((step, index) => {
+                        const isCompleted = index < currentStatusIndex;
+                        const isCurrent = index === currentStatusIndex;
+                        const Icon = step.icon;
+
+                        return (
+                            <div key={step.name} className="flex flex-col items-center z-10 text-center">
+                                <div className={cn("flex items-center justify-center w-8 h-8 rounded-full mb-2", 
+                                    isCompleted ? 'bg-primary' :
+                                    isCurrent ? 'bg-primary ring-4 ring-primary/30' :
+                                    'bg-muted'
+                                )}>
+                                   {isCompleted ? <CheckCircle className="h-5 w-5 text-primary-foreground"/> : <Icon className={cn("h-5 w-5", isCurrent ? 'text-primary-foreground' : 'text-muted-foreground')} />}
+                                </div>
+                                <p className={cn("text-xs font-semibold", isCompleted || isCurrent ? 'text-primary' : 'text-muted-foreground')}>{step.name}</p>
+                            </div>
+                        )
+                    })}
+                </div>
+            </CardContent>
+        </Card>
+    )
 }
 
 export default function OrderDetailPage() {
@@ -87,6 +135,7 @@ export default function OrderDetailPage() {
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-8">
+           <OrderStatusTimeline status={order.status} deliveryMethod={order.deliveryMethod} />
            <Card>
             <CardHeader>
                 <CardTitle className="flex items-center gap-2"><Package/> Items Ordered</CardTitle>
