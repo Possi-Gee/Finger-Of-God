@@ -8,20 +8,43 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { History, Heart, User, LogOut } from 'lucide-react';
 import { ProfileListItem } from '@/components/profile-list-item';
+import { useAuth } from '@/hooks/use-auth';
+import { useRouter } from 'next/navigation';
 
 export default function ProfilePage() {
+  const { user, loading, logout } = useAuth();
+  const router = useRouter();
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  if (!user) {
+    router.push('/login');
+    return null;
+  }
+
+  const handleLogout = async () => {
+    await logout();
+    router.push('/login');
+  };
+
+  const getInitials = (name: string | null | undefined) => {
+    if (!name) return 'U';
+    return name.split(' ').map(n => n[0]).join('').toUpperCase();
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-2xl mx-auto">
         <div className="flex flex-col items-center space-y-4 mb-8">
           <Avatar className="h-24 w-24">
-            <AvatarImage src="https://picsum.photos/200" alt="User Name" />
-            <AvatarFallback>UN</AvatarFallback>
+            <AvatarImage src={user.photoURL || undefined} alt={user.displayName || 'User'} />
+            <AvatarFallback>{getInitials(user.displayName)}</AvatarFallback>
           </Avatar>
           <div className="text-center">
-            <h1 className="text-2xl font-bold">Jane Doe</h1>
-            <p className="text-muted-foreground">jane.doe@example.com</p>
+            <h1 className="text-2xl font-bold">{user.displayName || 'Anonymous User'}</h1>
+            <p className="text-muted-foreground">{user.email}</p>
           </div>
         </div>
 
@@ -39,27 +62,25 @@ export default function ProfilePage() {
            <Card>
             <CardHeader>
               <CardTitle>Edit Profile</CardTitle>
-              <CardDescription>Update your personal information.</CardDescription>
+              <CardDescription>This information is managed by your identity provider.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
                <div className="space-y-2">
                  <Label htmlFor="fullName">Full Name</Label>
-                 <Input id="fullName" defaultValue="Jane Doe" />
+                 <Input id="fullName" defaultValue={user.displayName || ''} disabled />
                </div>
                 <div className="space-y-2">
                  <Label htmlFor="email">Email Address</Label>
-                 <Input id="email" type="email" defaultValue="jane.doe@example.com" />
+                 <Input id="email" type="email" defaultValue={user.email || ''} disabled />
                </div>
-               <Button>Save Changes</Button>
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader>
-              <CardTitle>Settings</CardTitle>
-            </CardHeader>
-            <CardContent className="divide-y p-0">
-              <ProfileListItem href="/login" icon={LogOut} label="Log Out" />
+             <CardContent className="p-0">
+               <div onClick={handleLogout} className="cursor-pointer">
+                  <ProfileListItem href="#" icon={LogOut} label="Log Out" />
+               </div>
             </CardContent>
           </Card>
         </div>

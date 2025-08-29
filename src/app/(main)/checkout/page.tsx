@@ -18,11 +18,12 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import Image from 'next/image';
 import { CreditCard, Truck, Smartphone, Store, MessageSquare } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Order } from '@/context/order-context';
 import { Textarea } from '@/components/ui/textarea';
 import { sendOrderConfirmationEmail } from '@/app/actions/send-email';
+import { useAuth } from '@/hooks/use-auth';
 
 const checkoutSchema = z.discriminatedUnion("deliveryMethod", [
     z.object({
@@ -70,6 +71,7 @@ const checkoutSchema = z.discriminatedUnion("deliveryMethod", [
 type CheckoutFormValues = z.infer<typeof checkoutSchema>;
 
 export default function CheckoutPage() {
+  const { user } = useAuth();
   const { state: cartState, dispatch: cartDispatch } = useCart();
   const { state: settings } = useSiteSettings();
   const { dispatch: orderDispatch } = useOrders();
@@ -100,6 +102,13 @@ export default function CheckoutPage() {
       orderNotes: '',
     }
   });
+
+   useEffect(() => {
+    if (user) {
+      form.setValue('email', user.email || '');
+      form.setValue('fullName', user.displayName || '');
+    }
+  }, [user, form]);
   
   const subtotal = items.reduce((sum, item) => sum + item.variant.price * item.quantity, 0);
   const tax = subtotal * (settings.taxRate / 100);
@@ -109,6 +118,16 @@ export default function CheckoutPage() {
   const onSubmit = async (data: CheckoutFormValues) => {
     const { paymentMethod, deliveryMethod, orderNotes, email } = data;
     
+    if (!user) {
+      toast({
+        title: 'Please Login',
+        description: 'You must be logged in to place an order.',
+        variant: 'destructive'
+      })
+      router.push(`/login?redirect=/checkout`);
+      return;
+    }
+
     const newOrder: Order = {
       id: Date.now(),
       date: new Date().toISOString(),
@@ -125,7 +144,7 @@ export default function CheckoutPage() {
         state: data.state!, 
         zip: data.zip!, 
         country: data.country! 
-      } : { fullName: data.fullName || 'In-store Pickup', email: data.email!, address: '', city: '', state: '', zip: '', country: '' },
+      } : { fullName: data.fullName || user.displayName || 'In-store Pickup', email: data.email!, address: '', city: '', state: '', zip: '', country: '' },
       paymentMethod,
       deliveryMethod,
       status: 'Pending',
@@ -540,7 +559,8 @@ export default function CheckoutPage() {
                 </div>
               </CardContent>
               <CardFooter>
-                 <Button type="submit" className="w-full" size="lg" disabled={items.length === 0}>
+                 <Button type="submit" className="w-full" size="lg" disabled={items.length === 0 || form.formState.isSubmitting}>
+                   {form.formState.isSubmitting && <Loader2 className="mr-2 animate-spin"/>}
                    Place Order
                  </Button>
               </CardFooter>

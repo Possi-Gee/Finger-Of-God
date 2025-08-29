@@ -13,6 +13,7 @@ import { Toaster } from '@/components/ui/toaster';
 import './globals.css';
 import { useEffect } from 'react';
 import { OrderProvider } from '@/context/order-context';
+import { AuthProvider } from '@/context/auth-context';
 import { useTheme } from '@/context/theme-provider';
 
 // export const metadata: Metadata = {
@@ -52,18 +53,20 @@ function AppLayout({ children }: { children: React.ReactNode }) {
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
       </head>
       <body className="font-body antialiased">
-          <ProductProvider>
-            <WishlistProvider>
-              <CartProvider>
-                <HomepageProvider>
-                  <OrderProvider>
-                    {children}
-                    <Toaster />
-                  </OrderProvider>
-                </HomepageProvider>
-              </CartProvider>
-            </WishlistProvider>
-          </ProductProvider>
+         <AuthProvider>
+            <ProductProvider>
+              <WishlistProvider>
+                <CartProvider>
+                  <HomepageProvider>
+                    <OrderProvider>
+                      {children}
+                      <Toaster />
+                    </OrderProvider>
+                  </HomepageProvider>
+                </CartProvider>
+              </WishlistProvider>
+            </ProductProvider>
+          </AuthProvider>
       </body>
     </html>
   )

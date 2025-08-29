@@ -1,6 +1,10 @@
 
 'use client';
 
+import React, { useState } from 'react';
+import { useForm, type SubmitHandler } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -8,9 +12,27 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { useSiteSettings } from '@/hooks/use-site-settings';
-import { ShoppingBag } from 'lucide-react';
+import { ShoppingBag, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useAuth } from '@/hooks/use-auth';
+import { useRouter } from 'next/navigation';
+import { useToast } from '@/hooks/use-toast';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+
+const loginSchema = z.object({
+  email: z.string().email('Invalid email address'),
+  password: z.string().min(1, 'Password is required'),
+});
+
+const signupSchema = z.object({
+  name: z.string().min(2, 'Name must be at least 2 characters'),
+  email: z.string().email('Invalid email address'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+});
+
+type LoginValues = z.infer<typeof loginSchema>;
+type SignupValues = z.infer<typeof signupSchema>;
 
 
 const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -33,6 +55,48 @@ const AppleIcon = (props: React.SVGProps<SVGSVGElement>) => (
 
 export function LoginPageClient() {
   const { state: settings } = useSiteSettings();
+  const { signup, login, loginWithGoogle } = useAuth();
+  const router = useRouter();
+  const { toast } = useToast();
+  const [error, setError] = useState<string | null>(null);
+
+  const { register: registerLogin, handleSubmit: handleLoginSubmit, formState: { errors: loginErrors, isSubmitting: isLoggingIn } } = useForm<LoginValues>({ resolver: zodResolver(loginSchema) });
+  const { register: registerSignup, handleSubmit: handleSignupSubmit, formState: { errors: signupErrors, isSubmitting: isSigningUp } } = useForm<SignupValues>({ resolver: zodResolver(signupSchema) });
+
+
+  const onLogin: SubmitHandler<LoginValues> = async ({ email, password }) => {
+    setError(null);
+    try {
+      await login(email, password);
+      toast({ title: 'Login Successful', description: 'Welcome back!' });
+      router.push('/');
+    } catch (e: any) {
+      setError(e.message);
+    }
+  };
+
+  const onSignup: SubmitHandler<SignupValues> = async ({ name, email, password }) => {
+    setError(null);
+    try {
+      await signup(email, password, name);
+      toast({ title: 'Signup Successful', description: 'Your account has been created.' });
+      router.push('/');
+    } catch (e: any) {
+      setError(e.message);
+    }
+  };
+  
+  const handleGoogleLogin = async () => {
+    setError(null);
+    try {
+        await loginWithGoogle();
+        toast({ title: 'Login Successful', description: 'Welcome!' });
+        router.push('/');
+    } catch(e: any) {
+        setError(e.message);
+    }
+  }
+
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
@@ -58,18 +122,23 @@ export function LoginPageClient() {
               <CardTitle>Welcome Back</CardTitle>
               <CardDescription>Enter your credentials to access your account.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="login-email">Email</Label>
-                <Input id="login-email" type="email" placeholder="m@example.com" required />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="login-password">Password</Label>
-                <Input id="login-password" type="password" required />
-              </div>
-              <Button type="submit" className="w-full">
-                Login
-              </Button>
+            <CardContent>
+              <form onSubmit={handleLoginSubmit(onLogin)} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="login-email">Email</Label>
+                  <Input id="login-email" type="email" placeholder="m@example.com" {...registerLogin('email')} />
+                  {loginErrors.email && <p className="text-sm text-destructive">{loginErrors.email.message}</p>}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="login-password">Password</Label>
+                  <Input id="login-password" type="password" {...registerLogin('password')} />
+                   {loginErrors.password && <p className="text-sm text-destructive">{loginErrors.password.message}</p>}
+                </div>
+                <Button type="submit" className="w-full" disabled={isLoggingIn}>
+                  {isLoggingIn && <Loader2 className="mr-2 animate-spin" />}
+                  Login
+                </Button>
+              </form>
             </CardContent>
           </Card>
         </TabsContent>
@@ -79,39 +148,51 @@ export function LoginPageClient() {
               <CardTitle>Create an Account</CardTitle>
               <CardDescription>Enter your details to create a new account.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent>
+              <form onSubmit={handleSignupSubmit(onSignup)} className="space-y-4">
                <div className="space-y-2">
                 <Label htmlFor="signup-name">Full Name</Label>
-                <Input id="signup-name" type="text" placeholder="John Doe" required />
+                <Input id="signup-name" type="text" placeholder="John Doe" {...registerSignup('name')} />
+                {signupErrors.name && <p className="text-sm text-destructive">{signupErrors.name.message}</p>}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="signup-email">Email</Label>
-                <Input id="signup-email" type="email" placeholder="m@example.com" required />
+                <Input id="signup-email" type="email" placeholder="m@example.com" {...registerSignup('email')} />
+                {signupErrors.email && <p className="text-sm text-destructive">{signupErrors.email.message}</p>}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="signup-password">Password</Label>
-                <Input id="signup-password" type="password" required />
+                <Input id="signup-password" type="password" {...registerSignup('password')} />
+                {signupErrors.password && <p className="text-sm text-destructive">{signupErrors.password.message}</p>}
               </div>
-              <Button type="submit" className="w-full">
-                Create Account
+              <Button type="submit" className="w-full" disabled={isSigningUp}>
+                  {isSigningUp && <Loader2 className="mr-2 animate-spin" />}
+                  Create Account
               </Button>
+              </form>
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
+      {error && (
+        <Alert variant="destructive" className="mt-4">
+          <AlertTitle>Authentication Failed</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
       <div className="relative my-6">
         <Separator />
         <span className="absolute left-1/2 -translate-x-1/2 -top-3 bg-background px-2 text-sm text-muted-foreground">OR CONTINUE WITH</span>
       </div>
-       <div className="grid grid-cols-2 gap-4">
-          <Button variant="outline">
+       <div className="grid grid-cols-1 gap-4">
+          <Button variant="outline" onClick={handleGoogleLogin}>
             <GoogleIcon className="mr-2 h-4 w-4" />
-            Google
+            Continue with Google
           </Button>
-          <Button variant="outline">
+          {/* <Button variant="outline">
             <AppleIcon className="mr-2 h-4 w-4" />
             Apple
-          </Button>
+          </Button> */}
         </div>
       </div>
     </div>
