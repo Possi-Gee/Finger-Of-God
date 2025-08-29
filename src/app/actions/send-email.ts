@@ -16,7 +16,7 @@ interface SendEmailParams {
 export const sendOrderConfirmationEmail = async ({ order, toEmail }: SendEmailParams) => {
     if (!process.env.RESEND_API_KEY) {
         console.error('Resend API key is not set.');
-        throw new Error('Email service is not configured.');
+        throw new Error('Email service is not configured. RESEND_API_KEY is missing.');
     }
 
     try {
