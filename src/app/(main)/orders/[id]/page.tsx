@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowLeft, CheckCircle, Package, Truck, User, Store, CircleDot } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Package, Truck, User, Store, CircleDot, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useMemo } from 'react';
 
@@ -221,8 +221,11 @@ export default function OrderDetailPage() {
                      <Button asChild className="w-full">
                         <Link href="/">Continue Shopping</Link>
                      </Button>
-                      <Button variant="outline" className="w-full">
-                        View Invoice
+                      <Button asChild variant="outline" className="w-full">
+                        <Link href={`/orders/${order.id}/invoice`}>
+                            <FileText className="mr-2 h-4 w-4" />
+                            View Invoice
+                        </Link>
                      </Button>
                 </CardFooter>
             </Card>
