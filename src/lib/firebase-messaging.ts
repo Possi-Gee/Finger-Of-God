@@ -13,7 +13,7 @@ export const requestNotificationPermission = async () => {
             console.log('Notification permission granted.');
             // TODO: Get the token here and return it
             const token = await getToken(messaging, { 
-                vapidKey: 'YOUR_VAPID_KEY_HERE' // IMPORTANT: Replace with your actual VAPID key
+                vapidKey: 'BOWBmbyjkOMXfuzFtb-8u2J16pyUQJeWzhq7kr3U5JGN7-WvZxD85o0pybkzHl8HFzsyeKV3OKE32gR8SEAKTK4' // IMPORTANT: Replace with your actual VAPID key
             });
             
             if (token) {
