@@ -137,7 +137,7 @@ export default function ProductDetailPage() {
           
           <Separator className="my-6" />
 
-           {product.variants.length > 0 && (
+           {product.variants.length > 1 && (
             <div className="mb-6">
                 <Label className="text-lg font-semibold mb-2 block">Select Option</Label>
                 <RadioGroup 
