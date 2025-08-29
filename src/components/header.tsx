@@ -37,12 +37,6 @@ export function Header() {
            <span className="font-bold sm:inline-block">{settings.appName}</span>
         </Link>
         <nav className="flex items-center gap-4 text-sm lg:gap-6">
-          <Link
-            href="/"
-            className="text-foreground/60 transition-colors hover:text-foreground/80"
-          >
-            Home
-          </Link>
         </nav>
         <div className="flex flex-1 items-center justify-end space-x-2">
            <Button variant="ghost" size="icon" asChild>
