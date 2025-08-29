@@ -2,7 +2,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Package, Sun, Moon, Wrench, User, LogIn, LogOut } from 'lucide-react';
+import { Package, Sun, Moon, Wrench, User, LogIn, LogOut, Home, Heart, ShoppingCart, History } from 'lucide-react';
 import { useTheme } from '@/context/theme-provider';
 import { Button } from '@/components/ui/button';
 import { useSiteSettings } from '@/hooks/use-site-settings';
@@ -17,13 +17,38 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
+import { useCart } from '@/hooks/use-cart';
+import { useWishlist } from '@/hooks/use-wishlist';
+import { cn } from '@/lib/utils';
+import { useEffect, useState } from 'react';
+
+
+const mainNavItems = [
+  { href: '/', label: 'Home', icon: Home },
+  { href: '/wishlist', label: 'Wishlist', icon: Heart },
+  { href: '/orders', label: 'Orders', icon: History },
+  { href: '/cart', label: 'Cart', icon: ShoppingCart },
+];
 
 export function Header() {
   const { theme, setTheme } = useTheme();
   const { state: settings } = useSiteSettings();
   const { user, loading, logout } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
+
+  const { state: cartState } = useCart();
+  const { state: wishlistState } = useWishlist();
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  const totalCartItems = cartState.items.reduce((sum, item) => sum + item.quantity, 0);
+  const totalWishlistItems = wishlistState.items.length;
+
 
   const handleLogout = async () => {
     await logout();
@@ -44,9 +69,32 @@ export function Header() {
           ) : (
             <Package className="h-6 w-6 text-primary" />
           )}
-           <span className="font-bold sm:inline-block">{settings.appName}</span>
+           <span className="hidden font-bold sm:inline-block">{settings.appName}</span>
         </Link>
-        <div className="flex flex-1 items-center justify-end space-x-2">
+        
+        <nav className="hidden md:flex flex-1 items-center space-x-6 text-sm font-medium">
+            {mainNavItems.map(item => {
+                const isActive = (item.href === '/' && pathname === item.href) || (item.href !== '/' && pathname.startsWith(item.href));
+                return (
+                    <Link key={item.href} href={item.href} className={cn("flex items-center gap-2 transition-colors hover:text-primary", isActive ? 'text-primary' : 'text-muted-foreground')}>
+                        <item.icon className="h-5 w-5" />
+                        <span>{item.label}</span>
+                        {isClient && item.href === '/cart' && totalCartItems > 0 && (
+                            <span className="ml-[-8px] flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
+                                {totalCartItems}
+                            </span>
+                        )}
+                        {isClient && item.href === '/wishlist' && totalWishlistItems > 0 && (
+                            <span className="ml-[-8px] flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
+                                {totalWishlistItems}
+                            </span>
+                        )}
+                    </Link>
+                )
+            })}
+        </nav>
+        
+        <div className="flex flex-1 items-center justify-end space-x-2 md:flex-initial">
            <Button variant="ghost" size="icon" asChild>
             <Link href="/admin/dashboard" aria-label="Admin Panel">
               <Wrench className="h-5 w-5" />
@@ -80,7 +128,7 @@ export function Header() {
               </DropdownMenuContent>
             </DropdownMenu>
            ) : (
-             <Button asChild variant="ghost" size="sm">
+             !loading && <Button asChild variant="ghost" size="sm">
               <Link href="/login">
                 <LogIn className="mr-2 h-4 w-4"/>
                 Login

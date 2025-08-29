@@ -13,7 +13,9 @@ export default function MainLayout({
       <Header />
       <main className="flex-1">{children}</main>
       <Footer />
-      <div className="pb-16 md:pb-0"></div>
+      {/* Spacer for bottom navbar on mobile */}
+      <div className="pb-16 md:hidden"></div>
+      {/* Mobile-only bottom navbar */}
       <div className="md:hidden">
         <BottomNavbar />
       </div>
