@@ -15,20 +15,30 @@ interface SendEmailParams {
 
 export const sendOrderConfirmationEmail = async ({ order, toEmail }: SendEmailParams) => {
     if (!process.env.RESEND_API_KEY) {
-        throw new Error('Resend API key is not set. Please set the RESEND_API_KEY environment variable.');
+        console.error('Resend API key is not set.');
+        throw new Error('Email service is not configured.');
     }
 
-    const { data, error } = await resend.emails.send({
-        from: 'ShopWave <onboarding@resend.dev>',
-        to: [toEmail],
-        subject: `Your ShopWave Order Confirmation #${order.id}`,
-        react: OrderConfirmationEmail({ order }),
-    });
+    try {
+        const { data, error } = await resend.emails.send({
+            from: 'ShopWave <onboarding@resend.dev>',
+            to: [toEmail],
+            subject: `Your ShopWave Order Confirmation #${order.id}`,
+            react: OrderConfirmationEmail({ order }),
+        });
 
-    if (error) {
-        console.error('Resend error:', error);
-        throw new Error(`Failed to send email: ${error.message}`);
+        if (error) {
+            // The error object from Resend has a 'message' property.
+            // We log the full error for debugging but throw a clean message.
+            console.error('Resend API Error:', error);
+            throw new Error(error.message || 'An unknown error occurred while sending the email.');
+        }
+
+        return data;
+
+    } catch (e: any) {
+        // This will catch network errors or other exceptions during the API call.
+        console.error('Failed to send email:', e);
+        throw new Error(e.message || 'An unexpected error occurred.');
     }
-
-    return data;
 };

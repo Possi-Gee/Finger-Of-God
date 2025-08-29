@@ -159,11 +159,11 @@ export default function CheckoutPage() {
             title: 'Order Placed!',
             description: 'Thank you for your purchase. A confirmation email has been sent.',
         });
-    } catch (error) {
+    } catch (error: any) {
         console.error('Failed to send email:', error);
         toast({
             title: 'Order Placed (Email Failed)',
-            description: 'Your order was placed successfully, but we failed to send a confirmation email.',
+            description: `Your order was placed, but we couldn't send the confirmation email. Error: ${error.message}`,
             variant: 'destructive',
         });
     }
