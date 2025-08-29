@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { History, Heart, User, LogOut, Bell } from 'lucide-react';
+import { History, Heart, User, LogOut, Bell, AlertTriangle } from 'lucide-react';
 import { ProfileListItem } from '@/components/profile-list-item';
 import { useToast } from '@/hooks/use-toast';
 import { requestNotificationPermission } from '@/lib/firebase-messaging';
@@ -16,32 +16,40 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 export default function ProfilePage() {
   const { toast } = useToast();
   const [token, setToken] = useState<string | null>(null);
+  const [notificationError, setNotificationError] = useState<string | null>(null);
 
   const handleEnableNotifications = async () => {
-    try {
-      const receivedToken = await requestNotificationPermission();
-      if (receivedToken) {
-        setToken(receivedToken);
-        console.log('FCM Token:', receivedToken);
-        toast({
-          title: 'Notifications Enabled!',
-          description: 'You will now receive updates about your orders.',
-        });
-      } else {
-        // This case handles when permission is denied by the user.
-        toast({
-          title: 'Notifications Denied',
-          description: 'You have not granted permission for notifications.',
-          variant: 'destructive',
-        });
-      }
-    } catch (error) {
-       console.error('Error getting notification token:', error);
-       toast({
-         title: 'Notification Error',
-         description: 'An error occurred while enabling notifications. Please check the console for details.',
-         variant: 'destructive',
-       });
+    setNotificationError(null);
+    setToken(null);
+    
+    if (!('Notification' in window)) {
+        setNotificationError("This browser does not support desktop notification.");
+        return;
+    }
+
+    const permission = Notification.permission;
+
+    if (permission === 'granted') {
+        const receivedToken = await requestNotificationPermission();
+        if (receivedToken) setToken(receivedToken);
+    } else if (permission === 'denied') {
+        setNotificationError("Notifications are blocked. Please enable them in your browser settings.");
+    } else {
+        const receivedToken = await requestNotificationPermission();
+        if (receivedToken) {
+            setToken(receivedToken);
+            toast({
+              title: 'Notifications Enabled!',
+              description: 'You will now receive updates about your orders.',
+            });
+        } else {
+            // This case handles when permission is denied by the user in the prompt.
+            toast({
+              title: 'Notifications Denied',
+              description: 'You have not granted permission for notifications.',
+              variant: 'destructive',
+            });
+        }
     }
   };
 
@@ -101,6 +109,15 @@ export default function ProfilePage() {
                     </div>
                     <Button onClick={handleEnableNotifications}>Enable</Button>
                 </div>
+                {notificationError && (
+                  <Alert variant="destructive" className="mt-4">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertTitle>Permission Denied</AlertTitle>
+                    <AlertDescription>
+                      {notificationError}
+                    </AlertDescription>
+                  </Alert>
+                )}
                 {token && (
                   <Alert className="mt-4">
                     <AlertTitle>Your Notification Token</AlertTitle>

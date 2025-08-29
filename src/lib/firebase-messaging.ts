@@ -28,6 +28,7 @@ export const requestNotificationPermission = async () => {
         }
     } catch (error) {
         console.error('An error occurred while requesting permission:', error);
-        throw error; // Re-throw the error to be caught by the caller
+        // We don't need to re-throw, null is a clear indicator of failure.
+        return null;
     }
 };
