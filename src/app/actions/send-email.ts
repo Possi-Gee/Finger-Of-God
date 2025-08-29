@@ -4,7 +4,7 @@
 import { Resend } from 'resend';
 import { OrderConfirmationEmail } from '@/components/emails/order-confirmation';
 import type { Order } from '@/context/order-context';
-import { SiteSettingsContext } from '@/context/site-settings-context';
+import { useSiteSettings } from '@/hooks/use-site-settings';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -14,6 +14,8 @@ interface SendEmailParams {
 }
 
 export const sendOrderConfirmationEmail = async ({ order, toEmail }: SendEmailParams) => {
+    const { state: settings } = useSiteSettings();
+
     if (!process.env.RESEND_API_KEY) {
         console.error('Resend API key is not set.');
         throw new Error('Email service is not configured. RESEND_API_KEY is missing.');
@@ -23,8 +25,8 @@ export const sendOrderConfirmationEmail = async ({ order, toEmail }: SendEmailPa
         const { data, error } = await resend.emails.send({
             from: 'ShopWave <onboarding@resend.dev>',
             to: [toEmail],
-            subject: `Your ShopWave Order Confirmation #${order.id}`,
-            react: OrderConfirmationEmail({ order }),
+            subject: `Your ${settings.appName} Order Confirmation #${order.id}`,
+            react: OrderConfirmationEmail({ order, appName: settings.appName, logoUrl: settings.logoUrl }),
         });
 
         if (error) {
