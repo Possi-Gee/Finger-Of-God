@@ -59,7 +59,7 @@ export default function InvoicePage() {
                     <header className="flex justify-between items-start pb-6 border-b">
                         <div>
                              {siteSettings.logoUrl ? (
-                                <Image src={siteSettings.logoUrl} alt={siteSettings.appName} width={120} height={50} className="object-contain" />
+                                <Image src={siteSettings.logoUrl} alt={siteSettings.appName} width={120} height={50} className="object-contain rounded-md" />
                             ) : (
                                 <h1 className="text-3xl font-bold text-primary">{siteSettings.appName}</h1>
                             )}
