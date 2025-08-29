@@ -13,6 +13,7 @@ import { Toaster } from '@/components/ui/toaster';
 import './globals.css';
 import { useEffect } from 'react';
 import { OrderProvider } from '@/context/order-context';
+import { useTheme } from '@/context/theme-provider';
 
 // export const metadata: Metadata = {
 //   title: 'ShopWave',
@@ -21,18 +22,27 @@ import { OrderProvider } from '@/context/order-context';
 
 function AppLayout({ children }: { children: React.ReactNode }) {
   const { state: settings } = useSiteSettings();
+  const { theme } = useTheme();
 
    useEffect(() => {
     document.title = settings.appName;
     const root = document.documentElement;
-    
-    (Object.keys(settings.theme) as Array<keyof typeof settings.theme>).forEach((key) => {
-      const value = settings.theme[key];
-      // For HSL values, we don't need to do anything special. For other values, they are set as-is.
-      root.style.setProperty(`--${key}`, value);
-    });
 
-  }, [settings]);
+    // We only want to apply the settings theme for the 'light' mode.
+    // The 'dark' mode will be handled by the CSS variables in globals.css under the .dark selector.
+    if (theme === 'light' || theme === 'system') {
+       (Object.keys(settings.theme) as Array<keyof typeof settings.theme>).forEach((key) => {
+        const value = settings.theme[key];
+        root.style.setProperty(`--${key}`, value);
+      });
+    } else {
+       // When switching to dark mode, remove the inline styles to let the CSS take over.
+       (Object.keys(settings.theme) as Array<keyof typeof settings.theme>).forEach((key) => {
+          root.style.removeProperty(`--${key}`);
+       });
+    }
+
+  }, [settings, theme]);
 
   return (
      <html lang="en" suppressHydrationWarning>
@@ -42,7 +52,6 @@ function AppLayout({ children }: { children: React.ReactNode }) {
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
       </head>
       <body className="font-body antialiased">
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <ProductProvider>
             <WishlistProvider>
               <CartProvider>
@@ -55,7 +64,6 @@ function AppLayout({ children }: { children: React.ReactNode }) {
               </CartProvider>
             </WishlistProvider>
           </ProductProvider>
-        </ThemeProvider>
       </body>
     </html>
   )
@@ -69,7 +77,9 @@ export default function RootLayout({
 }>) {
   return (
     <SiteSettingsProvider>
-      <AppLayout>{children}</AppLayout>
+       <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+         <AppLayout>{children}</AppLayout>
+      </ThemeProvider>
     </SiteSettingsProvider>
   );
 }
