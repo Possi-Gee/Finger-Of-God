@@ -3,7 +3,7 @@
 
 import type { Product } from '@/lib/products';
 import { products as initialProducts } from '@/lib/products';
-import React, { createContext, useReducer, useEffect, type ReactNode } from 'react';
+import React, { createContext, useReducer, useEffect, type ReactNode, useState } from 'react';
 
 type ProductState = {
   products: Product[];
@@ -56,6 +56,7 @@ export const ProductContext = createContext<ProductContextType | undefined>(unde
 
 export const ProductProvider = ({ children }: { children: ReactNode }) => {
   const [state, dispatch] = useReducer(productReducer, initialState);
+  const [isHydrated, setIsHydrated] = useState(false);
 
   useEffect(() => {
     try {
@@ -69,16 +70,20 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
       }
     } catch (error) {
       console.error("Failed to load products from localStorage", error);
+    } finally {
+        setIsHydrated(true);
     }
   }, []);
 
   useEffect(() => {
-    try {
-       localStorage.setItem('shopwave_products', JSON.stringify(state));
-    } catch (error) {
-      console.error("Failed to save products to localStorage", error);
+    if (isHydrated) {
+        try {
+           localStorage.setItem('shopwave_products', JSON.stringify(state));
+        } catch (error) {
+          console.error("Failed to save products to localStorage", error);
+        }
     }
-  }, [state]);
+  }, [state, isHydrated]);
 
   return (
     <ProductContext.Provider value={{ state, dispatch }}>

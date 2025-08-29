@@ -2,7 +2,7 @@
 'use client';
 
 import type { Product } from '@/lib/products';
-import React, { createContext, useReducer, useEffect, type ReactNode } from 'react';
+import React, { createContext, useReducer, useEffect, type ReactNode, useState } from 'react';
 
 type WishlistState = {
   items: Product[];
@@ -53,6 +53,7 @@ export const WishlistContext = createContext<WishlistContextType | undefined>(un
 
 export const WishlistProvider = ({ children }: { children: ReactNode }) => {
   const [state, dispatch] = useReducer(wishlistReducer, initialState);
+  const [isHydrated, setIsHydrated] = useState(false);
 
   useEffect(() => {
     try {
@@ -62,16 +63,20 @@ export const WishlistProvider = ({ children }: { children: ReactNode }) => {
       }
     } catch (error) {
       console.error("Failed to load wishlist from localStorage", error);
+    } finally {
+      setIsHydrated(true);
     }
   }, []);
 
   useEffect(() => {
-    try {
-      localStorage.setItem('shopwave_wishlist', JSON.stringify(state));
-    } catch (error) {
-      console.error("Failed to save wishlist to localStorage", error);
+    if (isHydrated) {
+        try {
+            localStorage.setItem('shopwave_wishlist', JSON.stringify(state));
+        } catch (error) {
+            console.error("Failed to save wishlist to localStorage", error);
+        }
     }
-  }, [state]);
+  }, [state, isHydrated]);
 
   const isWishlisted = (id: number) => state.items.some(item => item.id === id);
 

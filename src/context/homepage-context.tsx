@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { createContext, useReducer, useEffect, type ReactNode } from 'react';
+import React, { createContext, useReducer, useEffect, type ReactNode, useState } from 'react';
 
 export interface Promotion {
   id: number;
@@ -74,6 +74,7 @@ export const HomepageContext = createContext<HomepageContextType | undefined>(un
 
 export const HomepageProvider = ({ children }: { children: ReactNode }) => {
   const [state, dispatch] = useReducer(homepageReducer, initialState);
+  const [isHydrated, setIsHydrated] = useState(false);
 
   useEffect(() => {
     try {
@@ -87,17 +88,21 @@ export const HomepageProvider = ({ children }: { children: ReactNode }) => {
       }
     } catch (error) {
       console.error("Failed to load homepage state from localStorage", error);
+    } finally {
+        setIsHydrated(true);
     }
   }, []);
 
   useEffect(() => {
-    try {
-      localStorage.setItem('shopwave_homepage', JSON.stringify(state));
-    } catch (error)
- {
-      console.error("Failed to save homepage state to localStorage", error);
+    if (isHydrated) {
+        try {
+          localStorage.setItem('shopwave_homepage', JSON.stringify(state));
+        } catch (error)
+     {
+          console.error("Failed to save homepage state to localStorage", error);
+        }
     }
-  }, [state]);
+  }, [state, isHydrated]);
 
   return (
     <HomepageContext.Provider value={{ state, dispatch }}>

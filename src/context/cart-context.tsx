@@ -2,7 +2,7 @@
 'use client';
 
 import type { Product, ProductVariant } from '@/lib/products';
-import React, { createContext, useReducer, useEffect, type ReactNode } from 'react';
+import React, { createContext, useReducer, useEffect, type ReactNode, useState } from 'react';
 
 export interface CartItem {
   id: number; // This is now productId_variantId
@@ -105,6 +105,7 @@ export const CartContext = createContext<CartContextType | undefined>(undefined)
 
 export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [state, dispatch] = useReducer(cartReducer, initialState);
+  const [isHydrated, setIsHydrated] = useState(false);
 
   useEffect(() => {
     try {
@@ -114,16 +115,20 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       }
     } catch (error) {
       console.error("Failed to load cart from localStorage", error);
+    } finally {
+      setIsHydrated(true);
     }
   }, []);
 
   useEffect(() => {
-    try {
-      localStorage.setItem('shopwave_cart', JSON.stringify(state));
-    } catch (error) {
-      console.error("Failed to save cart to localStorage", error);
+    if (isHydrated) {
+        try {
+            localStorage.setItem('shopwave_cart', JSON.stringify(state));
+        } catch (error) {
+            console.error("Failed to save cart to localStorage", error);
+        }
     }
-  }, [state]);
+  }, [state, isHydrated]);
 
   return (
     <CartContext.Provider value={{ state, dispatch }}>

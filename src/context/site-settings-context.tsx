@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { createContext, useReducer, useEffect, type ReactNode } from 'react';
+import React, { createContext, useReducer, useEffect, type ReactNode, useState } from 'react';
 
 type Link = { id: number; label: string; url: string };
 type FooterColumn = { id: number; title: string; links: Link[] };
@@ -136,6 +136,7 @@ export const SiteSettingsContext = createContext<SiteSettingsContextType | undef
 
 export const SiteSettingsProvider = ({ children }: { children: ReactNode }) => {
   const [state, dispatch] = useReducer(settingsReducer, initialState);
+  const [isHydrated, setIsHydrated] = useState(false);
 
   useEffect(() => {
     try {
@@ -149,16 +150,20 @@ export const SiteSettingsProvider = ({ children }: { children: ReactNode }) => {
       }
     } catch (error) {
       console.error("Failed to load site settings from localStorage", error);
+    } finally {
+        setIsHydrated(true);
     }
   }, []);
 
   useEffect(() => {
-    try {
-      localStorage.setItem('shopwave_settings', JSON.stringify(state));
-    } catch (error) {
-      console.error("Failed to save site settings to localStorage", error);
+    if (isHydrated) {
+        try {
+          localStorage.setItem('shopwave_settings', JSON.stringify(state));
+        } catch (error) {
+          console.error("Failed to save site settings to localStorage", error);
+        }
     }
-  }, [state]);
+  }, [state, isHydrated]);
 
   return (
     <SiteSettingsContext.Provider value={{ state, dispatch }}>

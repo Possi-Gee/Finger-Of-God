@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { createContext, useReducer, useEffect, type ReactNode } from 'react';
+import React, { createContext, useReducer, useEffect, type ReactNode, useState } from 'react';
 import type { CartItem } from './cart-context';
 
 export type OrderStatus = 'Pending' | 'Shipped' | 'Delivered' | 'Cancelled';
@@ -75,6 +75,7 @@ export const OrderContext = createContext<OrderContextType | undefined>(undefine
 
 export const OrderProvider = ({ children }: { children: ReactNode }) => {
   const [state, dispatch] = useReducer(orderReducer, initialState);
+  const [isHydrated, setIsHydrated] = useState(false);
 
   useEffect(() => {
     try {
@@ -84,16 +85,20 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
       }
     } catch (error) {
       console.error("Failed to load orders from localStorage", error);
+    } finally {
+        setIsHydrated(true);
     }
   }, []);
 
   useEffect(() => {
-    try {
-      localStorage.setItem('shopwave_orders', JSON.stringify(state));
-    } catch (error) {
-      console.error("Failed to save orders to localStorage", error);
+    if(isHydrated) {
+        try {
+            localStorage.setItem('shopwave_orders', JSON.stringify(state));
+        } catch (error) {
+            console.error("Failed to save orders to localStorage", error);
+        }
     }
-  }, [state]);
+  }, [state, isHydrated]);
 
   return (
     <OrderContext.Provider value={{ state, dispatch }}>
