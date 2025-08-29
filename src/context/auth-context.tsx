@@ -41,39 +41,45 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => unsubscribe();
   }, []);
 
-  const signup = async (email: string, pass: string, name: string) => {
+  const signup = async (email: string, pass: string, name: string): Promise<User | null> => {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
       await updateProfile(userCredential.user, { displayName: name });
       // To get the updated user info, we need to get the user object again
-      if (auth.currentUser) {
-        setUser({ ...auth.currentUser });
-        return auth.currentUser;
+      const currentUser = auth.currentUser;
+      if (currentUser) {
+        setUser({ ...currentUser }); // Force a state update with the new profile info
+        return currentUser;
       }
       return userCredential.user;
-    } catch (error) {
-      console.error("Signup error:", error);
-      throw error;
+    } catch (error: any) {
+      console.error("Signup error:", error.message);
+      // Let the UI handle the error message
+      throw new Error(error.message || 'An unexpected error occurred during sign up.');
     }
   };
 
-  const login = async (email: string, pass: string) => {
+  const login = async (email: string, pass: string): Promise<User | null> => {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, pass);
       return userCredential.user;
-    } catch (error) {
-      console.error("Login error:", error);
-      throw error;
+    } catch (error: any) {
+      console.error("Login error:", error.message);
+      if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+          throw new Error('Invalid email or password. Please try again.');
+      }
+      // Let the UI handle other errors
+      throw new Error(error.message || 'An unexpected error occurred during login.');
     }
   };
   
-  const loginWithGoogle = async () => {
+  const loginWithGoogle = async (): Promise<User | null> => {
     try {
         const result = await signInWithPopup(auth, googleProvider);
         return result.user;
-    } catch (error) {
-        console.error("Google login error:", error);
-        throw error;
+    } catch (error: any) {
+        console.error("Google login error:", error.message);
+        throw new Error(error.message || 'Failed to sign in with Google.');
     }
   }
 

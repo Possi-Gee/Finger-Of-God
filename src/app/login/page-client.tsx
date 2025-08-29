@@ -16,7 +16,7 @@ import { ShoppingBag, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/hooks/use-auth';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
@@ -57,6 +57,7 @@ export function LoginPageClient() {
   const { state: settings } = useSiteSettings();
   const { signup, login, loginWithGoogle } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
   const [error, setError] = useState<string | null>(null);
 
@@ -69,7 +70,8 @@ export function LoginPageClient() {
     try {
       await login(email, password);
       toast({ title: 'Login Successful', description: 'Welcome back!' });
-      router.push('/');
+      const redirectUrl = searchParams.get('redirect') || '/';
+      router.push(redirectUrl);
     } catch (e: any) {
       setError(e.message);
     }
@@ -80,7 +82,8 @@ export function LoginPageClient() {
     try {
       await signup(email, password, name);
       toast({ title: 'Signup Successful', description: 'Your account has been created.' });
-      router.push('/');
+      const redirectUrl = searchParams.get('redirect') || '/';
+      router.push(redirectUrl);
     } catch (e: any) {
       setError(e.message);
     }
@@ -91,7 +94,8 @@ export function LoginPageClient() {
     try {
         await loginWithGoogle();
         toast({ title: 'Login Successful', description: 'Welcome!' });
-        router.push('/');
+        const redirectUrl = searchParams.get('redirect') || '/';
+        router.push(redirectUrl);
     } catch(e: any) {
         setError(e.message);
     }
