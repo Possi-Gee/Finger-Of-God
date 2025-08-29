@@ -19,7 +19,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import Image from 'next/image';
 import { CreditCard, Truck, Smartphone, Store, MessageSquare, Loader2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import type { Order } from '@/context/order-context';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/hooks/use-auth';
@@ -77,6 +77,7 @@ export default function CheckoutPage() {
   const { items } = cartState;
   const { toast } = useToast();
   const router = useRouter();
+  const pathname = usePathname();
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'card' | 'mobile_money' | 'on_delivery'>('card');
   const [deliveryMethod, setDeliveryMethod] = useState<'delivery' | 'pickup'>('delivery');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -168,17 +169,17 @@ export default function CheckoutPage() {
   useEffect(() => {
     const hasClearedCart = sessionStorage.getItem('hasClearedCart');
 
-    if (router.pathname.startsWith('/orders/') && !hasClearedCart) {
+    if (pathname && pathname.startsWith('/orders/') && !hasClearedCart) {
       cartDispatch({ type: 'CLEAR_CART' });
       sessionStorage.setItem('hasClearedCart', 'true');
     }
 
     return () => {
-      if (router.pathname === '/checkout') {
+      if (pathname === '/checkout') {
         sessionStorage.removeItem('hasClearedCart');
       }
     };
-  }, [router.pathname, cartDispatch]);
+  }, [pathname, cartDispatch]);
 
 
   if (items.length === 0) {
@@ -579,5 +580,7 @@ export default function CheckoutPage() {
     </div>
   );
 }
+
+    
 
     
