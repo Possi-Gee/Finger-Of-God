@@ -8,6 +8,7 @@ export type OrderStatus = 'Pending' | 'Shipped' | 'Delivered' | 'Cancelled';
 
 export type ShippingAddress = {
     fullName: string;
+    email: string;
     address: string;
     city: string;
     state: string;

@@ -22,11 +22,13 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Order } from '@/context/order-context';
 import { Textarea } from '@/components/ui/textarea';
+import { sendOrderConfirmationEmail } from '@/app/actions/send-email';
 
 const checkoutSchema = z.discriminatedUnion("deliveryMethod", [
     z.object({
         deliveryMethod: z.literal('delivery'),
         fullName: z.string().min(3, 'Full name is required'),
+        email: z.string().email('A valid email is required'),
         address: z.string().min(5, 'Address is required'),
         city: z.string().min(2, 'City is required'),
         state: z.string().min(2, 'State is required'),
@@ -36,6 +38,7 @@ const checkoutSchema = z.discriminatedUnion("deliveryMethod", [
     z.object({
         deliveryMethod: z.literal('pickup'),
         fullName: z.string().optional(),
+        email: z.string().email('A valid email is required'),
         address: z.string().optional(),
         city: z.string().optional(),
         state: z.string().optional(),
@@ -83,6 +86,7 @@ export default function CheckoutPage() {
       paymentMethod: 'card',
       deliveryMethod: 'delivery',
       fullName: '',
+      email: '',
       address: '',
       city: '',
       state: '',
@@ -102,8 +106,8 @@ export default function CheckoutPage() {
   const deliveryFee = deliveryMethod === 'delivery' && subtotal > 0 ? settings.shippingFee : 0;
   const total = subtotal + tax + deliveryFee;
 
-  const onSubmit = (data: CheckoutFormValues) => {
-    const { paymentMethod, deliveryMethod, orderNotes } = data;
+  const onSubmit = async (data: CheckoutFormValues) => {
+    const { paymentMethod, deliveryMethod, orderNotes, email } = data;
     
     const newOrder: Order = {
       id: Date.now(),
@@ -114,13 +118,14 @@ export default function CheckoutPage() {
       shippingFee: deliveryFee,
       total,
       shippingAddress: data.deliveryMethod === 'delivery' ? { 
-        fullName: data.fullName!, 
+        fullName: data.fullName!,
+        email: data.email!,
         address: data.address!, 
         city: data.city!, 
         state: data.state!, 
         zip: data.zip!, 
         country: data.country! 
-      } : { fullName: 'In-store Pickup', address: '', city: '', state: '', zip: '', country: '' },
+      } : { fullName: data.fullName || 'In-store Pickup', email: data.email!, address: '', city: '', state: '', zip: '', country: '' },
       paymentMethod,
       deliveryMethod,
       status: 'Pending',
@@ -128,11 +133,22 @@ export default function CheckoutPage() {
     };
 
     orderDispatch({ type: 'ADD_ORDER', payload: newOrder });
+    
+    try {
+        await sendOrderConfirmationEmail({ order: newOrder, toEmail: email });
+        toast({
+            title: 'Order Placed!',
+            description: 'Thank you for your purchase. A confirmation email has been sent.',
+        });
+    } catch (error) {
+        console.error('Failed to send email:', error);
+        toast({
+            title: 'Order Placed (Email Failed)',
+            description: 'Your order was placed successfully, but we failed to send a confirmation email.',
+            variant: 'destructive',
+        });
+    }
 
-    toast({
-      title: 'Order Placed!',
-      description: 'Thank you for your purchase. A confirmation email has been sent.',
-    });
     cartDispatch({ type: 'CLEAR_CART' });
     router.push(`/orders/${newOrder.id}`);
   };
@@ -194,19 +210,18 @@ export default function CheckoutPage() {
                   )}
                  />
               </CardContent>
-            </Card>
+            </Card>>
 
-            {deliveryMethod === 'delivery' && (
-              <Card>
+            <Card>
                 <CardHeader>
-                  <CardTitle>Shipping Address</CardTitle>
+                  <CardTitle>Contact Information</CardTitle>
                 </CardHeader>
-                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <CardContent className="space-y-4">
                   <FormField
                     control={form.control}
                     name="fullName"
                     render={({ field }) => (
-                      <FormItem className="md:col-span-2">
+                      <FormItem>
                         <FormLabel>Full Name</FormLabel>
                         <FormControl>
                           <Input placeholder="John Doe" {...field} />
@@ -215,6 +230,28 @@ export default function CheckoutPage() {
                       </FormItem>
                     )}
                   />
+                  <FormField
+                      control={form.control}
+                      name="email"
+                      render={({ field }) => (
+                          <FormItem>
+                              <FormLabel>Email</FormLabel>
+                              <FormControl>
+                                  <Input placeholder="you@example.com" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                          </FormItem>
+                      )}
+                  />
+                </CardContent>
+            </Card>
+
+            {deliveryMethod === 'delivery' && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Shipping Address</CardTitle>
+                </CardHeader>
+                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
                     name="address"
