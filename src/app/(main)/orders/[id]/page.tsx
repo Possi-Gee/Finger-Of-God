@@ -12,7 +12,6 @@ import Link from 'next/link';
 import { ArrowLeft, CheckCircle, Package, Truck, User, Store, CircleDot, FileText, MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useMemo } from 'react';
-import { NotificationPrompt } from '@/components/notification-prompt';
 
 const getStatusClass = (status: Order['status']) => {
   switch (status) {
@@ -132,9 +131,6 @@ export default function OrderDetailPage() {
                 </div>
             </div>
         </CardHeader>
-         <CardContent>
-          <NotificationPrompt />
-        </CardContent>
       </Card>
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

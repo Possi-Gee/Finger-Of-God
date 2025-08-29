@@ -131,7 +131,7 @@ export default function CheckoutPage() {
 
     toast({
       title: 'Order Placed!',
-      description: 'Thank you for your purchase. Your order is being processed.',
+      description: 'Thank you for your purchase. A confirmation email has been sent.',
     });
     cartDispatch({ type: 'CLEAR_CART' });
     router.push(`/orders/${newOrder.id}`);
