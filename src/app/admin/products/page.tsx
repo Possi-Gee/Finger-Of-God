@@ -9,6 +9,10 @@ import { z } from 'zod';
 import { categories, type Product } from '@/lib/products';
 import { useProduct } from '@/hooks/use-product';
 import { generateProductDescription } from '@/ai/flows/generate-product-description';
+import { sendProductUpdateEmail } from '@/app/actions/send-email';
+import { useAuth } from '@/hooks/use-auth';
+import { useWishlist } from '@/hooks/use-wishlist';
+import { useSiteSettings } from '@/hooks/use-site-settings';
 
 import { Button, buttonVariants } from '@/components/ui/button';
 import {
@@ -52,6 +56,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
+import type { User } from 'firebase/auth';
 
 const variantSchema = z.object({
   id: z.number().optional(),
@@ -75,6 +80,22 @@ const productSchema = z.object({
 
 type ProductFormValues = z.infer<typeof productSchema>;
 
+// This function is hypothetical. In a real app, you'd fetch this from your database.
+// For this prototype, we'll simulate fetching users who have a specific product in their wishlist.
+const getUsersWithProductInWishlist = (productId: number, allUsers: User[], wishlistState: any): User[] => {
+    // This is a simplified simulation. A real implementation would need a backend service
+    // to query all users' wishlists. Here we are limited to the current user's wishlist state.
+    const { isWishlisted } = wishlistState;
+    // We can't check other users' wishlists, so for demonstration, we will check
+    // if the current logged-in user has it in their wishlist.
+    const currentUser = getAuth().currentUser;
+    if (currentUser && isWishlisted(productId)) {
+        return [currentUser];
+    }
+    return [];
+}
+
+
 export default function AdminProductsPage() {
   const { state: productState, dispatch: productDispatch } = useProduct();
   const { products } = productState;
@@ -83,6 +104,9 @@ export default function AdminProductsPage() {
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
   const { toast } = useToast();
+  const { user } = useAuth(); // We need the current admin/user
+  const wishlistState = useWishlist();
+  const { state: siteSettings } = useSiteSettings();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('All');
@@ -310,7 +334,7 @@ export default function AdminProductsPage() {
   };
 
 
-  const onSubmit = (data: ProductFormValues) => {
+  const onSubmit = async (data: ProductFormValues) => {
     const productData = {
       ...data,
       variants: data.variants.map(v => ({...v, id: v.id || Date.now() + Math.random()}))
@@ -326,6 +350,28 @@ export default function AdminProductsPage() {
         title: 'Product Updated',
         description: `${data.name} has been successfully updated.`,
       });
+      
+      // Get users and send emails
+      // In a real app, this would be a more complex query to a user database
+      const usersToNotify = wishlistState.items
+        .filter(item => item.id === updatedProduct.id)
+        .map(() => user) // Simulate finding the user, in reality, you'd have user objects
+        .filter((u): u is User => u !== null);
+        
+      if(user) { // For demo, we'll assume the current admin is the user to notify
+        const isWishlisted = wishlistState.isWishlisted(updatedProduct.id);
+        if (isWishlisted) {
+            console.log(`Sending update email to ${user.email} for product ${updatedProduct.name}`);
+            await sendProductUpdateEmail({
+                product: updatedProduct,
+                user: user,
+                appName: siteSettings.appName,
+                logoUrl: siteSettings.logoUrl
+            });
+        }
+      }
+
+
     } else {
       const newProduct: Product = {
         id: Date.now(),
@@ -790,5 +836,3 @@ export default function AdminProductsPage() {
     </div>
   );
 }
-
-    
