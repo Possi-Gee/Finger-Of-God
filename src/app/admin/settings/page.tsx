@@ -123,9 +123,9 @@ function GeneralSettingsForm({ onSubmit, defaultValues }: { onSubmit: (data: z.i
             {errors.fromEmail && <p className="text-sm text-destructive mt-1">{errors.fromEmail.message}</p>}
              <Alert className="mt-2">
                 <Mail className="h-4 w-4" />
-                <AlertTitle>Important!</AlertTitle>
+                <AlertTitle>Important: Sending Email</AlertTitle>
                 <AlertDescription>
-                  This email must be from a domain you have verified in your Resend account. Using an unverified domain (like @gmail.com) will cause emails to fail.
+                  For testing, you can use `onboarding@resend.dev` to send emails **to your own verified email address only**. To send emails to your customers, you must use an email from a custom domain that you have verified in your Resend account.
                 </AlertDescription>
             </Alert>
           </div>
