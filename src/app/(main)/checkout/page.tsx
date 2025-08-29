@@ -153,18 +153,24 @@ export default function CheckoutPage() {
 
     orderDispatch({ type: 'ADD_ORDER', payload: newOrder });
     
-    try {
-        await sendOrderConfirmationEmail({ order: newOrder, toEmail: email });
-        toast({
-            title: 'Order Placed!',
-            description: 'Thank you for your purchase. A confirmation email has been sent.',
-        });
-    } catch (error: any) {
-        console.error('Failed to send email:', error);
+    const emailResult = await sendOrderConfirmationEmail({ 
+        order: newOrder, 
+        toEmail: email,
+        appName: settings.appName,
+        logoUrl: settings.logoUrl
+    });
+
+    if (emailResult.error) {
+        console.error('Failed to send email:', emailResult.error);
         toast({
             title: 'Order Placed (Email Failed)',
-            description: `Your order was placed, but we couldn't send the confirmation email. Error: ${error.message}`,
+            description: `Your order was placed, but we couldn't send the confirmation email. Error: ${emailResult.error.message}`,
             variant: 'destructive',
+        });
+    } else {
+         toast({
+            title: 'Order Placed!',
+            description: 'Thank you for your purchase. A confirmation email has been sent.',
         });
     }
 
