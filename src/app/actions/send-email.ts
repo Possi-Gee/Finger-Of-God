@@ -31,7 +31,6 @@ interface SendOrderStatusUpdateParams {
 }
 
 export const sendOrderConfirmationEmail = async ({ order, toEmail, appName, logoUrl }: SendEmailParams) => {
-
     if (!process.env.RESEND_API_KEY) {
         const errorMessage = 'Email service is not configured: RESEND_API_KEY is missing.';
         console.error(errorMessage);
