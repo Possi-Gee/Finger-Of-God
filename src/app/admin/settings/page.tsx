@@ -125,7 +125,7 @@ function GeneralSettingsForm({ onSubmit, defaultValues }: { onSubmit: (data: z.i
                 <Mail className="h-4 w-4" />
                 <AlertTitle>Important!</AlertTitle>
                 <AlertDescription>
-                  This email must be from a domain you have verified in your Resend account. Using an unverified domain will cause emails to fail.
+                  This email must be from a domain you have verified in your Resend account. Using an unverified domain (like @gmail.com) will cause emails to fail.
                 </AlertDescription>
             </Alert>
           </div>

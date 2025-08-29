@@ -33,7 +33,20 @@ interface SendOrderStatusUpdateParams {
     logoUrl?: string;
 }
 
+const checkFromAddress = (fromEmail: string) => {
+    const freeProviders = ['@gmail.com', '@yahoo.com', '@hotmail.com', '@outlook.com'];
+    if (freeProviders.some(provider => fromEmail.endsWith(provider))) {
+        const errorMessage = `Email service does not support free email providers like Gmail for the 'From' address. Please use a custom domain you have verified in Resend.`;
+        console.error(errorMessage);
+        return { data: null, error: { message: errorMessage, name: 'Configuration Error' } };
+    }
+    return null;
+}
+
 export const sendOrderConfirmationEmail = async ({ order, toEmail, fromEmail, appName, logoUrl }: SendOrderConfirmationEmailParams) => {
+    const fromAddressError = checkFromAddress(fromEmail);
+    if (fromAddressError) return fromAddressError;
+
     if (!process.env.RESEND_API_KEY) {
         const errorMessage = 'Email service is not configured: RESEND_API_KEY is missing.';
         console.error(errorMessage);
@@ -64,6 +77,9 @@ export const sendOrderConfirmationEmail = async ({ order, toEmail, fromEmail, ap
 };
 
 export const sendProductUpdateEmail = async ({ product, user, fromEmail, appName, logoUrl }: SendProductUpdateParams) => {
+    const fromAddressError = checkFromAddress(fromEmail);
+    if (fromAddressError) return fromAddressError;
+
     if (!process.env.RESEND_API_KEY) {
         const errorMessage = 'Email service is not configured: RESEND_API_KEY is missing.';
         console.error(errorMessage);
@@ -98,6 +114,9 @@ export const sendProductUpdateEmail = async ({ product, user, fromEmail, appName
 };
 
 export const sendOrderStatusUpdateEmail = async ({ order, status, fromEmail, appName, logoUrl }: SendOrderStatusUpdateParams) => {
+    const fromAddressError = checkFromAddress(fromEmail);
+    if (fromAddressError) return fromAddressError;
+
     if (!process.env.RESEND_API_KEY) {
         const errorMessage = 'Email service is not configured: RESEND_API_KEY is missing.';
         console.error(errorMessage);
