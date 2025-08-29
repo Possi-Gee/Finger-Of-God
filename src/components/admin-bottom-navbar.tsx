@@ -11,6 +11,7 @@ const navItems = [
   { href: '/admin/orders', label: 'Orders', icon: ShoppingCart },
   { href: '/admin/products', label: 'Products', icon: Package },
   { href: '/admin/settings', label: 'Settings', icon: Settings },
+  { href: '/', label: 'Shop', icon: Home },
 ];
 
 export function AdminBottomNavbar() {
@@ -18,9 +19,9 @@ export function AdminBottomNavbar() {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 max-w-screen-2xl items-center justify-around">
+      <div className="container grid h-16 grid-cols-5 max-w-screen-2xl items-center justify-around">
         {navItems.map((item) => {
-           const isActive = pathname.startsWith(item.href);
+           const isActive = (item.href === '/admin/dashboard' && pathname === item.href) || (item.href !== '/admin/dashboard' && item.href !== '/' && pathname.startsWith(item.href));
 
            return (
             <Link
