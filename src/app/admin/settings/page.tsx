@@ -10,8 +10,10 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Trash2, PlusCircle, Palette, Text, Link as LinkIcon, Percent, Landmark, Image as ImageIcon } from 'lucide-react';
+import { Trash2, PlusCircle, Palette, Text, Link as LinkIcon, Percent, Landmark, Image as ImageIcon, Home, Edit } from 'lucide-react';
 import Image from 'next/image';
+import Link from 'next/link';
+import { ProfileListItem } from '@/components/profile-list-item';
 
 // Schemas for each form section
 const generalSchema = z.object({ 
@@ -79,6 +81,7 @@ export default function SiteSettingsPage() {
       <GeneralSettingsForm onSubmit={createSubmitHandler('UPDATE_GENERAL_SETTINGS', 'General Settings Updated')} defaultValues={{ appName: state.appName, logoUrl: state.logoUrl }} />
       <CommerceSettingsForm onSubmit={createSubmitHandler('UPDATE_COMMERCE', 'Commerce Settings Updated')} defaultValues={{ taxRate: state.taxRate, shippingFee: state.shippingFee }} />
       <ThemeSettingsForm onSubmit={createSubmitHandler('UPDATE_THEME', 'Theme Updated')} defaultValues={state.theme} />
+      <ContentManagementCard />
       <FooterSettingsForm onSubmit={createSubmitHandler('UPDATE_FOOTER', 'Footer Updated')} defaultValues={state.footer} />
 
     </div>
@@ -180,6 +183,20 @@ function ThemeSettingsForm({ onSubmit, defaultValues }: { onSubmit: (data: z.inf
       </Card>
     </form>
   );
+}
+
+function ContentManagementCard() {
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2"><Edit /> Content Management</CardTitle>
+                <CardDescription>Manage the static content and layouts of your site.</CardDescription>
+            </CardHeader>
+            <CardContent className="divide-y p-0">
+                <ProfileListItem href="/admin/homepage-editor" icon={Home} label="Homepage Editor" />
+            </CardContent>
+        </Card>
+    );
 }
 
 function FooterSettingsForm({ onSubmit, defaultValues }: { onSubmit: (data: z.infer<typeof footerSchema>) => void; defaultValues: FooterSettings }) {

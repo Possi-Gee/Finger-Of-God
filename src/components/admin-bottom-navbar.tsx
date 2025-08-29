@@ -10,7 +10,6 @@ const navItems = [
   { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/admin/orders', label: 'Orders', icon: ShoppingCart },
   { href: '/admin/products', label: 'Products', icon: Package },
-  { href: '/admin/homepage-editor', label: 'Homepage', icon: Home },
   { href: '/admin/settings', label: 'Settings', icon: Settings },
 ];
 

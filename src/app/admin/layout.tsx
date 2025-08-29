@@ -41,11 +41,6 @@ export default function AdminLayout({
       icon: Package,
     },
     {
-      href: '/admin/homepage-editor',
-      label: 'Homepage',
-      icon: Home,
-    },
-    {
       href: '/admin/settings',
       label: 'Settings',
       icon: Settings,
