@@ -40,6 +40,11 @@ export default function AdminLayout({
       label: 'Products',
       icon: Package,
     },
+     {
+      href: '/admin/homepage-editor',
+      label: 'Homepage',
+      icon: Home,
+    },
     {
       href: '/admin/settings',
       label: 'Settings',
@@ -52,12 +57,22 @@ export default function AdminLayout({
     },
   ];
 
+  const getIsActive = (href: string) => {
+    if (href === '/admin/dashboard') {
+      return pathname === href;
+    }
+    if(href === '/'){
+        return false;
+    }
+    return pathname.startsWith(href);
+  }
+
   return (
     <SidebarProvider>
       <div className="md:hidden">
         <AdminBottomNavbar />
       </div>
-       <div className="hidden md:block">
+      <div className="hidden md:block">
         <Sidebar>
             <SidebarContent>
             <SidebarGroup>
@@ -66,7 +81,7 @@ export default function AdminLayout({
                     <SidebarMenuItem key={item.href}>
                     <SidebarMenuButton
                         asChild
-                        isActive={pathname === item.href}
+                        isActive={getIsActive(item.href)}
                         tooltip={{ children: item.label }}
                     >
                         <Link href={item.href}>
