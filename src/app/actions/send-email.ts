@@ -16,7 +16,6 @@ export const sendOrderConfirmationEmail = async ({ order, toEmail, appName, logo
     if (!process.env.RESEND_API_KEY) {
         const errorMessage = 'Email service is not configured: RESEND_API_KEY is missing.';
         console.error(errorMessage);
-        // We will not throw here to allow the order to be placed, but we'll show an error toast.
         return { data: null, error: { message: errorMessage, name: 'Configuration Error' } };
     }
     
