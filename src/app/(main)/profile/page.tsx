@@ -33,8 +33,10 @@ export default function ProfilePage() {
         const receivedToken = await requestNotificationPermission();
         if (receivedToken) setToken(receivedToken);
     } else if (permission === 'denied') {
-        setNotificationError("Notifications are blocked. Please enable them in your browser settings.");
+        setNotificationError("Notifications are blocked. Please enable them in your browser settings to receive updates.");
     } else {
+        // This is the 'default' state, where the user hasn't made a choice yet.
+        // requestNotificationPermission will trigger the browser prompt.
         const receivedToken = await requestNotificationPermission();
         if (receivedToken) {
             setToken(receivedToken);
@@ -43,12 +45,9 @@ export default function ProfilePage() {
               description: 'You will now receive updates about your orders.',
             });
         } else {
-            // This case handles when permission is denied by the user in the prompt.
-            toast({
-              title: 'Notifications Denied',
-              description: 'You have not granted permission for notifications.',
-              variant: 'destructive',
-            });
+            // This case handles when the user denies permission in the prompt.
+            // We set an error message to give immediate feedback.
+             setNotificationError("You have denied permission for notifications. You can enable them later in your browser settings.");
         }
     }
   };
@@ -112,7 +111,7 @@ export default function ProfilePage() {
                 {notificationError && (
                   <Alert variant="destructive" className="mt-4">
                     <AlertTriangle className="h-4 w-4" />
-                    <AlertTitle>Permission Denied</AlertTitle>
+                    <AlertTitle>Permission Required</AlertTitle>
                     <AlertDescription>
                       {notificationError}
                     </AlertDescription>
@@ -120,9 +119,9 @@ export default function ProfilePage() {
                 )}
                 {token && (
                   <Alert className="mt-4">
-                    <AlertTitle>Your Notification Token</AlertTitle>
+                    <AlertTitle>Notifications are Active</AlertTitle>
                     <AlertDescription className="break-all text-xs">
-                      {token}
+                      Your device is registered for notifications. Token: {token}
                     </AlertDescription>
                   </Alert>
                 )}
