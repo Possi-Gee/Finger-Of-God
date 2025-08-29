@@ -2,28 +2,15 @@
 'use client';
 
 import Link from 'next/link';
-import { Package, ShoppingCart, Heart, Sun, Moon, User, Bot, Wrench } from 'lucide-react';
+import { Package, Sun, Moon, Wrench } from 'lucide-react';
 import { useTheme } from '@/context/theme-provider';
 import { Button } from '@/components/ui/button';
-import { useCart } from '@/hooks/use-cart';
-import { useWishlist } from '@/hooks/use-wishlist';
 import { useSiteSettings } from '@/hooks/use-site-settings';
-import { useEffect, useState } from 'react';
 import Image from 'next/image';
 
 export function Header() {
   const { theme, setTheme } = useTheme();
-  const { state: cartState } = useCart();
-  const { state: wishlistState } = useWishlist();
   const { state: settings } = useSiteSettings();
-  const [isClient, setIsClient] = useState(false);
-
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-
-  const totalCartItems = cartState.items.reduce((sum, item) => sum + item.quantity, 0);
-  const totalWishlistItems = wishlistState.items.length;
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -36,45 +23,12 @@ export function Header() {
           )}
            <span className="font-bold sm:inline-block">{settings.appName}</span>
         </Link>
-        <nav className="flex items-center gap-4 text-sm lg:gap-6">
-        </nav>
         <div className="flex flex-1 items-center justify-end space-x-2">
            <Button variant="ghost" size="icon" asChild>
-            <Link href="/admin/orders" aria-label="Admin Panel">
+            <Link href="/admin/dashboard" aria-label="Admin Panel">
               <Wrench className="h-5 w-5" />
             </Link>
           </Button>
-          <div className="hidden md:flex items-center space-x-2">
-             <Button variant="ghost" size="icon" asChild>
-              <Link href="/wishlist" aria-label="Wishlist">
-                <div className="relative">
-                  <Heart className="h-5 w-5" />
-                  {isClient && totalWishlistItems > 0 && (
-                    <span className="absolute -right-2 -top-2 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
-                      {totalWishlistItems}
-                    </span>
-                  )}
-                </div>
-              </Link>
-            </Button>
-            <Button variant="ghost" size="icon" asChild>
-              <Link href="/cart" aria-label="Shopping Cart">
-                <div className="relative">
-                  <ShoppingCart className="h-5 w-5" />
-                  {isClient && totalCartItems > 0 && (
-                    <span className="absolute -right-2 -top-2 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
-                      {totalCartItems}
-                    </span>
-                  )}
-                </div>
-              </Link>
-            </Button>
-            <Button variant="ghost" size="icon" asChild>
-              <Link href="/profile" aria-label="Profile">
-                <User className="h-5 w-5" />
-              </Link>
-            </Button>
-          </div>
           <Button
             variant="ghost"
             size="icon"
