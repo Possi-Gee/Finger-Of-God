@@ -18,38 +18,30 @@ export default function ProfilePage() {
   const [token, setToken] = useState<string | null>(null);
 
   const handleEnableNotifications = async () => {
-    const permission = await Notification.requestPermission();
-    if (permission === 'granted') {
-      try {
-        const receivedToken = await requestNotificationPermission();
-        if (receivedToken) {
-          setToken(receivedToken);
-          console.log('FCM Token:', receivedToken);
-          toast({
-            title: 'Notifications Enabled!',
-            description: 'You will now receive updates about your orders.',
-          });
-        } else {
-            toast({
-                title: 'Error',
-                description: 'Could not retrieve notification token. Please try again.',
-                variant: 'destructive',
-            });
-        }
-      } catch (error) {
-         console.error('Error getting notification token:', error);
-         toast({
-           title: 'Notification Error',
-           description: 'An error occurred while enabling notifications. Please check the console for details.',
-           variant: 'destructive',
-         });
+    try {
+      const receivedToken = await requestNotificationPermission();
+      if (receivedToken) {
+        setToken(receivedToken);
+        console.log('FCM Token:', receivedToken);
+        toast({
+          title: 'Notifications Enabled!',
+          description: 'You will now receive updates about your orders.',
+        });
+      } else {
+        // This case handles when permission is denied by the user.
+        toast({
+          title: 'Notifications Denied',
+          description: 'You have not granted permission for notifications.',
+          variant: 'destructive',
+        });
       }
-    } else {
+    } catch (error) {
+       console.error('Error getting notification token:', error);
        toast({
-        title: 'Notifications Denied',
-        description: 'You have not granted permission for notifications.',
-        variant: 'destructive',
-      });
+         title: 'Notification Error',
+         description: 'An error occurred while enabling notifications. Please check the console for details.',
+         variant: 'destructive',
+       });
     }
   };
 

@@ -11,9 +11,8 @@ export const requestNotificationPermission = async () => {
         const permission = await Notification.requestPermission();
         if (permission === 'granted') {
             console.log('Notification permission granted.');
-            // TODO: Get the token here and return it
             const token = await getToken(messaging, { 
-                vapidKey: 'BOWBmbyjkOMXfuzFtb-8u2J16pyUQJeWzhq7kr3U5JGN7-WvZxD85o0pybkzHl8HFzsyeKV3OKE32gR8SEAKTK4' // IMPORTANT: Replace with your actual VAPID key
+                vapidKey: 'BOWBmbyjkOMXfuzFtb-8u2J16pyUQJeWzhq7kr3U5JGN7-WvZxD85o0pybkzHl8HFzsyeKV3OKE32gR8SEAKTK4'
             });
             
             if (token) {
@@ -29,6 +28,6 @@ export const requestNotificationPermission = async () => {
         }
     } catch (error) {
         console.error('An error occurred while requesting permission:', error);
-        return null;
+        throw error; // Re-throw the error to be caught by the caller
     }
 };
