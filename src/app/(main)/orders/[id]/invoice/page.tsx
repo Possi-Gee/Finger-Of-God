@@ -32,10 +32,6 @@ export default function InvoicePage() {
         return orderState.orders.find((o) => o.id.toString() === id);
     }, [id, orderState.orders]);
 
-    const handlePrint = () => {
-        window.print();
-    };
-
     if (!order) {
         return (
             <div className="container mx-auto px-4 py-8 text-center">
@@ -55,7 +51,7 @@ export default function InvoicePage() {
                     <Button variant="ghost" onClick={() => router.back()}>
                         <ArrowLeft className="mr-2" /> Back to Order Details
                     </Button>
-                    <Button onClick={handlePrint}>
+                    <Button onClick={() => window.print()}>
                         <Printer className="mr-2" /> Print / Save as PDF
                     </Button>
                 </div>
