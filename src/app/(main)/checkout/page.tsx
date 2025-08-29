@@ -79,6 +79,7 @@ export default function CheckoutPage() {
   const router = useRouter();
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'card' | 'mobile_money' | 'on_delivery'>('card');
   const [deliveryMethod, setDeliveryMethod] = useState<'delivery' | 'pickup'>('delivery');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
 
   const form = useForm<CheckoutFormValues>({
@@ -115,6 +116,7 @@ export default function CheckoutPage() {
   const total = subtotal + tax + deliveryFee;
 
   const onSubmit = async (data: CheckoutFormValues) => {
+    setIsSubmitting(true);
     const { paymentMethod, deliveryMethod, orderNotes, email } = data;
     
     if (!user) {
@@ -124,6 +126,7 @@ export default function CheckoutPage() {
         variant: 'destructive'
       })
       router.push(`/login?redirect=/checkout`);
+      setIsSubmitting(false);
       return;
     }
 
@@ -160,6 +163,23 @@ export default function CheckoutPage() {
     cartDispatch({ type: 'CLEAR_CART' });
     router.push(`/orders/${newOrder.id}`);
   };
+
+  // Only clear the cart once after successful submission
+  useEffect(() => {
+    const hasClearedCart = sessionStorage.getItem('hasClearedCart');
+
+    if (router.pathname.startsWith('/orders/') && !hasClearedCart) {
+      cartDispatch({ type: 'CLEAR_CART' });
+      sessionStorage.setItem('hasClearedCart', 'true');
+    }
+
+    return () => {
+      if (router.pathname === '/checkout') {
+        sessionStorage.removeItem('hasClearedCart');
+      }
+    };
+  }, [router.pathname, cartDispatch]);
+
 
   if (items.length === 0) {
     return (
@@ -547,8 +567,8 @@ export default function CheckoutPage() {
                 </div>
               </CardContent>
               <CardFooter>
-                 <Button type="submit" className="w-full" size="lg" disabled={items.length === 0 || form.formState.isSubmitting}>
-                   {form.formState.isSubmitting && <Loader2 className="mr-2 animate-spin"/>}
+                 <Button type="submit" className="w-full" size="lg" disabled={items.length === 0 || isSubmitting}>
+                   {isSubmitting && <Loader2 className="mr-2 animate-spin"/>}
                    Place Order
                  </Button>
               </CardFooter>
@@ -559,3 +579,5 @@ export default function CheckoutPage() {
     </div>
   );
 }
+
+    
