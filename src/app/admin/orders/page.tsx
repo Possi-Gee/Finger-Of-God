@@ -10,6 +10,9 @@ import { Badge } from '@/components/ui/badge';
 import { MoreHorizontal, ShoppingCart } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
+import { sendOrderStatusUpdateEmail } from '@/app/actions/send-email';
+import { useSiteSettings } from '@/hooks/use-site-settings';
+import { useToast } from '@/hooks/use-toast';
 
 const getStatusClass = (status: Order['status']) => {
   switch (status) {
@@ -25,11 +28,33 @@ const statuses: OrderStatus[] = ['Pending', 'Shipped', 'Delivered', 'Cancelled']
 
 export default function AdminOrdersPage() {
   const { state, dispatch } = useOrders();
+  const { state: siteSettings } = useSiteSettings();
   const { orders } = state;
   const router = useRouter();
+  const { toast } = useToast();
 
-  const handleStatusChange = (orderId: number, status: OrderStatus) => {
-    dispatch({ type: 'UPDATE_ORDER_STATUS', payload: { id: orderId, status } });
+  const handleStatusChange = async (order: Order, status: OrderStatus) => {
+    dispatch({ type: 'UPDATE_ORDER_STATUS', payload: { id: order.id, status } });
+    
+    const emailResult = await sendOrderStatusUpdateEmail({
+        order,
+        status,
+        appName: siteSettings.appName,
+        logoUrl: siteSettings.logoUrl
+    });
+
+    if (emailResult.error) {
+        toast({
+            title: 'Status Updated (Email Failed)',
+            description: `Order #${order.id} status changed, but notification email failed: ${emailResult.error.message}`,
+            variant: 'destructive',
+        });
+    } else {
+        toast({
+            title: 'Order Status Updated',
+            description: `Order #${order.id} is now ${status}. Customer notified.`
+        });
+    }
   };
   
   const handleViewOrder = (orderId: number) => {
@@ -82,7 +107,7 @@ export default function AdminOrdersPage() {
                         {statuses.map(status => (
                             <DropdownMenuItem 
                                 key={status} 
-                                onClick={() => handleStatusChange(order.id, status)}
+                                onClick={() => handleStatusChange(order, status)}
                                 disabled={order.status === status}
                             >
                                 Mark as {status}

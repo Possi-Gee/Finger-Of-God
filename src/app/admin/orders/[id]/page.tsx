@@ -13,6 +13,8 @@ import { cn } from '@/lib/utils';
 import { useMemo } from 'react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
+import { sendOrderStatusUpdateEmail } from '@/app/actions/send-email';
+import { useSiteSettings } from '@/hooks/use-site-settings';
 
 const getStatusClass = (status: Order['status']) => {
   switch (status) {
@@ -45,19 +47,36 @@ export default function AdminOrderDetailPage() {
   const router = useRouter();
   const { id } = params;
   const { state, dispatch } = useOrders();
+  const { state: siteSettings } = useSiteSettings();
   const { toast } = useToast();
 
   const order = useMemo(() => {
     return state.orders.find((o) => o.id.toString() === id);
   }, [id, state.orders]);
 
-  const handleStatusChange = (status: OrderStatus) => {
+  const handleStatusChange = async (status: OrderStatus) => {
     if (order) {
         dispatch({ type: 'UPDATE_ORDER_STATUS', payload: { id: order.id, status } });
-        toast({
-            title: 'Order Status Updated',
-            description: `Order #${order.id} has been marked as ${status}.`
-        })
+        
+        const emailResult = await sendOrderStatusUpdateEmail({
+            order,
+            status,
+            appName: siteSettings.appName,
+            logoUrl: siteSettings.logoUrl
+        });
+
+        if (emailResult.error) {
+            toast({
+                title: 'Status Updated (Email Failed)',
+                description: `Order #${order.id} status changed, but notification email failed: ${emailResult.error.message}`,
+                variant: 'destructive',
+            });
+        } else {
+            toast({
+                title: 'Order Status Updated',
+                description: `Order #${order.id} is now ${status}. Customer notified.`
+            });
+        }
     }
   };
   
@@ -178,6 +197,9 @@ export default function AdminOrderDetailPage() {
                             <p className="text-muted-foreground">This order is for in-store pickup.</p>
                         </div>
                     )}
+                     <Separator className="my-4" />
+                      <h4 className="font-semibold">Contact Email</h4>
+                      <p className="text-muted-foreground">{order.shippingAddress.email}</p>
                      <Separator className="my-4" />
                       <h4 className="font-semibold">Payment Information</h4>
                      <p className="text-muted-foreground">Method: {getPaymentMethodName(order.paymentMethod)}</p>
