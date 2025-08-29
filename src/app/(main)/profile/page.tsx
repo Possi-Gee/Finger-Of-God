@@ -32,23 +32,25 @@ export default function ProfilePage() {
     if (permission === 'granted') {
         const receivedToken = await requestNotificationPermission();
         if (receivedToken) setToken(receivedToken);
-    } else if (permission === 'denied') {
+        return;
+    }
+
+    if (permission === 'denied') {
         setNotificationError("Notifications are blocked. Please enable them in your browser settings to receive updates.");
+        return;
+    }
+    
+    // This will now only run if permission is 'default'
+    const receivedToken = await requestNotificationPermission();
+    if (receivedToken) {
+        setToken(receivedToken);
+        toast({
+          title: 'Notifications Enabled!',
+          description: 'You will now receive updates about your orders.',
+        });
     } else {
-        // This is the 'default' state, where the user hasn't made a choice yet.
-        // requestNotificationPermission will trigger the browser prompt.
-        const receivedToken = await requestNotificationPermission();
-        if (receivedToken) {
-            setToken(receivedToken);
-            toast({
-              title: 'Notifications Enabled!',
-              description: 'You will now receive updates about your orders.',
-            });
-        } else {
-            // This case handles when the user denies permission in the prompt.
-            // We set an error message to give immediate feedback.
-             setNotificationError("You have denied permission for notifications. You can enable them later in your browser settings.");
-        }
+         // This case handles when the user denies permission in the prompt.
+         setNotificationError("You have denied permission for notifications. You can enable them later in your browser settings.");
     }
   };
 
