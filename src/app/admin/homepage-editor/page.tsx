@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Trash2, PlusCircle, GripVertical } from 'lucide-react';
+import { Trash2, PlusCircle, GripVertical, Home } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const promotionSchema = z.object({
@@ -80,9 +80,12 @@ export default function HomepageEditorPage() {
   
   return (
     <div className="space-y-6">
-      <div className="text-center">
-        <h1 className="text-3xl font-bold">Homepage Content Editor</h1>
-        <p className="text-muted-foreground mt-2">Manage the content displayed on your homepage.</p>
+      <div className="flex items-center gap-4">
+        <Home className="h-8 w-8" />
+        <div>
+           <h1 className="text-3xl font-bold">Homepage Editor</h1>
+           <p className="text-muted-foreground mt-2">Manage the content displayed on your homepage.</p>
+        </div>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">

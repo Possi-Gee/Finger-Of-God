@@ -26,6 +26,11 @@ export default function AdminLayout({
 
   const menuItems = [
      {
+      href: '/admin/dashboard',
+      label: 'Dashboard',
+      icon: LayoutDashboard,
+    },
+     {
       href: '/admin/orders',
       label: 'Orders',
       icon: ShoppingCart,
@@ -37,12 +42,12 @@ export default function AdminLayout({
     },
     {
       href: '/admin/homepage-editor',
-      label: 'Homepage Editor',
-      icon: LayoutDashboard,
+      label: 'Homepage',
+      icon: Home,
     },
     {
       href: '/admin/settings',
-      label: 'Site Settings',
+      label: 'Settings',
       icon: Settings,
     },
      {
