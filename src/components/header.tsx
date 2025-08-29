@@ -50,35 +50,37 @@ export function Header() {
               <Wrench className="h-5 w-5" />
             </Link>
           </Button>
-          <Button variant="ghost" size="icon" asChild>
-            <Link href="/wishlist" aria-label="Wishlist">
-              <div className="relative">
-                <Heart className="h-5 w-5" />
-                {isClient && totalWishlistItems > 0 && (
-                  <span className="absolute -right-2 -top-2 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
-                    {totalWishlistItems}
-                  </span>
-                )}
-              </div>
-            </Link>
-          </Button>
-          <Button variant="ghost" size="icon" asChild>
-            <Link href="/cart" aria-label="Shopping Cart">
-              <div className="relative">
-                <ShoppingCart className="h-5 w-5" />
-                {isClient && totalCartItems > 0 && (
-                  <span className="absolute -right-2 -top-2 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
-                    {totalCartItems}
-                  </span>
-                )}
-              </div>
-            </Link>
-          </Button>
-          <Button variant="ghost" size="icon" asChild>
-            <Link href="/profile" aria-label="Profile">
-              <User className="h-5 w-5" />
-            </Link>
-          </Button>
+          <div className="hidden md:flex items-center space-x-2">
+             <Button variant="ghost" size="icon" asChild>
+              <Link href="/wishlist" aria-label="Wishlist">
+                <div className="relative">
+                  <Heart className="h-5 w-5" />
+                  {isClient && totalWishlistItems > 0 && (
+                    <span className="absolute -right-2 -top-2 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
+                      {totalWishlistItems}
+                    </span>
+                  )}
+                </div>
+              </Link>
+            </Button>
+            <Button variant="ghost" size="icon" asChild>
+              <Link href="/cart" aria-label="Shopping Cart">
+                <div className="relative">
+                  <ShoppingCart className="h-5 w-5" />
+                  {isClient && totalCartItems > 0 && (
+                    <span className="absolute -right-2 -top-2 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
+                      {totalCartItems}
+                    </span>
+                  )}
+                </div>
+              </Link>
+            </Button>
+            <Button variant="ghost" size="icon" asChild>
+              <Link href="/profile" aria-label="Profile">
+                <User className="h-5 w-5" />
+              </Link>
+            </Button>
+          </div>
           <Button
             variant="ghost"
             size="icon"
