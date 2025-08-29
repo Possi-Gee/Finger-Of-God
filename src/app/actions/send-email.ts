@@ -16,8 +16,9 @@ export const sendOrderConfirmationEmail = async ({ order, toEmail }: SendEmailPa
     const { state: settings } = useSiteSettings();
 
     if (!process.env.RESEND_API_KEY) {
-        console.error('Resend API key is not set.');
-        throw new Error('Email service is not configured. RESEND_API_KEY is missing.');
+        const errorMessage = 'Email service is not configured: RESEND_API_KEY is missing.';
+        console.error(errorMessage);
+        throw new Error(errorMessage);
     }
 
     try {
@@ -29,8 +30,6 @@ export const sendOrderConfirmationEmail = async ({ order, toEmail }: SendEmailPa
         });
 
         if (error) {
-            // The error object from Resend has a 'message' property.
-            // We log the full error for debugging but throw a clean message.
             console.error('Resend API Error:', error);
             throw new Error(error.message || 'An unknown error occurred while sending the email.');
         }
@@ -38,7 +37,6 @@ export const sendOrderConfirmationEmail = async ({ order, toEmail }: SendEmailPa
         return data;
 
     } catch (e: any) {
-        // This will catch network errors or other exceptions during the API call.
         console.error('Failed to send email:', e);
         throw new Error(e.message || 'An unexpected error occurred.');
     }
