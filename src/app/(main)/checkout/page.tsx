@@ -23,6 +23,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import type { Order } from '@/context/order-context';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/hooks/use-auth';
+import { sendOrderConfirmationEmail } from '@/app/actions/send-email';
 
 const checkoutSchema = z.discriminatedUnion("deliveryMethod", [
     z.object({
@@ -155,34 +156,35 @@ export default function CheckoutPage() {
     };
 
     orderDispatch({ type: 'ADD_ORDER', payload: newOrder });
-    
-    toast({
-        title: 'Order Placed!',
-        description: 'Thank you for your purchase. You can view your order in the orders page.',
+
+    const emailResult = await sendOrderConfirmationEmail({
+        order: newOrder,
+        toEmail: newOrder.shippingAddress.email,
+        fromEmail: settings.fromEmail,
+        appName: settings.appName,
+        logoUrl: settings.logoUrl
     });
 
+    if (emailResult.error) {
+        console.error('Failed to send email:', emailResult.error);
+        toast({
+            title: 'Order Placed (Email Failed)',
+            description: `Your order was placed, but we couldn't send the confirmation email. Error: ${emailResult.error.message}`,
+            variant: 'destructive',
+            duration: 9000,
+        });
+    } else {
+        toast({
+            title: 'Order Placed!',
+            description: 'Thank you for your purchase. A confirmation email has been sent.',
+        });
+    }
+    
     cartDispatch({ type: 'CLEAR_CART' });
     router.push(`/orders/${newOrder.id}`);
   };
 
-  // Only clear the cart once after successful submission
-  useEffect(() => {
-    const hasClearedCart = sessionStorage.getItem('hasClearedCart');
-
-    if (pathname && pathname.startsWith('/orders/') && !hasClearedCart) {
-      cartDispatch({ type: 'CLEAR_CART' });
-      sessionStorage.setItem('hasClearedCart', 'true');
-    }
-
-    return () => {
-      if (pathname === '/checkout') {
-        sessionStorage.removeItem('hasClearedCart');
-      }
-    };
-  }, [pathname, cartDispatch]);
-
-
-  if (items.length === 0) {
+  if (items.length === 0 && !isSubmitting) {
     return (
         <div className="container mx-auto px-4 py-8 text-center">
             <h1 className="text-2xl font-semibold">Your cart is empty.</h1>
@@ -580,7 +582,3 @@ export default function CheckoutPage() {
     </div>
   );
 }
-
-    
-
-    

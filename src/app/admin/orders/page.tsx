@@ -39,6 +39,7 @@ export default function AdminOrdersPage() {
     const emailResult = await sendOrderStatusUpdateEmail({
         order,
         status,
+        fromEmail: siteSettings.fromEmail,
         appName: siteSettings.appName,
         logoUrl: siteSettings.logoUrl
     });

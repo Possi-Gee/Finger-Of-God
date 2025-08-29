@@ -35,6 +35,7 @@ export type FooterSettings = {
 export type SiteSettingsState = {
   appName: string;
   logoUrl: string;
+  fromEmail: string;
   taxRate: number;
   shippingFee: number;
   theme: SiteTheme;
@@ -43,7 +44,7 @@ export type SiteSettingsState = {
 
 type SiteSettingsAction =
   | { type: 'SET_STATE'; payload: SiteSettingsState }
-  | { type: 'UPDATE_GENERAL_SETTINGS'; payload: { appName: string; logoUrl: string } }
+  | { type: 'UPDATE_GENERAL_SETTINGS'; payload: { appName: string; logoUrl: string, fromEmail: string } }
   | { type: 'UPDATE_COMMERCE'; payload: { taxRate: number; shippingFee: number } }
   | { type: 'UPDATE_THEME'; payload: SiteTheme }
   | { type: 'UPDATE_FOOTER'; payload: FooterSettings };
@@ -52,6 +53,7 @@ type SiteSettingsAction =
 const initialState: SiteSettingsState = {
   appName: 'ShopWave',
   logoUrl: '',
+  fromEmail: 'onboarding@resend.dev',
   taxRate: 8,
   shippingFee: 5,
   theme: {
@@ -113,7 +115,7 @@ const initialState: SiteSettingsState = {
 const settingsReducer = (state: SiteSettingsState, action: SiteSettingsAction): SiteSettingsState => {
   switch (action.type) {
     case 'UPDATE_GENERAL_SETTINGS':
-      return { ...state, appName: action.payload.appName, logoUrl: action.payload.logoUrl };
+      return { ...state, appName: action.payload.appName, logoUrl: action.payload.logoUrl, fromEmail: action.payload.fromEmail };
     case 'UPDATE_COMMERCE':
        return { ...state, taxRate: action.payload.taxRate, shippingFee: action.payload.shippingFee };
     case 'UPDATE_THEME':

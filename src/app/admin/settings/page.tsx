@@ -10,15 +10,17 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Trash2, PlusCircle, Palette, Text, Link as LinkIcon, Percent, Landmark, Image as ImageIcon, Home, Edit } from 'lucide-react';
+import { Trash2, PlusCircle, Palette, Text, Link as LinkIcon, Percent, Landmark, Image as ImageIcon, Home, Edit, Mail } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ProfileListItem } from '@/components/profile-list-item';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 // Schemas for each form section
 const generalSchema = z.object({ 
   appName: z.string().min(1, 'App name is required'),
-  logoUrl: z.string().url().or(z.literal('')) 
+  logoUrl: z.string().url().or(z.literal('')),
+  fromEmail: z.string().email('A valid email is required'),
 });
 const commerceSchema = z.object({
   taxRate: z.coerce.number().min(0, 'Tax rate must be a positive number'),
@@ -78,7 +80,7 @@ export default function SiteSettingsPage() {
         <p className="text-muted-foreground mt-2">Manage the global settings for your application.</p>
       </div>
       
-      <GeneralSettingsForm onSubmit={createSubmitHandler('UPDATE_GENERAL_SETTINGS', 'General Settings Updated')} defaultValues={{ appName: state.appName, logoUrl: state.logoUrl }} />
+      <GeneralSettingsForm onSubmit={createSubmitHandler('UPDATE_GENERAL_SETTINGS', 'General Settings Updated')} defaultValues={{ appName: state.appName, logoUrl: state.logoUrl, fromEmail: state.fromEmail }} />
       <CommerceSettingsForm onSubmit={createSubmitHandler('UPDATE_COMMERCE', 'Commerce Settings Updated')} defaultValues={{ taxRate: state.taxRate, shippingFee: state.shippingFee }} />
       <ThemeSettingsForm onSubmit={createSubmitHandler('UPDATE_THEME', 'Theme Updated')} defaultValues={state.theme} />
       <ContentManagementCard />
@@ -97,7 +99,7 @@ function GeneralSettingsForm({ onSubmit, defaultValues }: { onSubmit: (data: z.i
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><Text /> General</CardTitle>
-          <CardDescription>Basic application settings like name and logo.</CardDescription>
+          <CardDescription>Basic application settings like name, logo, and sending email address.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
@@ -114,6 +116,18 @@ function GeneralSettingsForm({ onSubmit, defaultValues }: { onSubmit: (data: z.i
                 <Image src={logoUrl} alt="Logo Preview" width={100} height={40} style={{ objectFit: 'contain' }} />
               </div>
             )}
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="fromEmail">"From" Email Address</Label>
+            <Input id="fromEmail" {...register('fromEmail')} />
+            {errors.fromEmail && <p className="text-sm text-destructive mt-1">{errors.fromEmail.message}</p>}
+             <Alert className="mt-2">
+                <Mail className="h-4 w-4" />
+                <AlertTitle>Important!</AlertTitle>
+                <AlertDescription>
+                  This email must be from a domain you have verified in your Resend account. Using an unverified domain will cause emails to fail.
+                </AlertDescription>
+            </Alert>
           </div>
         </CardContent>
         <CardFooter>

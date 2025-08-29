@@ -9,9 +9,10 @@ import type { Order, OrderStatus } from '@/context/order-context';
 import type { Product } from '@/lib/products';
 import type { User } from 'firebase/auth';
 
-interface SendEmailParams {
+interface SendOrderConfirmationEmailParams {
     order: Order;
     toEmail: string;
+    fromEmail: string;
     appName: string;
     logoUrl?: string;
 }
@@ -19,6 +20,7 @@ interface SendEmailParams {
 interface SendProductUpdateParams {
     product: Product;
     user: User;
+    fromEmail: string;
     appName: string;
     logoUrl?: string;
 }
@@ -26,11 +28,12 @@ interface SendProductUpdateParams {
 interface SendOrderStatusUpdateParams {
     order: Order;
     status: OrderStatus;
+    fromEmail: string;
     appName: string;
     logoUrl?: string;
 }
 
-export const sendOrderConfirmationEmail = async ({ order, toEmail, appName, logoUrl }: SendEmailParams) => {
+export const sendOrderConfirmationEmail = async ({ order, toEmail, fromEmail, appName, logoUrl }: SendOrderConfirmationEmailParams) => {
     if (!process.env.RESEND_API_KEY) {
         const errorMessage = 'Email service is not configured: RESEND_API_KEY is missing.';
         console.error(errorMessage);
@@ -41,7 +44,7 @@ export const sendOrderConfirmationEmail = async ({ order, toEmail, appName, logo
 
     try {
         const { data, error } = await resend.emails.send({
-            from: `${appName} <onboarding@resend.dev>`,
+            from: `${appName} <${fromEmail}>`,
             to: [toEmail],
             subject: `Your ${appName} Order Confirmation #${order.id}`,
             react: OrderConfirmationEmail({ order, appName, logoUrl }),
@@ -60,7 +63,7 @@ export const sendOrderConfirmationEmail = async ({ order, toEmail, appName, logo
     }
 };
 
-export const sendProductUpdateEmail = async ({ product, user, appName, logoUrl }: SendProductUpdateParams) => {
+export const sendProductUpdateEmail = async ({ product, user, fromEmail, appName, logoUrl }: SendProductUpdateParams) => {
     if (!process.env.RESEND_API_KEY) {
         const errorMessage = 'Email service is not configured: RESEND_API_KEY is missing.';
         console.error(errorMessage);
@@ -75,7 +78,7 @@ export const sendProductUpdateEmail = async ({ product, user, appName, logoUrl }
 
     try {
         const { data, error } = await resend.emails.send({
-            from: `${appName} <onboarding@resend.dev>`,
+            from: `${appName} <${fromEmail}>`,
             to: [user.email],
             subject: `An item on your wishlist has been updated!`,
             react: ProductUpdateEmail({ product, userDisplayName: user.displayName, appName, logoUrl }),
@@ -94,7 +97,7 @@ export const sendProductUpdateEmail = async ({ product, user, appName, logoUrl }
     }
 };
 
-export const sendOrderStatusUpdateEmail = async ({ order, status, appName, logoUrl }: SendOrderStatusUpdateParams) => {
+export const sendOrderStatusUpdateEmail = async ({ order, status, fromEmail, appName, logoUrl }: SendOrderStatusUpdateParams) => {
     if (!process.env.RESEND_API_KEY) {
         const errorMessage = 'Email service is not configured: RESEND_API_KEY is missing.';
         console.error(errorMessage);
@@ -105,7 +108,7 @@ export const sendOrderStatusUpdateEmail = async ({ order, status, appName, logoU
 
     try {
         const { data, error } = await resend.emails.send({
-            from: `${appName} <onboarding@resend.dev>`,
+            from: `${appName} <${fromEmail}>`,
             to: [order.shippingAddress.email],
             subject: `Your ${appName} order #${order.id} has been updated to: ${status}`,
             react: OrderStatusUpdateEmail({ order, status, appName, logoUrl }),

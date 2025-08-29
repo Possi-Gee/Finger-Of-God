@@ -365,6 +365,7 @@ export default function AdminProductsPage() {
             await sendProductUpdateEmail({
                 product: updatedProduct,
                 user: user,
+                fromEmail: siteSettings.fromEmail,
                 appName: siteSettings.appName,
                 logoUrl: siteSettings.logoUrl
             });
