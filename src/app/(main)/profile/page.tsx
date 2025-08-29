@@ -6,11 +6,53 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { History, Heart, User, KeyRound, LogOut, ChevronRight } from 'lucide-react';
-import Link from 'next/link';
+import { History, Heart, User, LogOut, Bell } from 'lucide-react';
 import { ProfileListItem } from '@/components/profile-list-item';
+import { useToast } from '@/hooks/use-toast';
+import { requestNotificationPermission } from '@/lib/firebase-messaging';
+import { useState } from 'react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 export default function ProfilePage() {
+  const { toast } = useToast();
+  const [token, setToken] = useState<string | null>(null);
+
+  const handleEnableNotifications = async () => {
+    const permission = await Notification.requestPermission();
+    if (permission === 'granted') {
+      try {
+        const receivedToken = await requestNotificationPermission();
+        if (receivedToken) {
+          setToken(receivedToken);
+          console.log('FCM Token:', receivedToken);
+          toast({
+            title: 'Notifications Enabled!',
+            description: 'You will now receive updates about your orders.',
+          });
+        } else {
+            toast({
+                title: 'Error',
+                description: 'Could not retrieve notification token. Please try again.',
+                variant: 'destructive',
+            });
+        }
+      } catch (error) {
+         console.error('Error getting notification token:', error);
+         toast({
+           title: 'Notification Error',
+           description: 'An error occurred while enabling notifications. Please check the console for details.',
+           variant: 'destructive',
+         });
+      }
+    } else {
+       toast({
+        title: 'Notifications Denied',
+        description: 'You have not granted permission for notifications.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-2xl mx-auto">
@@ -59,6 +101,23 @@ export default function ProfilePage() {
               <CardTitle>Settings</CardTitle>
             </CardHeader>
             <CardContent className="divide-y p-0">
+               <div className="p-4">
+                 <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                        <Bell className="h-6 w-6 text-muted-foreground" />
+                        <span className="font-medium">Push Notifications</span>
+                    </div>
+                    <Button onClick={handleEnableNotifications}>Enable</Button>
+                </div>
+                {token && (
+                  <Alert className="mt-4">
+                    <AlertTitle>Your Notification Token</AlertTitle>
+                    <AlertDescription className="break-all text-xs">
+                      {token}
+                    </AlertDescription>
+                  </Alert>
+                )}
+               </div>
               <ProfileListItem href="/login" icon={LogOut} label="Log Out" />
             </CardContent>
           </Card>
