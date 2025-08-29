@@ -22,7 +22,6 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Order } from '@/context/order-context';
 import { Textarea } from '@/components/ui/textarea';
-import { sendOrderConfirmationEmail } from '@/app/actions/send-email';
 import { useAuth } from '@/hooks/use-auth';
 
 const checkoutSchema = z.discriminatedUnion("deliveryMethod", [
@@ -153,26 +152,10 @@ export default function CheckoutPage() {
 
     orderDispatch({ type: 'ADD_ORDER', payload: newOrder });
     
-    const emailResult = await sendOrderConfirmationEmail({ 
-        order: newOrder, 
-        toEmail: email,
-        appName: settings.appName,
-        logoUrl: settings.logoUrl
+    toast({
+        title: 'Order Placed!',
+        description: 'Thank you for your purchase. You can view your order in the orders page.',
     });
-
-    if (emailResult.error) {
-        console.error('Failed to send email:', emailResult.error);
-        toast({
-            title: 'Order Placed (Email Failed)',
-            description: `Your order was placed, but we couldn't send the confirmation email. Error: ${emailResult.error.message}`,
-            variant: 'destructive',
-        });
-    } else {
-         toast({
-            title: 'Order Placed!',
-            description: 'Thank you for your purchase. A confirmation email has been sent.',
-        });
-    }
 
     cartDispatch({ type: 'CLEAR_CART' });
     router.push(`/orders/${newOrder.id}`);
@@ -185,9 +168,8 @@ export default function CheckoutPage() {
             <p className="mt-2 text-muted-foreground">You can't proceed to checkout without any items.</p>
             <Button onClick={() => router.push('/')} className="mt-6">Continue Shopping</Button>
         </div>
-    )
+    );
   }
-
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -235,7 +217,7 @@ export default function CheckoutPage() {
                   )}
                  />
               </CardContent>
-            </Card>>
+             </Card>
 
             <Card>
                 <CardHeader>
