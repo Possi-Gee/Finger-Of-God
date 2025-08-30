@@ -53,8 +53,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
       return userCredential.user;
     } catch (error: any) {
-      console.error("Signup error:", error.message);
-      // Let the UI handle the error message
+      console.error("Signup error:", error.code, error.message);
+      if (error.code === 'auth/email-already-in-use') {
+          throw new Error('This email address is already registered. Please login or use a different email.');
+      }
+      // Let the UI handle other errors
       throw new Error(error.message || 'An unexpected error occurred during sign up.');
     }
   };
