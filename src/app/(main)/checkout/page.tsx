@@ -173,8 +173,8 @@ export default function CheckoutPage() {
         description: 'Thank you for your purchase. A confirmation email is on its way.',
       });
 
-      cartDispatch({ type: 'CLEAR_CART' });
       router.push(`/orders/${newOrder.id}`);
+      cartDispatch({ type: 'CLEAR_CART' });
 
     } catch (error) {
       console.error("Failed to place order:", error);
@@ -586,5 +586,3 @@ export default function CheckoutPage() {
     </div>
   );
 }
-
-    
