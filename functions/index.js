@@ -98,6 +98,8 @@ exports.onOrderCreate = functions.firestore
         const customerEmail = order.shippingAddress.email;
         const appName = order.appName || "ShopWave"; // Fallback app name
 
+        functions.logger.log(`New order #${order.id} received. Preparing emails...`);
+
         // --- Email to Customer ---
         const customerMailOptions = {
             from: `"${appName}" <${ADMIN_EMAIL}>`,
@@ -125,12 +127,19 @@ exports.onOrderCreate = functions.firestore
         };
 
         try {
-            await transporter.sendMail(customerMailOptions);
-            functions.logger.log("Confirmation email sent to:", customerEmail);
-            await transporter.sendMail(adminMailOptions);
-            functions.logger.log("Admin notification email sent for order:", order.id);
+            functions.logger.log("Sending confirmation email to customer:", customerEmail);
+            const customerEmailInfo = await transporter.sendMail(customerMailOptions);
+            functions.logger.log("Successfully sent confirmation email to customer:", customerEmailInfo.response);
+
+            functions.logger.log("Sending notification email to admin:", ADMIN_EMAIL);
+            const adminEmailInfo = await transporter.sendMail(adminMailOptions);
+            functions.logger.log("Successfully sent admin notification email:", adminEmailInfo.response);
         } catch (error) {
-            functions.logger.error("Error sending emails:", error);
+            functions.logger.error("Error sending emails for order #" + order.id, {
+                errorMessage: error.message,
+                errorStack: error.stack,
+                errorCode: error.code,
+            });
         }
     });
 
@@ -145,8 +154,11 @@ exports.onOrderUpdate = functions.firestore
 
         // Check if the status has actually changed
         if (order.status === previousOrder.status) {
+            functions.logger.log(`Skipping email for order #${order.id}: status unchanged.`);
             return null;
         }
+
+        functions.logger.log(`Order #${order.id} status changed from ${previousOrder.status} to ${order.status}. Preparing email...`);
 
         const customerEmail = order.shippingAddress.email;
         const appName = order.appName || "ShopWave";
@@ -175,6 +187,7 @@ exports.onOrderUpdate = functions.firestore
 
         const statusInfo = getStatusInfo(order.status);
         if (!statusInfo) {
+            functions.logger.log(`No email template for status "${order.status}". Email not sent for order #${order.id}.`);
             return null; // No email needed for this status change
         }
 
@@ -191,10 +204,15 @@ exports.onOrderUpdate = functions.firestore
         };
 
         try {
-            await transporter.sendMail(mailOptions);
-            functions.logger.log(`Status update email sent to ${customerEmail} for order ${order.id}`);
+            functions.logger.log(`Sending status update email to ${customerEmail} for order ${order.id}`);
+            const emailInfo = await transporter.sendMail(mailOptions);
+            functions.logger.log(`Successfully sent status update email for order #${order.id}:`, emailInfo.response);
         } catch (error) {
-            functions.logger.error("Error sending status update email:", error);
+             functions.logger.error(`Error sending status update email for order #${order.id}`, {
+                errorMessage: error.message,
+                errorStack: error.stack,
+                errorCode: error.code,
+            });
         }
         return null;
     });
