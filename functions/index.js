@@ -23,6 +23,46 @@ const mailTransport = nodemailer.createTransport({
 });
 
 /**
+ * Sends an email notification when a new order is created.
+ */
+exports.onOrderCreate = functions.firestore
+  .document("orders/{orderId}")
+  .onCreate(async (snap, context) => {
+    const order = snap.data();
+    const orderId = context.params.orderId;
+
+    const customerEmail = order.customerEmail;
+    
+    if (!customerEmail) {
+      console.error(`Missing customerEmail for new order ${orderId}. Cannot send email.`);
+      return null;
+    }
+
+    const mailOptions = {
+      from: `"Your Shop Name" <${gmailEmail}>`,
+      to: customerEmail,
+      subject: `Your Order Confirmation #${orderId}`,
+      text: `Hi, thank you for your order! We've received order #${orderId} and are getting it ready.`,
+      html: `<p>Hi,</p><p>Thank you for your order! We've received order <strong>#${orderId}</strong> and are getting it ready for you.</p>`,
+    };
+
+    try {
+      await mailTransport.sendMail(mailOptions);
+      console.log(`Successfully sent confirmation email for new order ${orderId} to ${customerEmail}`);
+      return null;
+    } catch (error) {
+      console.error(
+        "There was an error while sending the confirmation email for order",
+        orderId,
+        ":",
+        error,
+      );
+      return null;
+    }
+  });
+
+
+/**
  * Sends an email notification when an order's status changes.
  */
 exports.onOrderStatusChange = functions.firestore
@@ -38,7 +78,7 @@ exports.onOrderStatusChange = functions.firestore
     }
 
     const customerEmail = newValue.customerEmail;
-    const orderId = newValue.orderId;
+    const orderId = context.params.orderId;
     const status = newValue.status;
 
     if (!customerEmail) {
@@ -49,18 +89,18 @@ exports.onOrderStatusChange = functions.firestore
     const mailOptions = {
       from: `"Your Shop Name" <${gmailEmail}>`,
       to: customerEmail,
-      subject: `Order ${orderId} Update`,
+      subject: `Order #${orderId} Update`,
       text: `Hi, your order status is now: ${status}`,
       html: `<p>Hi,</p><p>Your order status is now: <strong>${status}</strong></p>`,
     };
 
     try {
       await mailTransport.sendMail(mailOptions);
-      console.log(`Successfully sent email for order ${orderId} to ${customerEmail}`);
+      console.log(`Successfully sent status update email for order ${orderId} to ${customerEmail}`);
       return null;
     } catch (error) {
       console.error(
-        "There was an error while sending the email for order",
+        "There was an error while sending the status update email for order",
         orderId,
         ":",
         error,
