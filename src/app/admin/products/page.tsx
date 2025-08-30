@@ -140,11 +140,8 @@ export default function AdminProductsPage() {
     control,
     name: "variants"
   });
-
-  const { fields: imageFields, append: appendImage, remove: removeImage } = useFieldArray({
-    control,
-    name: "images"
-  });
+  
+  const images = watch('images');
 
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -360,8 +357,20 @@ export default function AdminProductsPage() {
 
   }, [products, searchTerm, filterCategory, sortBy]);
 
+  const handleImageAdd = (imageDataUri: string) => {
+    const currentImages = getValues('images') || [];
+    setValue('images', [...currentImages, imageDataUri], { shouldValidate: true, shouldDirty: true });
+  }
+
+  const handleImageRemove = (index: number) => {
+    const currentImages = getValues('images') || [];
+    const newImages = currentImages.filter((_, i) => i !== index);
+    setValue('images', newImages, { shouldValidate: true, shouldDirty: true });
+  }
+
+
   const handleImageCapture = (imageDataUri: string) => {
-    appendImage(imageDataUri, { shouldFocus: false });
+    handleImageAdd(imageDataUri);
     setIsCameraOpen(false);
   };
 
@@ -372,10 +381,14 @@ export default function AdminProductsPage() {
       reader.onload = (e) => {
         const imageDataUri = e.target?.result as string;
         if (imageDataUri) {
-          appendImage(imageDataUri, { shouldFocus: false });
+          handleImageAdd(imageDataUri);
         }
       };
       reader.readAsDataURL(file);
+    }
+     // Reset file input to allow selecting the same file again
+    if (event.target) {
+      event.target.value = '';
     }
   };
 
@@ -484,11 +497,11 @@ export default function AdminProductsPage() {
                   <Label>Images</Label>
                   <Card className="p-4 bg-background space-y-4">
                     <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
-                       {imageFields.map((field, index) => (
-                        <div key={field.id} className="relative group aspect-square">
-                            {field.value && (
+                       {images?.map((image, index) => (
+                        <div key={index} className="relative group aspect-square">
+                            {image && (
                               <Image
-                                  src={field.value}
+                                  src={image}
                                   alt={`Product image ${index + 1}`}
                                   fill
                                   sizes="100px"
@@ -500,7 +513,7 @@ export default function AdminProductsPage() {
                                 variant="destructive"
                                 size="icon"
                                 className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                                onClick={() => removeImage(index)}
+                                onClick={() => handleImageRemove(index)}
                             >
                                 <Trash2 className="h-4 w-4" />
                             </Button>
@@ -761,3 +774,5 @@ export default function AdminProductsPage() {
     </div>
   );
 }
+
+    
