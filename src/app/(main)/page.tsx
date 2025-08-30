@@ -6,15 +6,16 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { categories } from '@/lib/products';
 import { ProductCard } from '@/components/product-card';
-import { Search } from 'lucide-react';
+import { Search, ShoppingBag } from 'lucide-react';
 import { useProduct } from '@/hooks/use-product';
 import { CallToAction } from '@/components/call-to-action';
 import { PromotionalCarousel } from '@/components/promotional-carousel';
 import { FlashSales } from '@/components/flash-sales';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function HomePage() {
   const { state: productState } = useProduct();
-  const { products } = productState;
+  const { products, loading } = productState;
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [isClient, setIsClient] = useState(false);
@@ -65,15 +66,29 @@ export default function HomePage() {
           </Select>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {filteredProducts.map(product => (
-            <ProductCard key={product.id} product={product} />
-          ))}
-        </div>
-
-        {filteredProducts.length === 0 && (
+        {loading ? (
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {[...Array(8)].map((_, i) => (
+                    <Card key={i}>
+                        <Skeleton className="aspect-square w-full" />
+                        <CardContent className="p-4 space-y-2">
+                            <Skeleton className="h-4 w-2/3" />
+                            <Skeleton className="h-6 w-1/2" />
+                            <Skeleton className="h-10 w-full" />
+                        </CardContent>
+                    </Card>
+                ))}
+            </div>
+        ) : filteredProducts.length > 0 ? (
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {filteredProducts.map(product => (
+                <ProductCard key={product.id} product={product} />
+            ))}
+            </div>
+        ) : (
            <div className="text-center col-span-full py-16">
-              <p className="text-muted-foreground">No products found. Try adjusting your search or filters.</p>
+              <ShoppingBag className="mx-auto h-24 w-24 text-muted-foreground" />
+              <p className="text-muted-foreground mt-4">No products found. Try adjusting your search or filters.</p>
            </div>
         )}
       </div>

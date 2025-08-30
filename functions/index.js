@@ -121,3 +121,39 @@ exports.onOrderStatusChange = functions.firestore
       return null;
     }
   });
+
+
+/**
+ * Sends a push notification when a new product is added.
+ */
+exports.onProductCreate = functions.firestore
+  .document('products/{productId}')
+  .onCreate(async (snap, context) => {
+    const product = snap.data();
+
+    // This is a generic topic that all users who grant notification
+    // permission could be subscribed to. A more advanced implementation
+    // would manage user-specific FCM tokens.
+    const topic = 'new_products'; 
+
+    const payload = {
+      notification: {
+        title: '✨ New Product Added!',
+        body: `Check out the new ${product.name}!`,
+        icon: product.images[0] || '/favicon.ico', // Use first image as icon, or fallback
+        click_action: `/product/${product.id}` // Link to the product page
+      }
+    };
+    
+    console.log(`Sending notification for new product: ${product.name}`);
+
+    try {
+      await admin.messaging().sendToTopic(topic, payload);
+      console.log('Successfully sent new product notification.');
+      return null;
+    } catch (error) {
+      console.error('Error sending new product notification:', error);
+      return null;
+    }
+  });
+

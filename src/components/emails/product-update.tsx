@@ -45,7 +45,7 @@ export const ProductUpdateEmail = ({
         <Section style={{ padding: '0 48px' }}>
              <Row>
                 <Column>
-                    <Img src={product.image} alt={product.name} width="120" height="120" style={productImage} />
+                    <Img src={(product.images && product.images.length > 0) ? product.images[0] : ''} alt={product.name} width="120" height="120" style={productImage} />
                 </Column>
                 <Column style={productDetails}>
                     <Text style={productName}>{product.name}</Text>
@@ -159,4 +159,3 @@ const footerText = {
   fontSize: '12px',
   lineHeight: '16px',
 };
-

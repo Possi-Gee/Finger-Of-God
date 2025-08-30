@@ -9,10 +9,12 @@ import { z } from 'zod';
 import { categories, type Product } from '@/lib/products';
 import { useProduct } from '@/hooks/use-product';
 import { generateProductDescription } from '@/ai/flows/generate-product-description';
-import { sendProductUpdateEmail } from '@/app/actions/send-email';
 import { useAuth } from '@/hooks/use-auth';
 import { useWishlist } from '@/hooks/use-wishlist';
 import { useSiteSettings } from '@/hooks/use-site-settings';
+import { db } from '@/lib/firebase';
+import { doc, setDoc, deleteDoc, collection } from 'firebase/firestore';
+
 
 import { Button, buttonVariants } from '@/components/ui/button';
 import {
@@ -49,13 +51,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, AlertTriangle, Loader2, Bot, Edit, Trash2, Search, Package, Camera, Upload } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { PlusCircle, Loader2, Bot, Edit, Trash2, Search, Package, Camera, Upload } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
-import type { User } from 'firebase/auth';
 import { CameraCapture } from '@/components/camera-capture';
 
 
@@ -81,21 +81,6 @@ const productSchema = z.object({
 
 type ProductFormValues = z.infer<typeof productSchema>;
 
-// This function is hypothetical. In a real app, you'd fetch this from your database.
-// For this prototype, we'll simulate fetching users who have a specific product in their wishlist.
-const getUsersWithProductInWishlist = (productId: number, allUsers: User[], wishlistState: any): User[] => {
-    // This is a simplified simulation. A real implementation would need a backend service
-    // to query all users' wishlists. Here we are limited to the current user's wishlist state.
-    const { isWishlisted } = wishlistState;
-    // We can't check other users' wishlists, so for demonstration, we will check
-    // if the current logged-in user has it in their wishlist.
-    const currentUser = getAuth().currentUser;
-    if (currentUser && isWishlisted(productId)) {
-        return [currentUser];
-    }
-    return [];
-}
-
 
 export default function AdminProductsPage() {
   const { state: productState, dispatch: productDispatch } = useProduct();
@@ -106,9 +91,6 @@ export default function AdminProductsPage() {
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
   const { toast } = useToast();
-  const { user } = useAuth(); // We need the current admin/user
-  const wishlistState = useWishlist();
-  const { state: siteSettings } = useSiteSettings();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -136,7 +118,7 @@ export default function AdminProductsPage() {
     }
   });
   
-  const { fields, append, remove, update } = useFieldArray({
+  const { fields, append, remove } = useFieldArray({
     control,
     name: "variants"
   });
@@ -153,14 +135,11 @@ export default function AdminProductsPage() {
 
   const handleToggleSingleItemSale = (checked: boolean) => {
     if (checked) {
-      // Add a 'Single' variant if it doesn't exist
       if (!isSoldAsSingleItem) {
         append({ name: 'Single', price: 0, stock: 0, originalPrice: 0 });
       }
     } else {
-      // Remove the 'Single' variant if it exists
       if (isSoldAsSingleItem) {
-        // Prevent removal if it's the last variant
         if (getValues('variants').length > 1) {
             remove(singleItemVariantIndex);
         } else {
@@ -241,33 +220,16 @@ export default function AdminProductsPage() {
         ...editingProduct,
         ...productData,
       };
+      
+      const productRef = doc(db, 'products', updatedProduct.id.toString());
+      await setDoc(productRef, updatedProduct, { merge: true });
+      
       productDispatch({ type: 'UPDATE_PRODUCT', payload: updatedProduct });
+      
       toast({
         title: 'Product Updated',
         description: `${data.name} has been successfully updated.`,
       });
-      
-      // Get users and send emails
-      // In a real app, this would be a more complex query to a user database
-      const usersToNotify = wishlistState.items
-        .filter(item => item.id === updatedProduct.id)
-        .map(() => user) // Simulate finding the user, in reality, you'd have user objects
-        .filter((u): u is User => u !== null);
-        
-      if(user) { // For demo, we'll assume the current admin is the user to notify
-        const isWishlisted = wishlistState.isWishlisted(updatedProduct.id);
-        if (isWishlisted) {
-            console.log(`Sending update email to ${user.email} for product ${updatedProduct.name}`);
-            await sendProductUpdateEmail({
-                product: updatedProduct,
-                user: user,
-                fromEmail: siteSettings.fromEmail,
-                appName: siteSettings.appName,
-                logoUrl: siteSettings.logoUrl
-            });
-        }
-      }
-
 
     } else {
       const newProduct: Product = {
@@ -275,6 +237,10 @@ export default function AdminProductsPage() {
         ...productData,
         dataAiHint: `${data.category.toLowerCase()} product`
       };
+      
+      const productRef = doc(db, 'products', newProduct.id.toString());
+      await setDoc(productRef, newProduct);
+      
       productDispatch({ type: 'ADD_PRODUCT', payload: newProduct });
       toast({
         title: 'Product Added',
@@ -286,7 +252,6 @@ export default function AdminProductsPage() {
   
   const handleEditClick = (product: Product) => {
     setEditingProduct(product);
-    // Ensure variants have unique IDs for the form field array
     const productWithVariantIds = {
         ...product,
         variants: product.variants.map(v => ({ ...v, id: v.id || Math.random() }))
@@ -300,8 +265,9 @@ export default function AdminProductsPage() {
     setIsDeleteConfirmOpen(true);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (productToDelete) {
+      await deleteDoc(doc(db, "products", productToDelete.id.toString()));
       productDispatch({ type: 'DELETE_PRODUCT', payload: { id: productToDelete.id } });
       toast({
         title: 'Product Deleted',
@@ -386,7 +352,6 @@ export default function AdminProductsPage() {
       };
       reader.readAsDataURL(file);
     }
-     // Reset file input to allow selecting the same file again
     if (event.target) {
       event.target.value = '';
     }
@@ -420,7 +385,6 @@ export default function AdminProductsPage() {
             <ScrollArea className="overflow-y-auto">
               <form onSubmit={handleSubmit(onSubmit)} id="product-form" className="px-6 py-4 grid gap-6">
                 
-                {/* Product Details Section */}
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
@@ -492,7 +456,6 @@ export default function AdminProductsPage() {
                   </div>
                 </div>
 
-                {/* Image Section */}
                 <div className="space-y-4">
                   <Label>Images</Label>
                   <Card className="p-4 bg-background space-y-4">
@@ -552,8 +515,6 @@ export default function AdminProductsPage() {
                   </Card>
                 </div>
 
-
-                {/* Variants Section */}
                 <div className="space-y-4">
                     <Separator />
                     <div>
@@ -774,5 +735,3 @@ export default function AdminProductsPage() {
     </div>
   );
 }
-
-    
