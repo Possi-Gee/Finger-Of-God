@@ -23,7 +23,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 // --- Admin Configuration ---
 // Add the email addresses of authorized admins to this array.
 const ADMIN_EMAILS = [
-  "admin@example.com",
+  "temahfingerofgod@gmail.com",
 ];
 // -------------------------
 
