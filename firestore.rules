@@ -1,14 +1,9 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // This rule allows any authenticated user to create, read, list, and update documents in the 'orders' collection.
-    // This is suitable for a prototype where any user might act as an admin.
-    // For a production application, you would implement more granular security, such as:
-    //   - allow create: if request.auth != null;
-    //   - allow read, update: if request.auth.uid == resource.data.userId || get(/databases/$(database)/documents/admins/$(request.auth.uid)).exists;
-    //   - allow list: if exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    // Allow admin (any authenticated user in this prototype) to read and write all orders
     match /orders/{orderId} {
-      allow read, write, list: if request.auth != null;
+       allow read, write: if request.auth != null;
     }
   }
 }
