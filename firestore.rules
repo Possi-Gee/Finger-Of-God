@@ -1,11 +1,11 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Allow users to create orders and read their own orders.
-    // Admins are also allowed to read/update any order.
     match /orders/{orderId} {
-      allow create: if request.auth != null;
-      allow read, update: if request.auth != null;
+      // Allow any authenticated user to create, read (get, list), and update orders.
+      // For a production app, you would tighten these rules to distinguish between
+      // regular users (who can only read their own orders) and admins.
+      allow create, get, list, update: if request.auth != null;
     }
   }
 }
