@@ -23,14 +23,13 @@ const mailTransport = nodemailer.createTransport({
 });
 
 /**
- * Sends an email notification when a new order is created.
+ * Sends email notifications when a new order is created to both customer and admin.
  */
 exports.onOrderCreate = functions.firestore
   .document("orders/{orderId}")
   .onCreate(async (snap, context) => {
     const order = snap.data();
     const orderId = context.params.orderId;
-
     const customerEmail = order.customerEmail;
     
     if (!customerEmail) {
@@ -38,21 +37,35 @@ exports.onOrderCreate = functions.firestore
       return null;
     }
 
-    const mailOptions = {
+    // Email to the customer
+    const customerMailOptions = {
       from: `"Your Shop Name" <${gmailEmail}>`,
       to: customerEmail,
       subject: `Your Order Confirmation #${orderId}`,
       text: `Hi, thank you for your order! We've received order #${orderId} and are getting it ready.`,
       html: `<p>Hi,</p><p>Thank you for your order! We've received order <strong>#${orderId}</strong> and are getting it ready for you.</p>`,
     };
+    
+    // Email to the admin/app owner
+    const adminMailOptions = {
+        from: `"ShopWave Admin" <${gmailEmail}>`,
+        to: gmailEmail, // Send to the app owner's email
+        subject: `[New Order] You have a new order: #${orderId}`,
+        text: `A new order with ID #${orderId} has been placed by ${customerEmail}. Please check the admin dashboard to process it.`,
+        html: `<p>A new order with ID <strong>#${orderId}</strong> has been placed by ${customerEmail}.</p><p>Please check the admin dashboard to process it.</p>`,
+    };
 
     try {
-      await mailTransport.sendMail(mailOptions);
-      console.log(`Successfully sent confirmation email for new order ${orderId} to ${customerEmail}`);
+      // Send both emails concurrently
+      await Promise.all([
+        mailTransport.sendMail(customerMailOptions),
+        mailTransport.sendMail(adminMailOptions)
+      ]);
+      console.log(`Successfully sent confirmation emails for order ${orderId} to customer (${customerEmail}) and admin.`);
       return null;
     } catch (error) {
       console.error(
-        "There was an error while sending the confirmation email for order",
+        "There was an error while sending the confirmation emails for order",
         orderId,
         ":",
         error,
@@ -108,4 +121,3 @@ exports.onOrderStatusChange = functions.firestore
       return null;
     }
   });
-
