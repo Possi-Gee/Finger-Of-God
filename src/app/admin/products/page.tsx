@@ -71,7 +71,7 @@ const productSchema = z.object({
   name: z.string().min(3, 'Product name is required'),
   description: z.string().min(10, 'Description is required'),
   category: z.string().min(1, 'Category is required'),
-  images: z.array(z.string()).min(1, 'At least one product image is required.'),
+  images: z.array(z.string().url().or(z.string().startsWith('data:image'))).min(1, 'At least one product image is required.'),
   features: z.string().optional(),
   rating: z.coerce.number().min(0).max(5, 'Rating must be between 0 and 5').default(0),
   reviews: z.coerce.number().min(0).default(0),
@@ -486,13 +486,15 @@ export default function AdminProductsPage() {
                     <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
                        {imageFields.map((field, index) => (
                         <div key={field.id} className="relative group aspect-square">
-                            <Image
-                                src={field.value}
-                                alt={`Product image ${index + 1}`}
-                                fill
-                                sizes="100px"
-                                className="rounded-md object-cover"
-                            />
+                            {field.value && (
+                              <Image
+                                  src={field.value}
+                                  alt={`Product image ${index + 1}`}
+                                  fill
+                                  sizes="100px"
+                                  className="rounded-md object-cover"
+                              />
+                            )}
                             <Button
                                 type="button"
                                 variant="destructive"
@@ -695,7 +697,7 @@ export default function AdminProductsPage() {
                 <TableRow key={product.id}>
                   <TableCell>
                     <Image
-                      src={product.images && product.images.length > 0 ? product.images[0] : 'https://picsum.photos/60/60'}
+                      src={(product.images && product.images.length > 0) ? product.images[0] : 'https://picsum.photos/60/60'}
                       alt={product.name}
                       width={60}
                       height={60}
@@ -759,5 +761,3 @@ export default function AdminProductsPage() {
     </div>
   );
 }
-
-    
