@@ -9,8 +9,8 @@ admin.initializeApp();
 // --- WARNING: Do NOT use hardcoded credentials in a real application ---
 // Replace the placeholder values below with your actual Gmail address and 16-character App Password.
 // This is NOT secure. It is strongly recommended to use Firebase environment configuration instead.
-const gmailEmail = "YOUR_GMAIL_ADDRESS@gmail.com";
-const gmailPassword = "YOUR_16_CHARACTER_APP_PASSWORD";
+const gmailEmail = "temahfingerofgod@gmail.com";
+const gmailPassword = "hngmxhtdvreycent";
 // --- End of Warning ---
 
 

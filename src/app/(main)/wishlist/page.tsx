@@ -65,7 +65,7 @@ export default function WishlistPage() {
               <CardHeader className="p-0">
                 <div className="relative aspect-square w-full">
                   <Image
-                    src={product.image}
+                    src={product.images[0]}
                     alt={product.name}
                     fill
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"

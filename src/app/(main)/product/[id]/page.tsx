@@ -31,6 +31,8 @@ export default function ProductDetailPage() {
 
   const product = products.find(p => p.id.toString() === id);
 
+  const [selectedImage, setSelectedImage] = useState(product?.images[0]);
+
   const getDefaultVariant = () => {
     if (!product) return undefined;
     const singleVariant = product.variants.find(v => v.name.toLowerCase() === 'single' || v.name.toLowerCase() === 'standard' || v.name.toLowerCase() === 'single bottle');
@@ -117,15 +119,37 @@ export default function ProductDetailPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="grid md:grid-cols-2 gap-8 lg:gap-12">
-        <div className="relative aspect-square w-full rounded-lg overflow-hidden">
-          <Image
-            src={product.image}
-            alt={product.name}
-            fill
-            sizes="(max-width: 768px) 100vw, 50vw"
-            className="object-cover"
-            data-ai-hint={product.dataAiHint}
-          />
+        <div>
+          <div className="relative aspect-square w-full rounded-lg overflow-hidden mb-4">
+            <Image
+              src={selectedImage || product.images[0]}
+              alt={product.name}
+              fill
+              sizes="(max-width: 768px) 100vw, 50vw"
+              className="object-cover transition-opacity duration-300"
+              data-ai-hint={product.dataAiHint}
+            />
+          </div>
+          <div className="grid grid-cols-5 gap-2">
+            {product.images.map((image, index) => (
+              <button 
+                key={index}
+                onClick={() => setSelectedImage(image)}
+                className={cn(
+                  "relative aspect-square w-full rounded-md overflow-hidden ring-2 ring-transparent transition-all",
+                  selectedImage === image ? "ring-primary" : "hover:ring-primary/50"
+                )}
+              >
+                <Image
+                  src={image}
+                  alt={`${product.name} thumbnail ${index + 1}`}
+                  fill
+                  sizes="20vw"
+                  className="object-cover"
+                />
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="flex flex-col">

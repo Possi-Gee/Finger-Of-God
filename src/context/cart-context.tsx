@@ -18,7 +18,7 @@ type CartState = {
 };
 
 type AddItemPayload = {
-    product: Omit<Product, 'variants'>,
+    product: Omit<Product, 'variants' | 'images'> & {images: string[]},
     variant: ProductVariant,
     quantity?: number
 }
@@ -57,7 +57,7 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
             id: cartItemId,
             productId: product.id,
             name: product.name,
-            image: product.image,
+            image: product.images[0],
             quantity,
             variant
         }],
