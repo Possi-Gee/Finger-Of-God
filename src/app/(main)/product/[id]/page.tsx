@@ -31,7 +31,7 @@ export default function ProductDetailPage() {
 
   const product = products.find(p => p.id.toString() === id);
 
-  const [selectedImage, setSelectedImage] = useState(product?.images[0]);
+  const [selectedImage, setSelectedImage] = useState(product?.images?.[0]);
 
   const getDefaultVariant = () => {
     if (!product) return undefined;
@@ -115,6 +115,8 @@ export default function ProductDetailPage() {
     const value = parseInt(e.target.value, 10);
     setQuantity(isNaN(value) ? 1 : value);
   }
+  
+  const mainImage = selectedImage || (product.images && product.images.length > 0 ? product.images[0] : 'https://picsum.photos/600/600');
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -122,7 +124,7 @@ export default function ProductDetailPage() {
         <div>
           <div className="relative aspect-square w-full rounded-lg overflow-hidden mb-4">
             <Image
-              src={selectedImage || product.images[0]}
+              src={mainImage}
               alt={product.name}
               fill
               sizes="(max-width: 768px) 100vw, 50vw"
