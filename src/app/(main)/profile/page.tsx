@@ -1,6 +1,7 @@
 
 'use client';
 
+import { useEffect } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,19 +11,18 @@ import { History, Heart, User, LogOut } from 'lucide-react';
 import { ProfileListItem } from '@/components/profile-list-item';
 import { useAuth } from '@/hooks/use-auth';
 import { useRouter } from 'next/navigation';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function ProfilePage() {
   const { user, loading, logout } = useAuth();
   const router = useRouter();
 
-  if (loading) {
-    return <div>Loading...</div>;
-  }
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/login?redirect=/profile');
+    }
+  }, [user, loading, router]);
 
-  if (!user) {
-    router.push('/login');
-    return null;
-  }
 
   const handleLogout = async () => {
     await logout();
@@ -32,6 +32,33 @@ export default function ProfilePage() {
   const getInitials = (name: string | null | undefined) => {
     if (!name) return 'U';
     return name.split(' ').map(n => n[0]).join('').toUpperCase();
+  }
+
+  if (loading || !user) {
+    return (
+        <div className="container mx-auto px-4 py-8">
+            <div className="max-w-2xl mx-auto">
+                <div className="flex flex-col items-center space-y-4 mb-8">
+                    <Skeleton className="h-24 w-24 rounded-full" />
+                    <div className="text-center space-y-2">
+                        <Skeleton className="h-6 w-32" />
+                        <Skeleton className="h-4 w-48" />
+                    </div>
+                </div>
+                <div className="space-y-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>My Account</CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-0">
+                             <div className="p-4"><Skeleton className="h-6 w-full" /></div>
+                             <div className="p-4"><Skeleton className="h-6 w-full" /></div>
+                        </CardContent>
+                    </Card>
+                </div>
+            </div>
+        </div>
+    );
   }
 
   return (
