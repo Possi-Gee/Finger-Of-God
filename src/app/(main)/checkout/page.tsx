@@ -73,7 +73,7 @@ const checkoutSchema = z.discriminatedUnion("deliveryMethod", [
 type CheckoutFormValues = z.infer<typeof checkoutSchema>;
 
 export default function CheckoutPage() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const { state: cartState, dispatch: cartDispatch } = useCart();
   const { state: settings } = useSiteSettings();
   const { dispatch: orderDispatch } = useOrders();
@@ -107,11 +107,19 @@ export default function CheckoutPage() {
   });
 
    useEffect(() => {
+    if (!loading && !user) {
+        toast({
+            title: 'Authentication Required',
+            description: 'Please log in to proceed with your order.',
+            variant: 'destructive',
+        });
+        router.push('/login?redirect=/checkout');
+    }
     if (user) {
       form.setValue('email', user.email || '');
       form.setValue('fullName', user.displayName || '');
     }
-  }, [user, form]);
+  }, [user, loading, router, toast, form]);
   
   const subtotal = items.reduce((sum, item) => sum + item.variant.price * item.quantity, 0);
   const tax = subtotal * (settings.taxRate / 100);
@@ -121,6 +129,7 @@ export default function CheckoutPage() {
   const onSubmit = async (data: CheckoutFormValues) => {
     setIsSubmitting(true);
     
+    // The useEffect hook handles the redirection, but we keep this as a safeguard.
     if (!user) {
       toast({
         title: 'Please Login',
@@ -188,6 +197,15 @@ export default function CheckoutPage() {
       setIsSubmitting(false);
     }
   };
+
+  if (loading) {
+    return (
+        <div className="container mx-auto px-4 py-8 text-center">
+            <Loader2 className="mx-auto h-12 w-12 animate-spin" />
+            <p className="mt-4">Verifying authentication...</p>
+        </div>
+    );
+  }
 
   if (items.length === 0 && !isSubmitting) {
     return (
@@ -588,4 +606,5 @@ export default function CheckoutPage() {
   );
 }
 
+    
     
