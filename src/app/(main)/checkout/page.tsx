@@ -173,6 +173,8 @@ export default function CheckoutPage() {
         description: 'Thank you for your purchase. A confirmation email is on its way.',
       });
 
+      // Stop spinner and then navigate
+      setIsSubmitting(false);
       router.push(`/orders/${newOrder.id}`);
       cartDispatch({ type: 'CLEAR_CART' });
 
@@ -183,8 +185,7 @@ export default function CheckoutPage() {
           description: 'There was a problem placing your order. Please try again.',
           variant: 'destructive',
       });
-    } finally {
-        setIsSubmitting(false);
+      setIsSubmitting(false);
     }
   };
 
