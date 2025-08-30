@@ -134,23 +134,27 @@ export default function AdminProductsPage() {
   const isSoldAsSingleItem = singleItemVariantIndex !== -1;
 
   const handleToggleSingleItemSale = (checked: boolean) => {
-    if (checked) {
-      if (!isSoldAsSingleItem) {
-        append({ name: 'Single', price: 0, stock: 0, originalPrice: 0 });
-      }
-    } else {
-      if (isSoldAsSingleItem) {
-        if (getValues('variants').length > 1) {
-            remove(singleItemVariantIndex);
+    setTimeout(() => {
+        if (checked) {
+            if (!isSoldAsSingleItem) {
+                append({ name: 'Single', price: 0, stock: 0, originalPrice: 0 });
+            }
         } else {
-            toast({
-                title: "Cannot Remove",
-                description: "You must have at least one variant for a product.",
-                variant: 'destructive',
-            })
+            if (isSoldAsSingleItem) {
+                if (getValues('variants').length > 1) {
+                    remove(singleItemVariantIndex);
+                } else {
+                    toast({
+                        title: "Cannot Remove",
+                        description: "You must have at least one variant for a product.",
+                        variant: 'destructive',
+                    });
+                    // This is a workaround to keep the switch checked since we can't remove the last item
+                    setValue('variants', getValues('variants')); 
+                }
+            }
         }
-      }
-    }
+    }, 0);
   };
 
 
@@ -735,3 +739,5 @@ export default function AdminProductsPage() {
     </div>
   );
 }
+
+    
