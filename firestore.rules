@@ -1,11 +1,44 @@
+
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    // Helper functions
+    function isAdmin() {
+      // Check if the user is authenticated and their email is in the admin list.
+      // This list should ideally be stored in a secure place like a custom claim or another document.
+      // For simplicity, we hardcode it here, but this is NOT recommended for production.
+      let adminEmails = ["temahfingerofgod@gmail.com"];
+      return request.auth != null && request.auth.token.email in adminEmails;
+    }
+
+    function isOwner(userId) {
+      // Check if the authenticated user's ID matches the provided userId.
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    // Rules for the 'products' collection
+    match /products/{productId} {
+      // Anyone can read (get, list) products
+      allow get, list: if true;
+
+      // Only authenticated admins can create, update, or delete products
+      allow write: if isAdmin();
+    }
+
+    // Rules for the 'orders' collection
     match /orders/{orderId} {
-      // Allow any authenticated user to create, read, list, and update orders.
-      // For a production app, you would restrict read/write access to the specific user
-      // and admins.
-      allow read, write, list, create, update: if request.auth != null;
+      // Allow create if the user is authenticated and the order belongs to them
+      allow create: if isOwner(request.resource.data.userId);
+
+      // Allow read, update if the user is the owner of the order OR if the user is an admin
+      allow read, update: if isOwner(resource.data.userId) || isAdmin();
+      
+      // Deleting orders should be restricted, typically only for admins
+      allow delete: if isAdmin();
     }
   }
 }
+
+    

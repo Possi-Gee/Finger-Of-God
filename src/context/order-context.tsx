@@ -18,6 +18,7 @@ export type ShippingAddress = {
 
 export type Order = {
     id: number;
+    userId: string; // Added to associate order with a user
     orderId: string;
     customerEmail: string;
     date: string;

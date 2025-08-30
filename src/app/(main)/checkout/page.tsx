@@ -147,6 +147,7 @@ export default function CheckoutPage() {
 
     const newOrder: Order = {
       id: orderId,
+      userId: user.uid,
       orderId: orderId.toString(), // For the function
       customerEmail: email, // for the function
       date: new Date().toISOString(),
@@ -606,5 +607,4 @@ export default function CheckoutPage() {
   );
 }
 
-    
     
