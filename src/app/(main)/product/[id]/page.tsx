@@ -31,7 +31,9 @@ export default function ProductDetailPage() {
 
   const product = products.find(p => p.id.toString() === id);
 
-  const [selectedImage, setSelectedImage] = useState(product?.images?.[0]);
+  const [selectedImage, setSelectedImage] = useState(
+    product?.images && product.images.length > 0 ? product.images[0] : undefined
+  );
 
   const getDefaultVariant = () => {
     if (!product) return undefined;
@@ -133,7 +135,7 @@ export default function ProductDetailPage() {
             />
           </div>
           <div className="grid grid-cols-5 gap-2">
-            {product.images.map((image, index) => (
+            {product.images && product.images.length > 0 && product.images.map((image, index) => (
               <button 
                 key={index}
                 onClick={() => setSelectedImage(image)}
