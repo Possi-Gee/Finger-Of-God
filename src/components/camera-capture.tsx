@@ -1,10 +1,10 @@
 
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Camera, SwitchCamera, Video, VideoOff } from 'lucide-react';
+import { Camera, SwitchCamera, VideoOff } from 'lucide-react';
 import { Alert, AlertTitle, AlertDescription } from './ui/alert';
 
 interface CameraCaptureProps {
@@ -18,11 +18,21 @@ export function CameraCapture({ onCapture }: CameraCaptureProps) {
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [isCapturing, setIsCapturing] = useState(false);
+  const streamRef = useRef<MediaStream | null>(null);
 
-  useEffect(() => {
-    const getCameraPermission = async () => {
+
+  const cleanupStream = useCallback(() => {
+    if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+        streamRef.current = null;
+    }
+  }, []);
+
+  const getCameraPermission = useCallback(async () => {
+      cleanupStream();
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+        streamRef.current = stream;
         setHasCameraPermission(true);
 
         if (videoRef.current) {
@@ -37,18 +47,15 @@ export function CameraCapture({ onCapture }: CameraCaptureProps) {
           description: 'Please enable camera permissions in your browser settings to use this feature.',
         });
       }
-    };
+    }, [toast, cleanupStream]);
 
+  useEffect(() => {
     getCameraPermission();
 
     return () => {
-      // Cleanup: stop video stream when component unmounts
-      if (videoRef.current && videoRef.current.srcObject) {
-        const stream = videoRef.current.srcObject as MediaStream;
-        stream.getTracks().forEach(track => track.stop());
-      }
+      cleanupStream();
     };
-  }, [toast]);
+  }, [getCameraPermission, cleanupStream]);
 
   const handleCapture = () => {
     if (videoRef.current && canvasRef.current) {
@@ -61,6 +68,7 @@ export function CameraCapture({ onCapture }: CameraCaptureProps) {
       if (context) {
         context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
         setCapturedImage(canvas.toDataURL('image/jpeg'));
+        cleanupStream(); // Stop the stream after capturing
       }
       setIsCapturing(false);
     }
@@ -74,6 +82,7 @@ export function CameraCapture({ onCapture }: CameraCaptureProps) {
 
   const handleRetake = () => {
     setCapturedImage(null);
+    getCameraPermission(); // Re-request camera stream
   };
 
   if (hasCameraPermission === false) {

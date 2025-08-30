@@ -49,7 +49,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, AlertTriangle, Loader2, Bot, Edit, Trash2, Search, Package, Camera } from 'lucide-react';
+import { PlusCircle, AlertTriangle, Loader2, Bot, Edit, Trash2, Search, Package, Camera, Upload } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -109,6 +109,7 @@ export default function AdminProductsPage() {
   const { user } = useAuth(); // We need the current admin/user
   const wishlistState = useWishlist();
   const { state: siteSettings } = useSiteSettings();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('All');
@@ -360,8 +361,22 @@ export default function AdminProductsPage() {
   }, [products, searchTerm, filterCategory, sortBy]);
 
   const handleImageCapture = (imageDataUri: string) => {
-    appendImage({value: imageDataUri});
+    appendImage(imageDataUri, { shouldFocus: false });
     setIsCameraOpen(false);
+  };
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const imageDataUri = e.target?.result as string;
+        if (imageDataUri) {
+          appendImage(imageDataUri, { shouldFocus: false });
+        }
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
 
@@ -491,15 +506,22 @@ export default function AdminProductsPage() {
                       ))}
                     </div>
                     <div className="flex gap-2">
-                       <Button type="button" variant="outline" size="sm" onClick={() => appendImage({ value: '' })}>
-                          <PlusCircle className="mr-2 h-4 w-4" />
-                          Add Image URL
+                       <input
+                          type="file"
+                          accept="image/*"
+                          ref={fileInputRef}
+                          onChange={handleFileSelect}
+                          className="hidden"
+                        />
+                       <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
+                          <Upload className="mr-2 h-4 w-4" />
+                          Upload from Device
                        </Button>
                        <Dialog open={isCameraOpen} onOpenChange={setIsCameraOpen}>
                          <DialogTrigger asChild>
                             <Button type="button" variant="outline" size="sm">
                                 <Camera className="mr-2 h-4 w-4" />
-                                Add with Camera
+                                Use Camera
                             </Button>
                          </DialogTrigger>
                          <DialogContent>
