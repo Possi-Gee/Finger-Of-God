@@ -12,6 +12,7 @@ import { CallToAction } from '@/components/call-to-action';
 import { PromotionalCarousel } from '@/components/promotional-carousel';
 import { FlashSales } from '@/components/flash-sales';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Card, CardContent } from '@/components/ui/card';
 
 export default function HomePage() {
   const { state: productState } = useProduct();
