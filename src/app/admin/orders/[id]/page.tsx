@@ -16,6 +16,8 @@ import { useToast } from '@/hooks/use-toast';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Loader2 } from 'lucide-react';
+import { sendOrderStatusUpdateEmail } from '@/app/actions/send-email';
+import { useSiteSettings } from '@/hooks/use-site-settings';
 
 
 const getStatusClass = (status: Order['status']) => {
@@ -51,6 +53,7 @@ export default function AdminOrderDetailPage() {
   const { state, dispatch } = useOrders();
   const { toast } = useToast();
   const [isUpdating, setIsUpdating] = useState(false);
+  const { state: settings } = useSiteSettings();
 
   const order = useMemo(() => {
     return state.orders.find((o) => o.id.toString() === id);
@@ -65,10 +68,26 @@ export default function AdminOrderDetailPage() {
 
             dispatch({ type: 'UPDATE_ORDER_STATUS', payload: { id: order.id, status } });
 
-            toast({
+            const emailResult = await sendOrderStatusUpdateEmail({
+              order,
+              status,
+              fromEmail: settings.fromEmail,
+              appName: settings.appName,
+              logoUrl: settings.logoUrl,
+            });
+
+            if (emailResult.error) {
+               toast({
+                title: 'Order Status Updated (Email Failed)',
+                description: `Order #${order.id} is now ${status}, but the notification email failed to send.`,
+                variant: 'destructive',
+              });
+            } else {
+               toast({
                 title: 'Order Status Updated',
                 description: `Order #${order.id} is now ${status}. The customer will be notified shortly.`
-            });
+              });
+            }
         } catch (error) {
              toast({
                 title: 'Update Failed',

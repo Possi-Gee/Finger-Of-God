@@ -25,6 +25,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/hooks/use-auth';
 import { doc, setDoc, collection } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { sendOrderConfirmationEmail } from '@/app/actions/send-email';
 
 
 const checkoutSchema = z.discriminatedUnion("deliveryMethod", [
@@ -175,14 +176,30 @@ export default function CheckoutPage() {
       // Save order to Firestore
       const orderRef = doc(collection(db, 'orders'), newOrder.id.toString());
       await setDoc(orderRef, newOrder);
-
-      // Add to local state
+      
       orderDispatch({ type: 'ADD_ORDER', payload: newOrder });
 
-      toast({
-        title: 'Order Placed!',
-        description: 'Thank you for your purchase. A confirmation email is on its way.',
+      const emailResult = await sendOrderConfirmationEmail({
+          order: newOrder,
+          toEmail: newOrder.shippingAddress.email,
+          fromEmail: settings.fromEmail,
+          appName: settings.appName,
+          logoUrl: settings.logoUrl,
       });
+
+      if (emailResult.error) {
+        console.error("Email failed to send:", emailResult.error);
+         toast({
+          title: 'Order Placed (Email Failed)',
+          description: "Your order was successful, but the confirmation email could not be sent.",
+          variant: 'destructive'
+        });
+      } else {
+         toast({
+          title: 'Order Placed!',
+          description: 'Thank you for your purchase. A confirmation email is on its way.',
+        });
+      }
       
       setIsSubmitting(false);
       router.push(`/orders/${newOrder.id}`);
