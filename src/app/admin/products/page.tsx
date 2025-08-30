@@ -49,13 +49,15 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, AlertTriangle, Loader2, Bot, Edit, Trash2, Search, Package } from 'lucide-react';
+import { PlusCircle, AlertTriangle, Loader2, Bot, Edit, Trash2, Search, Package, Camera } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import type { User } from 'firebase/auth';
+import { CameraCapture } from '@/components/camera-capture';
+
 
 const variantSchema = z.object({
   id: z.number().optional(),
@@ -69,7 +71,7 @@ const productSchema = z.object({
   name: z.string().min(3, 'Product name is required'),
   description: z.string().min(10, 'Description is required'),
   category: z.string().min(1, 'Category is required'),
-  images: z.array(z.string().url('Each image must be a valid URL.')).min(1, 'At least one product image is required.'),
+  images: z.array(z.string()).min(1, 'At least one product image is required.'),
   features: z.string().optional(),
   rating: z.coerce.number().min(0).max(5, 'Rating must be between 0 and 5').default(0),
   reviews: z.coerce.number().min(0).default(0),
@@ -99,6 +101,7 @@ export default function AdminProductsPage() {
   const { state: productState, dispatch: productDispatch } = useProduct();
   const { products } = productState;
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
@@ -356,6 +359,10 @@ export default function AdminProductsPage() {
 
   }, [products, searchTerm, filterCategory, sortBy]);
 
+  const handleImageCapture = (imageDataUri: string) => {
+    appendImage({value: imageDataUri});
+    setIsCameraOpen(false);
+  };
 
 
   return (
@@ -461,22 +468,50 @@ export default function AdminProductsPage() {
                 <div className="space-y-4">
                   <Label>Images</Label>
                   <Card className="p-4 bg-background space-y-4">
-                    {imageFields.map((field, index) => (
-                      <div key={field.id} className="flex items-center gap-2">
-                        <Input
-                          {...register(`images.${index}` as const)}
-                          placeholder="https://example.com/image.jpg"
-                        />
-                        <Button type="button" variant="destructive" size="icon" onClick={() => removeImage(index)}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
-                    <Button type="button" variant="outline" size="sm" onClick={() => appendImage('')}>
-                      <PlusCircle className="mr-2 h-4 w-4" />
-                      Add Image URL
-                    </Button>
-                    {errors.images && <p className="text-sm text-destructive mt-1">{errors.images.message}</p>}
+                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+                       {imageFields.map((field, index) => (
+                        <div key={field.id} className="relative group aspect-square">
+                            <Image
+                                src={field.value}
+                                alt={`Product image ${index + 1}`}
+                                fill
+                                sizes="100px"
+                                className="rounded-md object-cover"
+                            />
+                            <Button
+                                type="button"
+                                variant="destructive"
+                                size="icon"
+                                className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                onClick={() => removeImage(index)}
+                            >
+                                <Trash2 className="h-4 w-4" />
+                            </Button>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex gap-2">
+                       <Button type="button" variant="outline" size="sm" onClick={() => appendImage({ value: '' })}>
+                          <PlusCircle className="mr-2 h-4 w-4" />
+                          Add Image URL
+                       </Button>
+                       <Dialog open={isCameraOpen} onOpenChange={setIsCameraOpen}>
+                         <DialogTrigger asChild>
+                            <Button type="button" variant="outline" size="sm">
+                                <Camera className="mr-2 h-4 w-4" />
+                                Add with Camera
+                            </Button>
+                         </DialogTrigger>
+                         <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>Capture Image</DialogTitle>
+                                <DialogDescription>Center the product in the frame and click capture.</DialogDescription>
+                            </DialogHeader>
+                            <CameraCapture onCapture={handleImageCapture} />
+                         </DialogContent>
+                       </Dialog>
+                    </div>
+                    {errors.images && <p className="text-sm text-destructive mt-1">{errors.images.message || (errors.images as any)._errors.join(', ')}</p>}
                   </Card>
                 </div>
 
