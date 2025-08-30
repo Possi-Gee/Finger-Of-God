@@ -10,7 +10,7 @@ admin.initializeApp();
 // Replace the placeholder values below with your actual Gmail address and 16-character App Password.
 // This is NOT secure. It is strongly recommended to use Firebase environment configuration instead.
 const gmailEmail = "temahfingerofgod@gmail.com";
-const gmailPassword = "hngmxhtdvreycent";
+const gmailPassword = "Possigee.1";
 // --- End of Warning ---
 
 
@@ -156,4 +156,3 @@ exports.onProductCreate = functions.firestore
       return null;
     }
   });
-
