@@ -119,6 +119,7 @@ export default function AdminProductsPage() {
     reset,
     watch,
     getValues,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
@@ -637,7 +638,7 @@ export default function AdminProductsPage() {
                 <TableRow key={product.id}>
                   <TableCell>
                     <Image
-                      src={product.images[0]}
+                      src={product.images && product.images.length > 0 ? product.images[0] : 'https://picsum.photos/60/60'}
                       alt={product.name}
                       width={60}
                       height={60}
@@ -701,3 +702,5 @@ export default function AdminProductsPage() {
     </div>
   );
 }
+
+    
