@@ -120,7 +120,6 @@ export default function CheckoutPage() {
 
   const onSubmit = async (data: CheckoutFormValues) => {
     setIsSubmitting(true);
-    const { paymentMethod, deliveryMethod, orderNotes, email } = data;
     
     if (!user) {
       toast({
@@ -132,6 +131,8 @@ export default function CheckoutPage() {
       setIsSubmitting(false);
       return;
     }
+
+    const { paymentMethod, deliveryMethod, orderNotes, email } = data;
     
     const orderId = Date.now();
 
@@ -586,3 +587,5 @@ export default function CheckoutPage() {
     </div>
   );
 }
+
+    
