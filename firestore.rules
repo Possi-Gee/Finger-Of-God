@@ -1,44 +1,32 @@
-
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Helper functions
-    function isAdmin() {
-      // Check if the user is authenticated and their email is in the admin list.
-      // This list should ideally be stored in a secure place like a custom claim or another document.
-      // For simplicity, we hardcode it here, but this is NOT recommended for production.
+    
+    // Helper function to check if a user is an admin
+    function isAdmin(request) {
+      // List of authorized admin emails
       let adminEmails = ["temahfingerofgod@gmail.com"];
-      return request.auth != null && request.auth.token.email in adminEmails;
+      return request.auth.token.email_verified && request.auth.token.email in adminEmails;
     }
-
-    function isOwner(userId) {
-      // Check if the authenticated user's ID matches the provided userId.
-      return request.auth != null && request.auth.uid == userId;
-    }
-
-    // Rules for the 'products' collection
+    
+    // Products can be read by anyone, but only written by admins.
     match /products/{productId} {
-      // Anyone can read (get, list) products
-      allow get, list: if true;
-
-      // Only authenticated admins can create, update, or delete products
-      allow write: if isAdmin();
+      allow read: if true;
+      allow write: if isAdmin(request);
     }
-
-    // Rules for the 'orders' collection
+    
+    // Orders collection
     match /orders/{orderId} {
-      // Allow create if the user is authenticated and the order belongs to them
-      allow create: if isOwner(request.resource.data.userId);
-
-      // Allow read, update if the user is the owner of the order OR if the user is an admin
-      allow read, update: if isOwner(resource.data.userId) || isAdmin();
+    
+      // Users can create their own orders
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
       
-      // Deleting orders should be restricted, typically only for admins
-      allow delete: if isAdmin();
+      // Users can read and update their own orders. Admins can read any order.
+      allow read, update: if (request.auth != null && resource.data.userId == request.auth.uid) || isAdmin(request);
+      
+      // Only admins can delete orders.
+      allow delete: if isAdmin(request);
     }
   }
 }
-
-    
