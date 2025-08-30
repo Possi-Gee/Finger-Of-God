@@ -13,8 +13,6 @@ import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { sendOrderStatusUpdateEmail } from '@/app/actions/send-email';
-import { useSiteSettings } from '@/hooks/use-site-settings';
 
 const getStatusClass = (status: Order['status']) => {
   switch (status) {
@@ -33,7 +31,6 @@ export default function AdminOrdersPage() {
   const { orders } = state;
   const router = useRouter();
   const { toast } = useToast();
-  const { state: settings } = useSiteSettings();
 
   const handleStatusChange = async (order: Order, status: OrderStatus) => {
     try {
@@ -42,26 +39,11 @@ export default function AdminOrdersPage() {
 
         dispatch({ type: 'UPDATE_ORDER_STATUS', payload: { id: order.id, status } });
 
-        const emailResult = await sendOrderStatusUpdateEmail({
-          order,
-          status,
-          fromEmail: settings.fromEmail,
-          appName: settings.appName,
-          logoUrl: settings.logoUrl,
+        toast({
+          title: 'Order Status Updated',
+          description: `Order #${order.id} is now ${status}. The customer will be notified.`
         });
-
-        if (emailResult.error) {
-           toast({
-            title: 'Order Status Updated (Email Failed)',
-            description: `Order #${order.id} is now ${status}, but the notification email could not be sent.`,
-            variant: 'destructive',
-          });
-        } else {
-           toast({
-            title: 'Order Status Updated',
-            description: `Order #${order.id} is now ${status}. The customer will be notified.`
-          });
-        }
+        
     } catch(e) {
         toast({
             title: 'Update Failed',
@@ -143,5 +125,3 @@ export default function AdminOrdersPage() {
     </div>
   );
 }
-
-    

@@ -25,7 +25,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/hooks/use-auth';
 import { doc, setDoc, collection } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { sendOrderConfirmationEmail } from '@/app/actions/send-email';
 
 
 const checkoutSchema = z.discriminatedUnion("deliveryMethod", [
@@ -130,7 +129,6 @@ export default function CheckoutPage() {
   const onSubmit = async (data: CheckoutFormValues) => {
     setIsSubmitting(true);
     
-    // The useEffect hook handles the redirection, but we keep this as a safeguard.
     if (!user) {
       toast({
         title: 'Please Login',
@@ -149,8 +147,8 @@ export default function CheckoutPage() {
     const newOrder: Order = {
       id: orderId,
       userId: user.uid,
-      orderId: orderId.toString(), // For the function
-      customerEmail: email, // for the function
+      orderId: orderId.toString(),
+      customerEmail: email,
       date: new Date().toISOString(),
       items: items,
       subtotal,
@@ -173,33 +171,15 @@ export default function CheckoutPage() {
     };
 
     try {
-      // Save order to Firestore
       const orderRef = doc(collection(db, 'orders'), newOrder.id.toString());
       await setDoc(orderRef, newOrder);
       
       orderDispatch({ type: 'ADD_ORDER', payload: newOrder });
 
-      const emailResult = await sendOrderConfirmationEmail({
-          order: newOrder,
-          toEmail: newOrder.shippingAddress.email,
-          fromEmail: settings.fromEmail,
-          appName: settings.appName,
-          logoUrl: settings.logoUrl,
+      toast({
+        title: 'Order Placed!',
+        description: 'Thank you for your purchase. A confirmation email will be sent shortly.',
       });
-
-      if (emailResult.error) {
-        console.error("Email failed to send:", emailResult.error);
-         toast({
-          title: 'Order Placed (Email Failed)',
-          description: "Your order was successful, but the confirmation email could not be sent.",
-          variant: 'destructive'
-        });
-      } else {
-         toast({
-          title: 'Order Placed!',
-          description: 'Thank you for your purchase. A confirmation email is on its way.',
-        });
-      }
       
       setIsSubmitting(false);
       router.push(`/orders/${newOrder.id}`);
@@ -623,5 +603,3 @@ export default function CheckoutPage() {
     </div>
   );
 }
-
-    
