@@ -172,8 +172,7 @@ export default function CheckoutPage() {
         title: 'Order Placed!',
         description: 'Thank you for your purchase. A confirmation email is on its way.',
       });
-
-      // Stop spinner and then navigate
+      
       setIsSubmitting(false);
       router.push(`/orders/${newOrder.id}`);
       cartDispatch({ type: 'CLEAR_CART' });
