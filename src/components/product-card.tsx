@@ -76,13 +76,16 @@ export function ProductCard({ product }: ProductCardProps) {
     ? Math.round(((originalPrice - displayPrice) / originalPrice) * 100)
     : 0;
 
+  const productImage = (product.images && product.images.length > 0) ? product.images[0] : 'https://picsum.photos/600/600';
+
+
   return (
      <Link href={`/product/${product.id}`} className="group block h-full">
         <Card className="flex h-full flex-col overflow-hidden transition-all duration-300 group-hover:shadow-lg group-hover:-translate-y-1">
           <CardHeader className="p-0 relative">
             <div className="relative aspect-square w-full">
               <Image
-                src={product.images[0]}
+                src={productImage}
                 alt={product.name}
                 fill
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
