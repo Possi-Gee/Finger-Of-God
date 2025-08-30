@@ -24,7 +24,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import {
   AlertDialog,
@@ -237,7 +236,7 @@ export default function AdminProductsPage() {
 
     } else {
       const newProduct: Product = {
-        id: Date.now(),
+        id: Date.now() + Math.random(),
         ...productData,
         dataAiHint: `${data.category.toLowerCase()} product`
       };
