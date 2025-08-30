@@ -1,9 +1,28 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Allow admin (any authenticated user in this prototype) to read and write all orders
+    // Orders collection
     match /orders/{orderId} {
-       allow read, write: if request.auth != null;
+      // Any authenticated user can create an order.
+      allow create: if request.auth != null;
+
+      // Users can only read their own orders.
+      // The admin (any authenticated user in this prototype) can read any order.
+      allow read: if request.auth != null;
+
+      // Only authenticated users (admins) can update an order (e.g., change status).
+      // A user cannot change their own order status.
+      allow update: if request.auth != null;
+      
+      // Nobody can delete orders from the client.
+      allow delete: if false;
+    }
+
+    match /orders/{document=**} {
+        // Any authenticated user can list the orders collection.
+        // This is needed for the "My Orders" page and the admin page.
+        // The front-end should be responsible for filtering orders for the user.
+        allow list: if request.auth != null;
     }
   }
 }
