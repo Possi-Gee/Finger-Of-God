@@ -1,0 +1,22 @@
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Allow logged-in users to create new orders for themselves
+    match /orders/{orderId} {
+      allow create: if request.auth != null;
+
+      // Allow users to read their own orders
+      allow read: if request.auth != null && resource.data.customerEmail == request.auth.token.email;
+
+      // Allow admin/backend functions to update or delete
+      allow update, delete: if false; // To be updated with admin rules if needed
+    }
+
+    // Default deny all other reads/writes
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
