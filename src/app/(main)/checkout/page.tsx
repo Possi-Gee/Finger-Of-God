@@ -19,11 +19,13 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import Image from 'next/image';
 import { CreditCard, Truck, Smartphone, Store, MessageSquare, Loader2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import type { Order } from '@/context/order-context';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/hooks/use-auth';
-import { sendOrderConfirmationEmail } from '@/app/actions/send-email';
+import { doc, setDoc, collection } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+
 
 const checkoutSchema = z.discriminatedUnion("deliveryMethod", [
     z.object({
@@ -78,7 +80,6 @@ export default function CheckoutPage() {
   const { items } = cartState;
   const { toast } = useToast();
   const router = useRouter();
-  const pathname = usePathname();
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'card' | 'mobile_money' | 'on_delivery'>('card');
   const [deliveryMethod, setDeliveryMethod] = useState<'delivery' | 'pickup'>('delivery');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -131,9 +132,13 @@ export default function CheckoutPage() {
       setIsSubmitting(false);
       return;
     }
+    
+    const orderId = Date.now();
 
     const newOrder: Order = {
-      id: Date.now(),
+      id: orderId,
+      orderId: orderId.toString(), // For the function
+      customerEmail: email, // for the function
       date: new Date().toISOString(),
       items: items,
       subtotal,
@@ -155,33 +160,32 @@ export default function CheckoutPage() {
       orderNotes: orderNotes
     };
 
-    orderDispatch({ type: 'ADD_ORDER', payload: newOrder });
+    try {
+      // Save order to Firestore
+      const orderRef = doc(collection(db, 'orders'), newOrder.id.toString());
+      await setDoc(orderRef, newOrder);
 
-    const emailResult = await sendOrderConfirmationEmail({
-        order: newOrder,
-        toEmail: newOrder.shippingAddress.email,
-        fromEmail: settings.fromEmail,
-        appName: settings.appName,
-        logoUrl: settings.logoUrl
-    });
+      // Add to local state
+      orderDispatch({ type: 'ADD_ORDER', payload: newOrder });
 
-    if (emailResult.error) {
-        console.error('Failed to send email:', emailResult.error);
-        toast({
-            title: 'Order Placed (Email Failed)',
-            description: `Your order was placed, but we couldn't send the confirmation email. Error: ${emailResult.error.message}`,
-            variant: 'destructive',
-            duration: 9000,
-        });
-    } else {
-        toast({
-            title: 'Order Placed!',
-            description: 'Thank you for your purchase. A confirmation email has been sent.',
-        });
+      toast({
+        title: 'Order Placed!',
+        description: 'Thank you for your purchase. A confirmation email is on its way.',
+      });
+
+      cartDispatch({ type: 'CLEAR_CART' });
+      router.push(`/orders/${newOrder.id}`);
+
+    } catch (error) {
+      console.error("Failed to place order:", error);
+      toast({
+          title: 'Order Failed',
+          description: 'There was a problem placing your order. Please try again.',
+          variant: 'destructive',
+      });
+    } finally {
+        setIsSubmitting(false);
     }
-    
-    cartDispatch({ type: 'CLEAR_CART' });
-    router.push(`/orders/${newOrder.id}`);
   };
 
   if (items.length === 0 && !isSubmitting) {
@@ -582,3 +586,5 @@ export default function CheckoutPage() {
     </div>
   );
 }
+
+    

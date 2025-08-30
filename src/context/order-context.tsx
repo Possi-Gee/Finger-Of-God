@@ -18,6 +18,8 @@ export type ShippingAddress = {
 
 export type Order = {
     id: number;
+    orderId: string;
+    customerEmail: string;
     date: string;
     items: CartItem[];
     subtotal: number;
@@ -106,3 +108,5 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
     </OrderContext.Provider>
   );
 };
+
+    

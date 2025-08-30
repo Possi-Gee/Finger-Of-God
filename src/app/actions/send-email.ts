@@ -1,5 +1,8 @@
-
 'use server';
+
+// This file is no longer used by the checkout page but is kept for reference
+// or potential future use with a different email provider.
+// The primary email logic is now handled by the Firebase Function in /functions/index.js
 
 import { Resend } from 'resend';
 import { OrderConfirmationEmail } from '@/components/emails/order-confirmation';
@@ -39,17 +42,26 @@ const isFreeEmailProvider = (email: string): boolean => {
   return freeProviders.includes(domain);
 }
 
-export const sendOrderConfirmationEmail = async ({ order, toEmail, fromEmail, appName, logoUrl }: SendOrderConfirmationEmailParams) => {
-    if (!process.env.RESEND_API_KEY) {
-        const errorMessage = 'Email service is not configured: RESEND_API_KEY is missing.';
-        console.error(`sendOrderConfirmationEmail Error: ${errorMessage}`);
-        return { data: null, error: new Error(errorMessage) };
+const handleResendError = (e: any, context: string): { data: null, error: Error } => {
+    console.error(`Failed to send ${context} email:`, e);
+    let errorMessage = `An unexpected error occurred while sending the ${context} email.`;
+    if (e instanceof Error) {
+        errorMessage = e.message;
+    } else if (typeof e === 'object' && e !== null && 'message' in e) {
+        errorMessage = (e as { message: string }).message;
     }
+    return { data: null, error: new Error(errorMessage) };
+}
 
-    if (isFreeEmailProvider(fromEmail)) {
-        const errorMessage = 'Cannot send email using a free email provider. Please configure a custom domain with your email service.';
-        console.error(`sendOrderConfirmationEmail Error: ${errorMessage}`);
-        return { data: null, error: new Error(errorMessage) };
+
+export const sendOrderConfirmationEmail = async ({ order, toEmail, fromEmail, appName, logoUrl }: SendOrderConfirmationEmailParams) => {
+    const CONTEXT = 'Order Confirmation';
+    if (!process.env.RESEND_API_KEY) {
+        return handleResendError(new Error('Email service is not configured: RESEND_API_KEY is missing.'), CONTEXT);
+    }
+    
+    if (fromEmail.toLowerCase() !== 'onboarding@resend.dev' && isFreeEmailProvider(fromEmail)) {
+        return handleResendError(new Error('Cannot send email using a free email provider. Please configure a custom domain with your email service.'), CONTEXT);
     }
     
     const resend = new Resend(process.env.RESEND_API_KEY);
@@ -63,37 +75,28 @@ export const sendOrderConfirmationEmail = async ({ order, toEmail, fromEmail, ap
         });
 
         if (error) {
-            console.error('Resend API Error (Order Confirmation):', error);
-            // Ensure the error object has a message property
-            return { data: null, error: new Error(error.message || 'Resend API returned an error.') };
+            return handleResendError(error, CONTEXT);
         }
 
         return { data, error: null };
 
     } catch (e: any) {
-        console.error('Failed to send order confirmation email:', e);
-        // Ensure the error object has a message property
-        return { data: null, error: new Error(e.message || 'An unexpected error occurred.') };
+        return handleResendError(e, CONTEXT);
     }
 };
 
 export const sendProductUpdateEmail = async ({ product, user, fromEmail, appName, logoUrl }: SendProductUpdateParams) => {
+    const CONTEXT = 'Product Update';
     if (!process.env.RESEND_API_KEY) {
-        const errorMessage = 'Email service is not configured: RESEND_API_KEY is missing.';
-        console.error(`sendProductUpdateEmail Error: ${errorMessage}`);
-        return { data: null, error: new Error(errorMessage) };
+        return handleResendError(new Error('Email service is not configured: RESEND_API_KEY is missing.'), CONTEXT);
     }
     
     if (!user.email) {
-        const errorMessage = 'User has no email address.';
-        console.error(`sendProductUpdateEmail Error: ${errorMessage}`);
-        return { data: null, error: new Error(errorMessage) };
+        return handleResendError(new Error('User has no email address.'), CONTEXT);
     }
 
-    if (isFreeEmailProvider(fromEmail)) {
-        const errorMessage = 'Cannot send email using a free email provider. Please configure a custom domain with your email service.';
-        console.error(`sendProductUpdateEmail Error: ${errorMessage}`);
-        return { data: null, error: new Error(errorMessage) };
+    if (fromEmail.toLowerCase() !== 'onboarding@resend.dev' && isFreeEmailProvider(fromEmail)) {
+        return handleResendError(new Error('Cannot send email using a free email provider. Please configure a custom domain with your email service.'), CONTEXT);
     }
 
     const resend = new Resend(process.env.RESEND_API_KEY);
@@ -107,29 +110,24 @@ export const sendProductUpdateEmail = async ({ product, user, fromEmail, appName
         });
 
         if (error) {
-            console.error('Resend API Error (Product Update):', error);
-            return { data: null, error: new Error(error.message || 'Resend API returned an error.') };
+            return handleResendError(error, CONTEXT);
         }
 
         return { data, error: null };
 
     } catch (e: any) {
-        console.error('Failed to send product update email:', e);
-        return { data: null, error: new Error(e.message || 'An unexpected error occurred.') };
+        return handleResendError(e, CONTEXT);
     }
 };
 
 export const sendOrderStatusUpdateEmail = async ({ order, status, fromEmail, appName, logoUrl }: SendOrderStatusUpdateParams) => {
+    const CONTEXT = 'Order Status Update';
     if (!process.env.RESEND_API_KEY) {
-        const errorMessage = 'Email service is not configured: RESEND_API_KEY is missing.';
-        console.error(`sendOrderStatusUpdateEmail Error: ${errorMessage}`);
-        return { data: null, error: new Error(errorMessage) };
+        return handleResendError(new Error('Email service is not configured: RESEND_API_KEY is missing.'), CONTEXT);
     }
-
-    if (isFreeEmailProvider(fromEmail)) {
-        const errorMessage = 'Cannot send email using a free email provider. Please configure a custom domain with your email service.';
-        console.error(`sendOrderStatusUpdateEmail Error: ${errorMessage}`);
-        return { data: null, error: new Error(errorMessage) };
+    
+    if (fromEmail.toLowerCase() !== 'onboarding@resend.dev' && isFreeEmailProvider(fromEmail)) {
+        return handleResendError(new Error('Cannot send email using a free email provider. Please configure a custom domain with your email service.'), CONTEXT);
     }
     
     const resend = new Resend(process.env.RESEND_API_KEY);
@@ -143,14 +141,14 @@ export const sendOrderStatusUpdateEmail = async ({ order, status, fromEmail, app
         });
 
         if (error) {
-            console.error('Resend API Error (Order Status Update):', error);
-            return { data: null, error: new Error(error.message || 'Resend API returned an error.') };
+            return handleResendError(error, CONTEXT);
         }
 
         return { data, error: null };
 
     } catch (e: any) {
-        console.error('Failed to send order status update email:', e);
-        return { data: null, error: new Error(e.message || 'An unexpected error occurred.') };
+        return handleResendError(e, CONTEXT);
     }
 };
+
+    

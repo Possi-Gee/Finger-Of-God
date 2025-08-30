@@ -10,9 +10,9 @@ import { Badge } from '@/components/ui/badge';
 import { MoreHorizontal, ShoppingCart } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
-import { sendOrderStatusUpdateEmail } from '@/app/actions/send-email';
-import { useSiteSettings } from '@/hooks/use-site-settings';
 import { useToast } from '@/hooks/use-toast';
+import { doc, updateDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 const getStatusClass = (status: Order['status']) => {
   switch (status) {
@@ -28,33 +28,28 @@ const statuses: OrderStatus[] = ['Pending', 'Shipped', 'Delivered', 'Cancelled']
 
 export default function AdminOrdersPage() {
   const { state, dispatch } = useOrders();
-  const { state: siteSettings } = useSiteSettings();
   const { orders } = state;
   const router = useRouter();
   const { toast } = useToast();
 
   const handleStatusChange = async (order: Order, status: OrderStatus) => {
-    dispatch({ type: 'UPDATE_ORDER_STATUS', payload: { id: order.id, status } });
-    
-    const emailResult = await sendOrderStatusUpdateEmail({
-        order,
-        status,
-        fromEmail: siteSettings.fromEmail,
-        appName: siteSettings.appName,
-        logoUrl: siteSettings.logoUrl
-    });
+    try {
+        const orderRef = doc(db, 'orders', order.id.toString());
+        await updateDoc(orderRef, { status: status });
 
-    if (emailResult.error) {
-        toast({
-            title: 'Status Updated (Email Failed)',
-            description: `Order #${order.id} status changed, but notification email failed: ${emailResult.error.message}`,
-            variant: 'destructive',
-        });
-    } else {
+        dispatch({ type: 'UPDATE_ORDER_STATUS', payload: { id: order.id, status } });
+
         toast({
             title: 'Order Status Updated',
-            description: `Order #${order.id} is now ${status}. Customer notified.`
+            description: `Order #${order.id} is now ${status}. The customer will be notified shortly.`
         });
+    } catch(e) {
+        toast({
+            title: 'Update Failed',
+            description: `Could not update order #${order.id}. Please check the logs.`,
+            variant: 'destructive',
+        });
+        console.error("Failed to update status from list view:", e);
     }
   };
   
@@ -129,3 +124,5 @@ export default function AdminOrdersPage() {
     </div>
   );
 }
+
+    

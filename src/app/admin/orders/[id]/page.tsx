@@ -10,11 +10,13 @@ import { Separator } from '@/components/ui/separator';
 import Image from 'next/image';
 import { ArrowLeft, Package, Truck, User, MoreVertical, Store, MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
-import { sendOrderStatusUpdateEmail } from '@/app/actions/send-email';
-import { useSiteSettings } from '@/hooks/use-site-settings';
+import { doc, updateDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { Loader2 } from 'lucide-react';
+
 
 const getStatusClass = (status: Order['status']) => {
   switch (status) {
@@ -47,8 +49,8 @@ export default function AdminOrderDetailPage() {
   const router = useRouter();
   const { id } = params;
   const { state, dispatch } = useOrders();
-  const { state: siteSettings } = useSiteSettings();
   const { toast } = useToast();
+  const [isUpdating, setIsUpdating] = useState(false);
 
   const order = useMemo(() => {
     return state.orders.find((o) => o.id.toString() === id);
@@ -56,27 +58,26 @@ export default function AdminOrderDetailPage() {
 
   const handleStatusChange = async (status: OrderStatus) => {
     if (order) {
-        dispatch({ type: 'UPDATE_ORDER_STATUS', payload: { id: order.id, status } });
-        
-        const emailResult = await sendOrderStatusUpdateEmail({
-            order,
-            status,
-            fromEmail: siteSettings.fromEmail,
-            appName: siteSettings.appName,
-            logoUrl: siteSettings.logoUrl
-        });
+        setIsUpdating(true);
+        try {
+            const orderRef = doc(db, 'orders', order.id.toString());
+            await updateDoc(orderRef, { status: status });
 
-        if (emailResult.error) {
-            toast({
-                title: 'Status Updated (Email Failed)',
-                description: `Order #${order.id} status changed, but notification email failed: ${emailResult.error.message}`,
-                variant: 'destructive',
-            });
-        } else {
+            dispatch({ type: 'UPDATE_ORDER_STATUS', payload: { id: order.id, status } });
+
             toast({
                 title: 'Order Status Updated',
-                description: `Order #${order.id} is now ${status}. Customer notified.`
+                description: `Order #${order.id} is now ${status}. The customer will be notified shortly.`
             });
+        } catch (error) {
+             toast({
+                title: 'Update Failed',
+                description: 'Could not update the order status in the database.',
+                variant: 'destructive',
+            });
+             console.error("Failed to update order status: ", error);
+        } finally {
+            setIsUpdating(false);
         }
     }
   };
@@ -101,14 +102,17 @@ export default function AdminOrderDetailPage() {
         </Button>
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button variant="outline">Update Status <MoreVertical className="ml-2 h-4 w-4" /></Button>
+                <Button variant="outline" disabled={isUpdating}>
+                    {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Update Status <MoreVertical className="ml-2 h-4 w-4" />
+                </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
                 {statuses.map(status => (
                     <DropdownMenuItem 
                         key={status} 
                         onClick={() => handleStatusChange(status)}
-                        disabled={order.status === status}
+                        disabled={order.status === status || isUpdating}
                     >
                         Mark as {status}
                     </DropdownMenuItem>
@@ -218,3 +222,5 @@ export default function AdminOrderDetailPage() {
     </div>
   );
 }
+
+    
