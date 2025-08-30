@@ -6,13 +6,13 @@ const nodemailer = require("nodemailer");
 // Initialize Firebase Admin SDK
 admin.initializeApp();
 
-// Configure Nodemailer with your Gmail credentials
-// IMPORTANT: Use environment variables to store your email and password securely.
-// In the Firebase console, set these using:
-// firebase functions:config:set gmail.email="your-email@gmail.com"
-// firebase functions:config:set gmail.password="your-16-character-app-password"
-const gmailEmail = functions.config().gmail.email;
-const gmailPassword = functions.config().gmail.password;
+// --- WARNING: Do NOT use hardcoded credentials in a real application ---
+// Replace the placeholder values below with your actual Gmail address and 16-character App Password.
+// This is NOT secure. It is strongly recommended to use Firebase environment configuration instead.
+const gmailEmail = "YOUR_GMAIL_ADDRESS@gmail.com";
+const gmailPassword = "YOUR_16_CHARACTER_APP_PASSWORD";
+// --- End of Warning ---
+
 
 const mailTransport = nodemailer.createTransport({
   service: "gmail",
