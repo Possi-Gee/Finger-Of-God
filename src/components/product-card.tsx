@@ -63,14 +63,25 @@ export function ProductCard({ product }: ProductCardProps) {
   
   const productVariants = product.variants || [];
 
-  const standardVariant = productVariants.find(v => v.name === 'Standard' || v.name === 'Single' || v.name === 'Single Bottle');
-  
-  const displayPrice = standardVariant 
-    ? standardVariant.price 
-    : (productVariants.length > 0 ? Math.min(...productVariants.map(v => v.price)) : 0);
+  const singleVariant = productVariants.find(v => v.name === 'Standard' || v.name === 'Single' || v.name === 'Single Bottle');
+  const packVariants = productVariants.filter(v => v.name !== 'Standard' && v.name !== 'Single' && v.name !== 'Single Bottle');
 
-  const originalPrice = standardVariant?.originalPrice 
-    || (productVariants.length > 0 && productVariants[0].originalPrice ? productVariants[0].originalPrice : 0);
+  let displayPrice = 0;
+  let originalPrice = 0;
+  let displayVariant = null;
+
+  if (packVariants.length > 0) {
+    displayVariant = packVariants.sort((a,b) => a.price - b.price)[0];
+  } else if (singleVariant) {
+    displayVariant = singleVariant;
+  } else if (productVariants.length > 0) {
+    displayVariant = productVariants.sort((a,b) => a.price - b.price)[0];
+  }
+
+  if (displayVariant) {
+    displayPrice = displayVariant.price;
+    originalPrice = displayVariant.originalPrice || 0;
+  }
   
   const discount = (originalPrice && originalPrice > displayPrice)
     ? Math.round(((originalPrice - displayPrice) / originalPrice) * 100)
@@ -105,7 +116,7 @@ export function ProductCard({ product }: ProductCardProps) {
             <p className="text-sm font-medium leading-tight flex-grow">{product.name}</p>
             <div className="mt-2 flex items-baseline gap-2 flex-wrap">
                 <p className="text-lg font-bold text-foreground">
-                  {!standardVariant && productVariants.length > 1 ? 'From ' : ''}GH₵{displayPrice.toFixed(2)}
+                  {productVariants.length > 1 && !singleVariant ? 'From ' : ''}GH₵{displayPrice.toFixed(2)}
                 </p>
                 {originalPrice > 0 && (
                     <p className="text-sm text-muted-foreground line-through">GH₵{originalPrice.toFixed(2)}</p>
