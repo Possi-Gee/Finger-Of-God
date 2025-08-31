@@ -264,7 +264,6 @@ export default function AdminProductsPage() {
       const productRef = doc(db, 'products', newProduct.id.toString());
       await setDoc(productRef, newProduct);
       
-      productDispatch({ type: 'ADD_PRODUCT', payload: newProduct });
       toast({
         title: 'Product Added',
         description: `${data.name} has been successfully added.`,
@@ -692,8 +691,8 @@ export default function AdminProductsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredAndSortedProducts.length > 0 ? filteredAndSortedProducts.map((product, index) => (
-                <TableRow key={product.id || `product-${index}-${product.name}`}>
+              {filteredAndSortedProducts.length > 0 ? filteredAndSortedProducts.map((product) => (
+                <TableRow key={product.id}>
                   <TableCell>
                     <Image
                       src={(product.images && product.images.length > 0) ? product.images[0] : 'https://picsum.photos/60/60'}
