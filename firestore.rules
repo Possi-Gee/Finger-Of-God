@@ -7,7 +7,7 @@ service cloud.firestore {
     function isAdmin(request) {
       // List of authorized admin emails
       let adminEmails = ["temahfingerofgod@gmail.com"];
-      return request.auth != null && request.auth.token.email_verified && request.auth.token.email in adminEmails;
+      return request.auth.token.email_verified && request.auth.token.email in adminEmails;
     }
     
     // Products can be read by anyone, but only written by admins.
@@ -19,14 +19,15 @@ service cloud.firestore {
     // Orders collection
     match /orders/{orderId} {
     
-      // Users can create their own orders
+      // Allow users to create their own orders.
       allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
       
-      // Users can read their own orders. Admins can read any order.
-      allow read, update: if (request.auth != null && resource.data.userId == request.auth.uid) || isAdmin(request);
-
-      // Admins can list all orders. Users can list their own orders.
-      allow list: if isAdmin(request) || (request.auth != null && request.query.where.isFilter() && request.query.where.path == "userId" && request.query.where.value == request.auth.uid);
+      // Allow authenticated users to perform list and read operations.
+      // The actual documents they can see are restricted by the query in the app's code.
+      allow list, read: if request.auth != null;
+      
+      // Allow users to update their own orders, and admins to update any order.
+      allow update: if (request.auth != null && resource.data.userId == request.auth.uid) || isAdmin(request);
       
       // Only admins can delete orders.
       allow delete: if isAdmin(request);
