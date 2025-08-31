@@ -7,6 +7,8 @@ import { useSiteSettings } from '@/hooks/use-site-settings';
 import { ShoppingBag } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useProduct } from '@/hooks/use-product';
+import { useMemo } from 'react';
 
 const TwitterIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg fill="currentColor" viewBox="0 0 24 24" {...props}>
@@ -28,6 +30,25 @@ const InstagramIcon = (props: React.SVGProps<SVGSVGElement>) => (
 
 export function Footer() {
   const { state: settings } = useSiteSettings();
+  const { state: productState } = useProduct();
+
+  const productCategories = useMemo(() => {
+    return [...new Set(productState.products.map((p) => p.category))].sort();
+  }, [productState.products]);
+
+  const shopColumn = {
+    id: 1,
+    title: 'Shop',
+    links: productCategories.map((category, index) => ({
+      id: index + 1,
+      label: category,
+      url: `/?category=${encodeURIComponent(category)}`
+    }))
+  };
+
+  const otherColumns = settings.footer.columns.filter(c => c.title.toLowerCase() !== 'shop');
+  const footerColumns = [shopColumn, ...otherColumns];
+
 
   return (
     <footer className="border-t bg-card text-card-foreground">
@@ -47,7 +68,7 @@ export function Footer() {
             </p>
           </div>
 
-          {settings.footer.columns.map((column) => (
+          {footerColumns.map((column) => (
              <div key={column.id} className="space-y-3">
                 <h4 className="font-semibold">{column.title}</h4>
                 <ul className="space-y-2 text-sm">

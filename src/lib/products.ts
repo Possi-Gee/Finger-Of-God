@@ -200,8 +200,3 @@ export const products: Product[] = [
     ],
   }
 ];
-
-export const categories = [
-  'All',
-  ...Array.from(new Set(products.map((p) => p.category))).sort(),
-];

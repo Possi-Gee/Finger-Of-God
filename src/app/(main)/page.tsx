@@ -4,7 +4,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { categories } from '@/lib/products';
 import { ProductCard } from '@/components/product-card';
 import { Search, ShoppingBag } from 'lucide-react';
 import { useProduct } from '@/hooks/use-product';
@@ -13,17 +12,30 @@ import { PromotionalCarousel } from '@/components/promotional-carousel';
 import { FlashSales } from '@/components/flash-sales';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
+import { useSearchParams } from 'next/navigation';
 
 export default function HomePage() {
   const { state: productState } = useProduct();
   const { products, loading } = productState;
+  const searchParams = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [isClient, setIsClient] = useState(false);
 
+  const categories = useMemo(() => {
+    return ['All', ...[...new Set(products.map((p) => p.category))].sort()];
+  }, [products]);
+
   useEffect(() => {
     setIsClient(true);
-  }, []);
+    const categoryFromUrl = searchParams.get('category');
+    if (categoryFromUrl && categories.includes(categoryFromUrl)) {
+      setSelectedCategory(categoryFromUrl);
+    } else {
+      setSelectedCategory('All');
+    }
+  }, [searchParams, categories]);
+
 
   const filteredProducts = useMemo(() => {
     return products.filter(product => {

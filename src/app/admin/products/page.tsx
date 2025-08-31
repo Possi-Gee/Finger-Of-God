@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { useForm, Controller, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { categories, type Product } from '@/lib/products';
+import { type Product } from '@/lib/products';
 import { useProduct } from '@/hooks/use-product';
 import { generateProductDescription } from '@/ai/flows/generate-product-description';
 import { useAuth } from '@/hooks/use-auth';
@@ -95,6 +95,10 @@ export default function AdminProductsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('All');
   const [sortBy, setSortBy] = useState('name-asc');
+
+  const categories = useMemo(() => {
+    return ['All', ...[...new Set(products.map((p) => p.category))].sort()];
+  }, [products]);
 
 
   const {
