@@ -5,18 +5,27 @@ const nodemailer = require("nodemailer");
 
 admin.initializeApp();
 
-// Configure Nodemailer transporter using Gmail
+// Configure Nodemailer transporter using environment variables
 // IMPORTANT: You must use an "App Password" for this to work with Gmail's security.
 // See: https://support.google.com/accounts/answer/185833
+//
+// To set these variables, run the following commands in your terminal in the project directory:
+// firebase functions:config:set gmail.user="your-email@gmail.com"
+// firebase functions:config:set gmail.pass="your-16-digit-app-password"
+//
+// After setting, deploy functions for the changes to take effect:
+// firebase deploy --only functions
 const transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
-        user: "temahfingerofgod@gmail.com",
-        pass: "hngmxhtdvreycent",
+        user: functions.config().gmail.user,
+        pass: functions.config().gmail.pass,
     },
 });
 
-const ADMIN_EMAIL = "temahfingerofgod@gmail.com";
+// The admin email should also be configured for flexibility.
+// Run: firebase functions:config:set admin.email="your-admin-email@example.com"
+const ADMIN_EMAIL = functions.config().admin.email;
 
 /**
  * Generates the HTML body for an email.
@@ -102,7 +111,7 @@ exports.onOrderCreate = functions.firestore
 
         // --- Email to Customer ---
         const customerMailOptions = {
-            from: `"${appName}" <${ADMIN_EMAIL}>`,
+            from: `"${appName}" <${functions.config().gmail.user}>`,
             to: customerEmail,
             subject: `Your ${appName} Order Confirmation #${order.id}`,
             html: generateEmailHTML(
@@ -115,7 +124,7 @@ exports.onOrderCreate = functions.firestore
 
         // --- Email to Admin ---
         const adminMailOptions = {
-            from: `"${appName} Admin" <${ADMIN_EMAIL}>`,
+            from: `"${appName} Admin" <${functions.config().gmail.user}>`,
             to: ADMIN_EMAIL,
             subject: `New Order Received #${order.id}`,
             html: generateEmailHTML(
@@ -192,7 +201,7 @@ exports.onOrderUpdate = functions.firestore
         }
 
         const mailOptions = {
-            from: `"${appName}" <${ADMIN_EMAIL}>`,
+            from: `"${appName}" <${functions.config().gmail.user}>`,
             to: customerEmail,
             subject: `Your ${appName} order #${order.id} is now: ${order.status}`,
             html: generateEmailHTML(
