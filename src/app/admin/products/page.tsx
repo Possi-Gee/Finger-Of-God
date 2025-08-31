@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { useForm, Controller, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { type Product } from '@/lib/products';
+import { type Product, type ProductVariant } from '@/lib/products';
 import { useProduct } from '@/hooks/use-product';
 import { generateProductDescription } from '@/ai/flows/generate-product-description';
 import { useAuth } from '@/hooks/use-auth';
@@ -24,7 +24,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import {
   AlertDialog,
@@ -60,7 +59,7 @@ import { CameraCapture } from '@/components/camera-capture';
 
 
 const variantSchema = z.object({
-  id: z.number().optional(),
+  id: z.string().optional(),
   name: z.string().min(1, 'Variant name is required'),
   price: z.coerce.number().min(0.01, 'Price must be greater than 0'),
   originalPrice: z.coerce.number().optional(),
@@ -68,6 +67,7 @@ const variantSchema = z.object({
 });
 
 const productSchema = z.object({
+  id: z.string().optional(),
   name: z.string().min(3, 'Product name is required'),
   description: z.string().min(10, 'Description is required'),
   category: z.string().min(1, 'Category is required'),
@@ -129,7 +129,7 @@ export default function AdminProductsPage() {
       isOfficialStore: false,
       rating: 0,
       reviews: 0,
-      variants: [{ name: 'Standard', price: 0, stock: 0 }],
+      variants: [{ name: 'Standard', price: 0, stock: 0, id: crypto.randomUUID() }],
       images: [],
     }
   });
@@ -153,7 +153,7 @@ export default function AdminProductsPage() {
     setTimeout(() => {
         if (checked) {
             if (!isSoldAsSingleItem) {
-                append({ name: 'Single', price: 0, stock: 0, originalPrice: 0 });
+                append({ name: 'Single', price: 0, stock: 0, originalPrice: 0, id: crypto.randomUUID() });
             }
         } else {
             if (isSoldAsSingleItem) {
@@ -212,7 +212,7 @@ export default function AdminProductsPage() {
       isOfficialStore: false,
       rating: 0,
       reviews: 0,
-      variants: [{ name: 'Standard', price: 0, stock: 0 }],
+      variants: [{ name: 'Standard', price: 0, stock: 0, id: crypto.randomUUID() }],
       name: '',
       description: '',
       category: '',
@@ -232,7 +232,7 @@ export default function AdminProductsPage() {
   const onSubmit = async (data: ProductFormValues) => {
     const productData = {
       ...data,
-      variants: data.variants.map(v => ({...v, id: v.id || Date.now() + Math.random()}))
+      variants: data.variants.map(v => ({...v, id: v.id || crypto.randomUUID()}))
     }
 
     if (editingProduct) {
@@ -253,7 +253,7 @@ export default function AdminProductsPage() {
 
     } else {
       const newProduct: Product = {
-        id: Date.now() + Math.random(),
+        id: crypto.randomUUID(),
         ...productData,
         dataAiHint: `${data.category.toLowerCase()} product`
       };
@@ -274,7 +274,7 @@ export default function AdminProductsPage() {
     setEditingProduct(product);
     const productWithVariantIds = {
         ...product,
-        variants: product.variants.map(v => ({ ...v, id: v.id || Math.random() }))
+        variants: product.variants.map(v => ({ ...v, id: v.id || crypto.randomUUID() }))
     };
     reset(productWithVariantIds);
     setIsDialogOpen(true);
@@ -311,7 +311,7 @@ export default function AdminProductsPage() {
       return `GH₵${minPrice.toFixed(2)}`;
     }
     return `GH₵${minPrice.toFixed(2)} - GH₵${maxPrice.toFixed(2)}`;
-  }
+  };
   
   const filteredAndSortedProducts = useMemo(() => {
     let filtered = [...products];
@@ -618,7 +618,7 @@ export default function AdminProductsPage() {
                     <Button
                         type="button"
                         variant="outline"
-                        onClick={() => append({ name: '', price: 0, stock: 0})}
+                        onClick={() => append({ name: '', price: 0, stock: 0, id: crypto.randomUUID() })}
                     >
                         <PlusCircle className="mr-2" />
                         Add Pack/Bundle
@@ -748,7 +748,7 @@ export default function AdminProductsPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} className={buttonVariants({ variant: 'destructive'})}>
+            <AlertDialogAction onClick={confirmDelete} className={buttonVariants({ variant: "destructive" })}>
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>

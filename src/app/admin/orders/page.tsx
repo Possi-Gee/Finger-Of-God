@@ -54,7 +54,7 @@ export default function AdminOrdersPage() {
     }
   };
   
-  const handleViewOrder = (orderId: number) => {
+  const handleViewOrder = (orderId: string) => {
     router.push(`/admin/orders/${orderId}`);
   };
 

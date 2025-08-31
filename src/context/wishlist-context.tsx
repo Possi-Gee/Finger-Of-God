@@ -10,7 +10,7 @@ type WishlistState = {
 
 type WishlistAction =
   | { type: 'ADD_ITEM'; payload: Product }
-  | { type: 'REMOVE_ITEM'; payload: { id: number } }
+  | { type: 'REMOVE_ITEM'; payload: { id: string } }
   | { type: 'SET_STATE'; payload: WishlistState };
 
 const initialState: WishlistState = {
@@ -46,7 +46,7 @@ const wishlistReducer = (state: WishlistState, action: WishlistAction): Wishlist
 export type WishlistContextType = {
   state: WishlistState;
   dispatch: React.Dispatch<WishlistAction>;
-  isWishlisted: (id: number) => boolean;
+  isWishlisted: (id: string) => boolean;
 };
 
 export const WishlistContext = createContext<WishlistContextType | undefined>(undefined);
@@ -78,7 +78,7 @@ export const WishlistProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [state, isHydrated]);
 
-  const isWishlisted = (id: number) => state.items.some(item => item.id === id);
+  const isWishlisted = (id: string) => state.items.some(item => item.id === id);
 
   return (
     <WishlistContext.Provider value={{ state, dispatch, isWishlisted }}>

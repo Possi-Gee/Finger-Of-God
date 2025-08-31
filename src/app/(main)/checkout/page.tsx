@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -141,7 +142,7 @@ export default function CheckoutPage() {
 
     const { paymentMethod, deliveryMethod, orderNotes, email } = data;
     
-    const orderId = Date.now() + Math.random();
+    const orderId = crypto.randomUUID();
 
     const newOrder: Order = {
       id: orderId,

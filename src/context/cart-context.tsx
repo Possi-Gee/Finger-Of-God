@@ -5,8 +5,8 @@ import type { Product, ProductVariant } from '@/lib/products';
 import React, { createContext, useReducer, useEffect, type ReactNode, useState } from 'react';
 
 export interface CartItem {
-  id: number; // This is now productId_variantId
-  productId: number;
+  id: string; // This is now productId_variantId
+  productId: string;
   name: string;
   image: string;
   quantity: number;
@@ -25,8 +25,8 @@ type AddItemPayload = {
 
 type CartAction =
   | { type: 'ADD_ITEM'; payload: AddItemPayload }
-  | { type: 'REMOVE_ITEM'; payload: { id: number } }
-  | { type: 'UPDATE_QUANTITY'; payload: { id: number; quantity: number } }
+  | { type: 'REMOVE_ITEM'; payload: { id: string } }
+  | { type: 'UPDATE_QUANTITY'; payload: { id: string; quantity: number } }
   | { type: 'SET_STATE'; payload: CartState }
   | { type: 'CLEAR_CART' };
 
@@ -38,7 +38,7 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
   switch (action.type) {
     case 'ADD_ITEM': {
       const { product, variant, quantity = 1 } = action.payload;
-      const cartItemId = product.id * 1000 + variant.id; // Create a unique ID for the cart item
+      const cartItemId = `${product.id}_${variant.id}`;
       const existingItem = state.items.find(item => item.id === cartItemId);
       
       if (existingItem) {

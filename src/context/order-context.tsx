@@ -25,7 +25,7 @@ export type ShippingAddress = {
 };
 
 export type Order = {
-    id: number;
+    id: string;
     userId: string; 
     orderId: string;
     customerEmail: string;
@@ -51,7 +51,7 @@ type OrderState = {
 
 type OrderAction =
   | { type: 'ADD_ORDER'; payload: Order }
-  | { type: 'UPDATE_ORDER_STATUS'; payload: { id: number; status: OrderStatus } }
+  | { type: 'UPDATE_ORDER_STATUS'; payload: { id: string; status: OrderStatus } }
   | { type: 'SET_ORDERS'; payload: Order[] }
   | { type: 'SET_LOADING'; payload: boolean };
 

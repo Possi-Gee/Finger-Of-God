@@ -15,7 +15,7 @@ type ProductState = {
 type ProductAction =
   | { type: 'ADD_PRODUCT'; payload: Product }
   | { type: 'UPDATE_PRODUCT'; payload: Product }
-  | { type: 'DELETE_PRODUCT'; payload: { id: number } }
+  | { type: 'DELETE_PRODUCT'; payload: { id: string } }
   | { type: 'SET_PRODUCTS'; payload: Product[] }
   | { type: 'SET_LOADING'; payload: boolean };
 

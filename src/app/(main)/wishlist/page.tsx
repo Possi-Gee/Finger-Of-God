@@ -32,7 +32,7 @@ export default function WishlistPage() {
     );
   }
 
-  const handleRemoveFromWishlist = (id: number, name: string) => {
+  const handleRemoveFromWishlist = (id: string, name: string) => {
     wishlistDispatch({ type: 'REMOVE_ITEM', payload: { id } });
     toast({
       title: 'Removed from wishlist',
