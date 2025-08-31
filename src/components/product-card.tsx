@@ -67,22 +67,10 @@ export function ProductCard({ product }: ProductCardProps) {
   
   let displayPrice = 0;
   let originalPrice = 0;
-  let displayVariant = null;
-  let pricePrefix = '';
-
+  
   if (standardVariant) {
-    displayVariant = standardVariant;
-  } else if (productVariants.length > 0) {
-    // If no standard variant, find the cheapest one and add "From "
-    displayVariant = productVariants.sort((a,b) => a.price - b.price)[0];
-    if (productVariants.length > 1) {
-      pricePrefix = 'From ';
-    }
-  }
-
-  if (displayVariant) {
-    displayPrice = displayVariant.price;
-    originalPrice = displayVariant.originalPrice || 0;
+    displayPrice = standardVariant.price;
+    originalPrice = standardVariant.originalPrice || 0;
   }
   
   const discount = (originalPrice && originalPrice > displayPrice)
@@ -116,14 +104,16 @@ export function ProductCard({ product }: ProductCardProps) {
           <CardContent className="flex flex-col flex-grow p-3">
              {product.isOfficialStore && <Badge className="bg-cyan-600 hover:bg-cyan-700 w-fit mb-2">Official Store</Badge>}
             <p className="text-sm font-medium leading-tight flex-grow">{product.name}</p>
-            <div className="mt-2 flex items-baseline gap-2 flex-wrap">
-                <p className="text-lg font-bold text-foreground">
-                  {pricePrefix}GH₵{displayPrice.toFixed(2)}
-                </p>
-                {originalPrice > 0 && (
-                    <p className="text-sm text-muted-foreground line-through">GH₵{originalPrice.toFixed(2)}</p>
-                )}
-            </div>
+            {standardVariant && (
+              <div className="mt-2 flex items-baseline gap-2 flex-wrap">
+                  <p className="text-lg font-bold text-foreground">
+                    GH₵{displayPrice.toFixed(2)}
+                  </p>
+                  {originalPrice > 0 && (
+                      <p className="text-sm text-muted-foreground line-through">GH₵{originalPrice.toFixed(2)}</p>
+                  )}
+              </div>
+            )}
             <div className="flex items-center gap-1 mt-1">
                 <div className="flex items-center">
                     {[...Array(5)].map((_, i) => (
