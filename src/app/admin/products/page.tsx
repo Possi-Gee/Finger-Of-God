@@ -24,7 +24,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import {
   AlertDialog,
@@ -256,7 +255,8 @@ export default function AdminProductsPage() {
       const newProduct: Product = {
         id: crypto.randomUUID(),
         ...productData,
-        dataAiHint: `${data.category.toLowerCase()} product`
+        dataAiHint: `${data.category.toLowerCase()} product`,
+        variants: productData.variants.map(v => ({...v, id: crypto.randomUUID()})),
       };
       
       const productRef = doc(db, 'products', newProduct.id.toString());
