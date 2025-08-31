@@ -167,23 +167,25 @@ export default function CheckoutPage() {
       paymentMethod,
       deliveryMethod,
       status: 'Pending',
-      orderNotes: orderNotes
+      orderNotes: orderNotes,
+      appName: settings.appName,
     };
 
     try {
+      // Use the orderId as the document ID in Firestore for consistency
       const orderRef = doc(collection(db, 'orders'), newOrder.id.toString());
       await setDoc(orderRef, newOrder);
       
-      orderDispatch({ type: 'ADD_ORDER', payload: newOrder });
+      // We no longer need to dispatch ADD_ORDER here, as the onSnapshot listener will pick it up.
+      // orderDispatch({ type: 'ADD_ORDER', payload: newOrder });
 
       toast({
         title: 'Order Placed!',
         description: 'Thank you for your purchase. A confirmation email will be sent shortly.',
       });
       
-      setIsSubmitting(false);
-      router.push(`/orders/${newOrder.id}`);
       cartDispatch({ type: 'CLEAR_CART' });
+      router.push(`/orders/${newOrder.id}`);
 
     } catch (error) {
       console.error("Failed to place order:", error);
@@ -192,6 +194,7 @@ export default function CheckoutPage() {
           description: 'There was a problem placing your order. Please try again.',
           variant: 'destructive',
       });
+    } finally {
       setIsSubmitting(false);
     }
   };

@@ -3,6 +3,14 @@
 
 import React, { createContext, useReducer, useEffect, type ReactNode, useState } from 'react';
 import type { CartItem } from './cart-context';
+import { db } from '@/lib/firebase';
+import { collection, onSnapshot, query, where, orderBy } from 'firebase/firestore';
+import { useAuth } from '@/hooks/use-auth';
+
+// This must match the admin email list in firestore.rules
+const ADMIN_EMAILS = [
+  "temahfingerofgod@gmail.com",
+];
 
 export type OrderStatus = 'Pending' | 'Shipped' | 'Delivered' | 'Cancelled';
 
@@ -18,7 +26,7 @@ export type ShippingAddress = {
 
 export type Order = {
     id: number;
-    userId: string; // Added to associate order with a user
+    userId: string; 
     orderId: string;
     customerEmail: string;
     date: string;
@@ -32,38 +40,48 @@ export type Order = {
     deliveryMethod: 'delivery' | 'pickup';
     status: OrderStatus;
     orderNotes?: string;
+    appName?: string;
 };
 
 
 type OrderState = {
   orders: Order[];
+  loading: boolean;
 };
 
 type OrderAction =
   | { type: 'ADD_ORDER'; payload: Order }
   | { type: 'UPDATE_ORDER_STATUS'; payload: { id: number; status: OrderStatus } }
-  | { type: 'SET_STATE'; payload: OrderState };
+  | { type: 'SET_ORDERS'; payload: Order[] }
+  | { type: 'SET_LOADING'; payload: boolean };
+
 
 const initialState: OrderState = {
   orders: [],
+  loading: true,
 };
 
 const orderReducer = (state: OrderState, action: OrderAction): OrderState => {
   switch (action.type) {
     case 'ADD_ORDER':
+      // This might not be needed anymore if we rely solely on Firestore snapshot,
+      // but can be kept for optimistic UI updates if desired.
       return {
         ...state,
         orders: [action.payload, ...state.orders],
       };
     case 'UPDATE_ORDER_STATUS':
+       // This can also be handled by the snapshot listener, but direct dispatch gives faster UI feedback.
       return {
         ...state,
         orders: state.orders.map(order =>
           order.id === action.payload.id ? { ...order, status: action.payload.status } : order
         ),
       };
-    case 'SET_STATE':
-      return action.payload;
+    case 'SET_ORDERS':
+        return { ...state, orders: action.payload, loading: false };
+    case 'SET_LOADING':
+        return { ...state, loading: action.payload };
     default:
       return state;
   }
@@ -78,30 +96,49 @@ export const OrderContext = createContext<OrderContextType | undefined>(undefine
 
 export const OrderProvider = ({ children }: { children: ReactNode }) => {
   const [state, dispatch] = useReducer(orderReducer, initialState);
-  const [isHydrated, setIsHydrated] = useState(false);
+  const { user, loading: authLoading } = useAuth(); // Use auth context to get user info
 
   useEffect(() => {
-    try {
-      const storedOrders = localStorage.getItem('shopwave_orders');
-      if (storedOrders) {
-        dispatch({ type: 'SET_STATE', payload: JSON.parse(storedOrders) });
-      }
-    } catch (error) {
-      console.error("Failed to load orders from localStorage", error);
-    } finally {
-        setIsHydrated(true);
+    if (authLoading) {
+      dispatch({ type: 'SET_LOADING', payload: true });
+      return;
     }
-  }, []);
 
-  useEffect(() => {
-    if(isHydrated) {
-        try {
-            localStorage.setItem('shopwave_orders', JSON.stringify(state));
-        } catch (error) {
-            console.error("Failed to save orders to localStorage", error);
-        }
+    if (!user) {
+      // If no user is logged in, clear orders and stop loading.
+      dispatch({ type: 'SET_ORDERS', payload: [] });
+      return;
     }
-  }, [state, isHydrated]);
+
+    dispatch({ type: 'SET_LOADING', payload: true });
+
+    const ordersCol = collection(db, 'orders');
+    
+    // Determine if the logged-in user is an admin
+    const isAdmin = ADMIN_EMAILS.includes(user.email || '');
+
+    // Create a query based on user role.
+    // Admins see all orders, sorted by date.
+    // Regular users see only their own orders, sorted by date.
+    const q = isAdmin 
+        ? query(ordersCol, orderBy('date', 'desc'))
+        : query(ordersCol, where("userId", "==", user.uid), orderBy('date', 'desc'));
+
+    // Use onSnapshot for real-time updates
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+        const ordersData: Order[] = [];
+        querySnapshot.forEach((doc) => {
+            ordersData.push(doc.data() as Order);
+        });
+        dispatch({ type: 'SET_ORDERS', payload: ordersData });
+    }, (error) => {
+        console.error("Error fetching orders from Firestore: ", error);
+        dispatch({ type: 'SET_LOADING', payload: false });
+    });
+
+    // Cleanup subscription on unmount
+    return () => unsubscribe();
+  }, [user, authLoading]);
 
   return (
     <OrderContext.Provider value={{ state, dispatch }}>
@@ -109,5 +146,3 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
     </OrderContext.Provider>
   );
 };
-
-    
