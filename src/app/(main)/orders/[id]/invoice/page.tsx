@@ -58,7 +58,7 @@ export default function InvoicePage() {
         try {
             const canvas = await html2canvas(invoiceRef.current, {
                 scale: 2, // Higher scale for better quality
-                useCORS: true,
+                useCORS: true, // This is the crucial fix
                 backgroundColor: null,
             });
 
