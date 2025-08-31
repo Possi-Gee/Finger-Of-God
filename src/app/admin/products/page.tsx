@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
@@ -58,6 +57,8 @@ import { MoreHorizontal } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { CameraCapture } from '@/components/camera-capture';
 
+// Helper function to generate unique IDs
+const generateUniqueId = () => `id-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
 const variantSchema = z.object({
   id: z.string().optional(),
@@ -130,14 +131,15 @@ export default function AdminProductsPage() {
       isOfficialStore: false,
       rating: 0,
       reviews: 0,
-      variants: [{ name: 'Standard', price: 0, stock: 0, id: crypto.randomUUID() }],
+      variants: [{ name: 'Standard', price: 0, stock: 0, id: generateUniqueId() }],
       images: [],
     }
   });
   
   const { fields, append, remove } = useFieldArray({
     control,
-    name: "variants"
+    name: "variants",
+    keyName: "fieldId" // Use a different key name to avoid conflicts
   });
   
   const images = watch('images');
@@ -154,7 +156,7 @@ export default function AdminProductsPage() {
     setTimeout(() => {
         if (checked) {
             if (!isSoldAsSingleItem) {
-                append({ name: 'Single', price: 0, stock: 0, originalPrice: 0, id: crypto.randomUUID() });
+                append({ name: 'Single', price: 0, stock: 0, originalPrice: 0, id: generateUniqueId() });
             }
         } else {
             if (isSoldAsSingleItem) {
@@ -166,7 +168,6 @@ export default function AdminProductsPage() {
                         description: "You must have at least one variant for a product.",
                         variant: 'destructive',
                     });
-                    // This is a workaround to keep the switch checked since we can't remove the last item
                     setValue('variants', getValues('variants')); 
                 }
             }
@@ -213,7 +214,7 @@ export default function AdminProductsPage() {
       isOfficialStore: false,
       rating: 0,
       reviews: 0,
-      variants: [{ name: 'Standard', price: 0, stock: 0, id: crypto.randomUUID() }],
+      variants: [{ name: 'Standard', price: 0, stock: 0, id: generateUniqueId() }],
       name: '',
       description: '',
       category: '',
@@ -233,7 +234,7 @@ export default function AdminProductsPage() {
   const onSubmit = async (data: ProductFormValues) => {
     const productData = {
       ...data,
-      variants: data.variants.map(v => ({...v, id: v.id || crypto.randomUUID()}))
+      variants: data.variants.map(v => ({...v, id: v.id || generateUniqueId()}))
     }
 
     if (editingProduct) {
@@ -254,10 +255,9 @@ export default function AdminProductsPage() {
 
     } else {
       const newProduct: Product = {
-        id: crypto.randomUUID(),
+        id: generateUniqueId(),
         ...productData,
-        dataAiHint: `${data.category.toLowerCase()} product`,
-        variants: productData.variants.map(v => ({...v, id: crypto.randomUUID()})),
+        dataAiHint: `${data.category.toLowerCase()} product`
       };
       
       const productRef = doc(db, 'products', newProduct.id.toString());
@@ -276,7 +276,7 @@ export default function AdminProductsPage() {
     setEditingProduct(product);
     const productWithVariantIds = {
         ...product,
-        variants: product.variants.map(v => ({ ...v, id: v.id || crypto.randomUUID() }))
+        variants: product.variants.map(v => ({ ...v, id: v.id || generateUniqueId() }))
     };
     reset(productWithVariantIds);
     setIsDialogOpen(true);
@@ -485,7 +485,7 @@ export default function AdminProductsPage() {
                   <Card className="p-4 bg-background space-y-4">
                     <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
                        {images?.map((image, index) => (
-                        <div key={index} className="relative group aspect-square">
+                        <div key={`image-${index}-${image.substring(0, 10)}`} className="relative group aspect-square">
                             {image && (
                               <Image
                                   src={image}
@@ -582,7 +582,7 @@ export default function AdminProductsPage() {
                         {fields.map((field, index) => {
                             if (field.name === 'Single') return null;
                             return (
-                            <Card key={field.id} className="p-4 bg-muted/20 relative">
+                            <Card key={field.id || `variant-${index}-${field.name}`} className="p-4 bg-muted/20 relative">
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                                     <div className="lg:col-span-4">
                                         <Label>Pack/Bundle Name</Label>
@@ -620,7 +620,7 @@ export default function AdminProductsPage() {
                     <Button
                         type="button"
                         variant="outline"
-                        onClick={() => append({ name: '', price: 0, stock: 0, id: crypto.randomUUID() })}
+                        onClick={() => append({ name: '', price: 0, stock: 0, id: generateUniqueId() })}
                     >
                         <PlusCircle className="mr-2" />
                         Add Pack/Bundle
@@ -691,8 +691,8 @@ export default function AdminProductsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredAndSortedProducts.length > 0 ? filteredAndSortedProducts.map((product) => (
-                <TableRow key={product.id}>
+              {filteredAndSortedProducts.length > 0 ? filteredAndSortedProducts.map((product, index) => (
+                <TableRow key={product.id || `product-${index}-${product.name}`}>
                   <TableCell>
                     <Image
                       src={(product.images && product.images.length > 0) ? product.images[0] : 'https://picsum.photos/60/60'}
