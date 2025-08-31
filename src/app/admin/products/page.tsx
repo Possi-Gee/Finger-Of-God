@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
@@ -58,7 +59,7 @@ import { Separator } from '@/components/ui/separator';
 import { CameraCapture } from '@/components/camera-capture';
 
 // Helper function to generate unique IDs
-const generateUniqueId = () => `id-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+const generateUniqueId = () => crypto.randomUUID();
 
 const variantSchema = z.object({
   id: z.string().optional(),
