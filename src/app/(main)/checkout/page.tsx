@@ -172,11 +172,9 @@ export default function CheckoutPage() {
     };
 
     try {
-      // Use the orderId as the document ID in Firestore for consistency
       const orderRef = doc(collection(db, 'orders'), newOrder.id.toString());
       await setDoc(orderRef, newOrder);
       
-      // Dispatch ADD_ORDER here to update local state immediately
       orderDispatch({ type: 'ADD_ORDER', payload: newOrder });
 
       toast({
