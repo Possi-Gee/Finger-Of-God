@@ -414,12 +414,24 @@ export default function AdminProductsPage() {
                     </div>
                      <div className="space-y-2">
                         <Label htmlFor="category">Category</Label>
-                        <Input id="category" {...register('category')} list="category-suggestions" />
-                        <datalist id="category-suggestions">
-                          {uniqueCategories.map(category => (
-                            <option key={category} value={category} />
-                          ))}
-                        </datalist>
+                        <Controller
+                            control={control}
+                            name="category"
+                            render={({ field }) => (
+                                <Select onValueChange={field.onChange} value={field.value} defaultValue={field.value}>
+                                    <SelectTrigger id="category">
+                                        <SelectValue placeholder="Select a category" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {uniqueCategories.map(category => (
+                                            <SelectItem key={category} value={category}>
+                                                {category}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            )}
+                        />
                         {errors.category && <p className="text-sm text-destructive mt-1">{errors.category.message}</p>}
                       </div>
                   </div>
