@@ -142,7 +142,7 @@ export default function CheckoutPage() {
 
     const { paymentMethod, deliveryMethod, orderNotes, email } = data;
     
-    const orderId = Date.now();
+    const orderId = Date.now() + Math.random();
 
     const newOrder: Order = {
       id: orderId,
