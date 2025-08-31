@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowLeft, CheckCircle, Package, Truck, User, Store, CircleDot, FileText, MessageSquare } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Package, Truck, User, Store, CircleDot, FileText, MessageSquare, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useMemo } from 'react';
 
@@ -98,6 +98,15 @@ export default function OrderDetailPage() {
   const order = useMemo(() => {
     return state.orders.find((o) => o.id.toString() === id);
   }, [id, state.orders]);
+  
+  if (state.loading) {
+    return (
+      <div className="container mx-auto px-4 py-8 text-center">
+        <Loader2 className="mx-auto h-12 w-12 animate-spin" />
+        <p className="mt-4">Loading Order Details...</p>
+      </div>
+    );
+  }
   
   if (!order) {
     return (

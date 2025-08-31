@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Printer, ArrowLeft } from 'lucide-react';
+import { Printer, ArrowLeft, Loader2 } from 'lucide-react';
 import Image from 'next/image';
 
 const getPaymentMethodName = (method: string) => {
@@ -31,6 +31,15 @@ export default function InvoicePage() {
     const order = useMemo(() => {
         return orderState.orders.find((o) => o.id.toString() === id);
     }, [id, orderState.orders]);
+
+    if (orderState.loading) {
+        return (
+             <div className="container mx-auto px-4 py-8 text-center">
+                <Loader2 className="mx-auto h-12 w-12 animate-spin" />
+                <p className="mt-4">Loading Invoice...</p>
+            </div>
+        )
+    }
 
     if (!order) {
         return (
