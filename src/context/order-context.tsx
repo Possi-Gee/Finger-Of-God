@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { createContext, useReducer, useEffect, type ReactNode, useState } from 'react';
@@ -63,14 +64,15 @@ const initialState: OrderState = {
 const orderReducer = (state: OrderState, action: OrderAction): OrderState => {
   switch (action.type) {
     case 'ADD_ORDER':
-      // This might not be needed anymore if we rely solely on Firestore snapshot,
-      // but can be kept for optimistic UI updates if desired.
+      // Prevent adding a duplicate if it already exists from a snapshot update
+      if (state.orders.find(o => o.id === action.payload.id)) {
+        return state;
+      }
       return {
         ...state,
         orders: [action.payload, ...state.orders],
       };
     case 'UPDATE_ORDER_STATUS':
-       // This can also be handled by the snapshot listener, but direct dispatch gives faster UI feedback.
       return {
         ...state,
         orders: state.orders.map(order =>

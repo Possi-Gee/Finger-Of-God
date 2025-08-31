@@ -176,8 +176,8 @@ export default function CheckoutPage() {
       const orderRef = doc(collection(db, 'orders'), newOrder.id.toString());
       await setDoc(orderRef, newOrder);
       
-      // We no longer need to dispatch ADD_ORDER here, as the onSnapshot listener will pick it up.
-      // orderDispatch({ type: 'ADD_ORDER', payload: newOrder });
+      // Dispatch ADD_ORDER here to update local state immediately
+      orderDispatch({ type: 'ADD_ORDER', payload: newOrder });
 
       toast({
         title: 'Order Placed!',
@@ -389,7 +389,7 @@ export default function CheckoutPage() {
               <CardHeader>
                 <CardTitle>Payment Method</CardTitle>
                 <CardDescription>Choose how you'd like to pay for your order.</CardDescription>
-              </CardHeader>
+              </Header>
               <CardContent>
                 <FormField
                   control={form.control}
