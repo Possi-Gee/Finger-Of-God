@@ -45,30 +45,28 @@ export default function MyOrdersPage() {
             </Button>
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-4">
           {orders.map((order) => (
-            <Card key={order.id} className="hover:shadow-md transition-shadow">
-              <Link href={`/orders/${order.id}`}>
-                <CardHeader>
-                    <div className="flex flex-col sm:flex-row justify-between sm:items-center">
+            <Link key={order.id} href={`/orders/${order.id}`} className="block">
+                <Card className="hover:shadow-md transition-shadow">
+                    <CardHeader className="flex flex-row justify-between items-start">
                         <div>
                             <CardTitle className="text-lg">Order #{order.id}</CardTitle>
                             <CardDescription>Placed on {new Date(order.date).toLocaleDateString()}</CardDescription>
                         </div>
-                        <Badge className={cn("mt-2 sm:mt-0", getStatusClass(order.status))}>{order.status}</Badge>
-                    </div>
-                </CardHeader>
-                <CardContent>
-                    <div className="flex items-center justify-between">
-                         <div className="flex items-center gap-2">
-                             <Package className="h-5 w-5 text-muted-foreground"/>
-                            <span className="text-sm text-muted-foreground">{order.items.length} item(s)</span>
-                         </div>
-                        <span className="text-lg font-bold">GH₵{order.total.toFixed(2)}</span>
-                    </div>
-                </CardContent>
-              </Link>
-            </Card>
+                        <Badge className={cn(getStatusClass(order.status))}>{order.status}</Badge>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <Package className="h-5 w-5 text-muted-foreground"/>
+                                <span className="text-sm text-muted-foreground">{order.items.length} item(s)</span>
+                            </div>
+                            <span className="text-lg font-bold">GH₵{order.total.toFixed(2)}</span>
+                        </div>
+                    </CardContent>
+                </Card>
+            </Link>
           ))}
         </div>
       )}
