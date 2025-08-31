@@ -63,17 +63,15 @@ export function ProductCard({ product }: ProductCardProps) {
   
   const productVariants = product.variants || [];
 
-  const standardVariant = productVariants.find(v => v.name === 'Standard' || v.name === 'Single' || v.name === 'Single Bottle');
-  
-  let displayPrice = 0;
-  let originalPrice = 0;
-  
-  if (standardVariant) {
-    displayPrice = standardVariant.price;
-    originalPrice = standardVariant.originalPrice || 0;
+  let highestPriceVariant = null;
+  if (productVariants.length > 0) {
+    highestPriceVariant = productVariants.reduce((max, v) => v.price > max.price ? v : max, productVariants[0]);
   }
+
+  const displayPrice = highestPriceVariant ? highestPriceVariant.price : null;
+  const originalPrice = highestPriceVariant ? highestPriceVariant.originalPrice : null;
   
-  const discount = (originalPrice && originalPrice > displayPrice)
+  const discount = (originalPrice && displayPrice && originalPrice > displayPrice)
     ? Math.round(((originalPrice - displayPrice) / originalPrice) * 100)
     : 0;
 
@@ -104,12 +102,12 @@ export function ProductCard({ product }: ProductCardProps) {
           <CardContent className="flex flex-col flex-grow p-3">
              {product.isOfficialStore && <Badge className="bg-cyan-600 hover:bg-cyan-700 w-fit mb-2">Official Store</Badge>}
             <p className="text-sm font-medium leading-tight flex-grow">{product.name}</p>
-            {standardVariant && (
+            {displayPrice !== null && (
               <div className="mt-2 flex items-baseline gap-2 flex-wrap">
                   <p className="text-lg font-bold text-foreground">
                     GH₵{displayPrice.toFixed(2)}
                   </p>
-                  {originalPrice > 0 && (
+                  {originalPrice && originalPrice > 0 && (
                       <p className="text-sm text-muted-foreground line-through">GH₵{originalPrice.toFixed(2)}</p>
                   )}
               </div>
