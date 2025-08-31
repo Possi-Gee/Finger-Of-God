@@ -253,7 +253,7 @@ export default function AdminProductsPage() {
 
     } else {
       const newProduct: Product = {
-        id: Date.now() + Math.random(),
+        id: new Date().getTime(),
         ...productData,
         dataAiHint: `${data.category.toLowerCase()} product`
       };
