@@ -101,6 +101,10 @@ export default function AdminProductsPage() {
     return ['All', ...[...new Set(products.map((p) => p.category))].sort()];
   }, [products]);
 
+  const uniqueCategories = useMemo(() => {
+    return [...new Set(products.map((p) => p.category))].sort();
+  }, [products]);
+
 
   const {
     register,
@@ -402,24 +406,14 @@ export default function AdminProductsPage() {
                     </div>
                      <div className="space-y-2">
                         <Label htmlFor="category">Category</Label>
-                        <Controller
-                            name="category"
-                            control={control}
-                            render={({ field }) => (
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <SelectTrigger>
-                                <SelectValue placeholder="Select a category" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                {categories.filter(c => c !== 'All').map(category => (
-                                    <SelectItem key={category} value={category}>{category}</SelectItem>
-                                ))}
-                                </SelectContent>
-                            </Select>
-                            )}
-                        />
-                      {errors.category && <p className="text-sm text-destructive mt-1">{errors.category.message}</p>}
-                    </div>
+                        <Input id="category" {...register('category')} list="category-suggestions" />
+                        <datalist id="category-suggestions">
+                          {uniqueCategories.map(category => (
+                            <option key={category} value={category} />
+                          ))}
+                        </datalist>
+                        {errors.category && <p className="text-sm text-destructive mt-1">{errors.category.message}</p>}
+                      </div>
                   </div>
 
                   <div className="space-y-2">
@@ -743,3 +737,5 @@ export default function AdminProductsPage() {
     </div>
   );
 }
+
+    
