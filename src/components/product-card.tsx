@@ -63,19 +63,21 @@ export function ProductCard({ product }: ProductCardProps) {
   
   const productVariants = product.variants || [];
 
-  const singleVariant = productVariants.find(v => v.name === 'Standard' || v.name === 'Single' || v.name === 'Single Bottle');
-  const packVariants = productVariants.filter(v => v.name !== 'Standard' && v.name !== 'Single' && v.name !== 'Single Bottle');
-
+  const standardVariant = productVariants.find(v => v.name === 'Standard' || v.name === 'Single' || v.name === 'Single Bottle');
+  
   let displayPrice = 0;
   let originalPrice = 0;
   let displayVariant = null;
+  let pricePrefix = '';
 
-  if (packVariants.length > 0) {
-    displayVariant = packVariants.sort((a,b) => a.price - b.price)[0];
-  } else if (singleVariant) {
-    displayVariant = singleVariant;
+  if (standardVariant) {
+    displayVariant = standardVariant;
   } else if (productVariants.length > 0) {
+    // If no standard variant, find the cheapest one and add "From "
     displayVariant = productVariants.sort((a,b) => a.price - b.price)[0];
+    if (productVariants.length > 1) {
+      pricePrefix = 'From ';
+    }
   }
 
   if (displayVariant) {
@@ -116,7 +118,7 @@ export function ProductCard({ product }: ProductCardProps) {
             <p className="text-sm font-medium leading-tight flex-grow">{product.name}</p>
             <div className="mt-2 flex items-baseline gap-2 flex-wrap">
                 <p className="text-lg font-bold text-foreground">
-                  {productVariants.length > 1 && !singleVariant ? 'From ' : ''}GH₵{displayPrice.toFixed(2)}
+                  {pricePrefix}GH₵{displayPrice.toFixed(2)}
                 </p>
                 {originalPrice > 0 && (
                     <p className="text-sm text-muted-foreground line-through">GH₵{originalPrice.toFixed(2)}</p>
