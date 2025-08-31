@@ -97,13 +97,21 @@ export default function AdminProductsPage() {
   const [filterCategory, setFilterCategory] = useState('All');
   const [sortBy, setSortBy] = useState('name-asc');
 
-  const categories = useMemo(() => {
-    return ['All', ...[...new Set(products.map((p) => p.category))].sort()];
-  }, [products]);
+  const baseCategories = [
+    "Toiletries & Personal Care",
+    "Cleaning Supplies",
+    "Food & Beverages",
+    "Packaging & Disposables",
+  ];
 
   const uniqueCategories = useMemo(() => {
-    return [...new Set(products.map((p) => p.category))].sort();
+    const allCategories = new Set([...baseCategories, ...products.map((p) => p.category)]);
+    return Array.from(allCategories).sort();
   }, [products]);
+  
+  const categories = useMemo(() => {
+    return ['All', ...uniqueCategories];
+  }, [uniqueCategories]);
 
 
   const {
@@ -737,5 +745,3 @@ export default function AdminProductsPage() {
     </div>
   );
 }
-
-    
