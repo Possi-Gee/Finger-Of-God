@@ -10,11 +10,12 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Trash2, PlusCircle, Palette, Text, Link as LinkIcon, Percent, Landmark, Image as ImageIcon, Home, Edit, Mail } from 'lucide-react';
+import { Trash2, PlusCircle, Palette, Text, Link as LinkIcon, Percent, Landmark, Image as ImageIcon, Home, Edit, Mail, Loader2 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ProfileListItem } from '@/components/profile-list-item';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import React, { useEffect } from 'react';
 
 // Schemas for each form section
 const generalSchema = z.object({ 
@@ -59,18 +60,24 @@ const footerSchema = z.object({
 });
 
 export default function SiteSettingsPage() {
-  const { state, dispatch } = useSiteSettings();
+  const { state, updateSettings } = useSiteSettings();
   const { toast } = useToast();
 
-  const createSubmitHandler = (
-      actionType: 'UPDATE_GENERAL_SETTINGS' | 'UPDATE_COMMERCE' | 'UPDATE_THEME' | 'UPDATE_FOOTER',
-      toastTitle: string
-    ) => (data: any) => {
-    dispatch({ type: actionType, payload: data as any });
-    toast({
-      title: toastTitle,
-      description: 'Your settings have been saved.',
-    });
+  const createSubmitHandler = (toastTitle: string) => async (data: any) => {
+    try {
+        await updateSettings(data);
+        toast({
+            title: toastTitle,
+            description: 'Your settings have been saved.',
+        });
+    } catch (error) {
+         toast({
+            title: 'Update Failed',
+            description: 'Could not save settings to the database.',
+            variant: 'destructive',
+        });
+        console.error("Failed to update settings:", error);
+    }
   };
 
   return (
@@ -80,20 +87,26 @@ export default function SiteSettingsPage() {
         <p className="text-muted-foreground mt-2">Manage the global settings for your application.</p>
       </div>
       
-      <GeneralSettingsForm onSubmit={createSubmitHandler('UPDATE_GENERAL_SETTINGS', 'General Settings Updated')} defaultValues={{ appName: state.appName, logoUrl: state.logoUrl, fromEmail: state.fromEmail }} />
-      <CommerceSettingsForm onSubmit={createSubmitHandler('UPDATE_COMMERCE', 'Commerce Settings Updated')} defaultValues={{ taxRate: state.taxRate, shippingFee: state.shippingFee }} />
-      <ThemeSettingsForm onSubmit={createSubmitHandler('UPDATE_THEME', 'Theme Updated')} defaultValues={state.theme} />
+      <GeneralSettingsForm onSubmit={createSubmitHandler('General Settings Updated')} defaultValues={{ appName: state.appName, logoUrl: state.logoUrl, fromEmail: state.fromEmail }} />
+      <CommerceSettingsForm onSubmit={createSubmitHandler('Commerce Settings Updated')} defaultValues={{ taxRate: state.taxRate, shippingFee: state.shippingFee }} />
+      <ThemeSettingsForm onSubmit={createSubmitHandler('Theme Updated')} defaultValues={state.theme} />
       <ContentManagementCard />
-      <FooterSettingsForm onSubmit={createSubmitHandler('UPDATE_FOOTER', 'Footer Updated')} defaultValues={state.footer} />
+      <FooterSettingsForm onSubmit={createSubmitHandler('Footer Updated')} defaultValues={state.footer} />
 
     </div>
   );
 }
 
 // Sub-components for each form
-function GeneralSettingsForm({ onSubmit, defaultValues }: { onSubmit: (data: z.infer<typeof generalSchema>) => void; defaultValues: z.infer<typeof generalSchema> }) {
-  const { register, handleSubmit, formState: { errors }, watch } = useForm({ resolver: zodResolver(generalSchema), defaultValues });
+function GeneralSettingsForm({ onSubmit, defaultValues }: { onSubmit: (data: z.infer<typeof generalSchema>) => Promise<void>; defaultValues: z.infer<typeof generalSchema> }) {
+  const { register, handleSubmit, formState: { errors, isSubmitting }, watch, reset } = useForm({ resolver: zodResolver(generalSchema), defaultValues });
+  
+  useEffect(() => {
+    reset(defaultValues);
+  }, [defaultValues, reset]);
+  
   const logoUrl = watch('logoUrl');
+
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
       <Card>
@@ -131,15 +144,23 @@ function GeneralSettingsForm({ onSubmit, defaultValues }: { onSubmit: (data: z.i
           </div>
         </CardContent>
         <CardFooter>
-          <Button type="submit">Save Changes</Button>
+          <Button type="submit" disabled={isSubmitting}>
+             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Save Changes
+          </Button>
         </CardFooter>
       </Card>
     </form>
   );
 }
 
-function CommerceSettingsForm({ onSubmit, defaultValues }: { onSubmit: (data: z.infer<typeof commerceSchema>) => void; defaultValues: z.infer<typeof commerceSchema> }) {
-  const { register, handleSubmit, formState: { errors } } = useForm({ resolver: zodResolver(commerceSchema), defaultValues });
+function CommerceSettingsForm({ onSubmit, defaultValues }: { onSubmit: (data: z.infer<typeof commerceSchema>) => Promise<void>; defaultValues: z.infer<typeof commerceSchema> }) {
+  const { register, handleSubmit, formState: { errors, isSubmitting }, reset } = useForm({ resolver: zodResolver(commerceSchema), defaultValues });
+  
+  useEffect(() => {
+    reset(defaultValues);
+  }, [defaultValues, reset]);
+
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
       <Card>
@@ -166,15 +187,23 @@ function CommerceSettingsForm({ onSubmit, defaultValues }: { onSubmit: (data: z.
             </div>
         </CardContent>
         <CardFooter>
-            <Button type="submit">Save Changes</Button>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Save Changes
+            </Button>
         </CardFooter>
       </Card>
     </form>
   );
 }
 
-function ThemeSettingsForm({ onSubmit, defaultValues }: { onSubmit: (data: z.infer<typeof themeSchema>) => void; defaultValues: SiteTheme }) {
-  const { register, handleSubmit, formState: { errors } } = useForm({ resolver: zodResolver(themeSchema), defaultValues });
+function ThemeSettingsForm({ onSubmit, defaultValues }: { onSubmit: (data: z.infer<typeof themeSchema>) => Promise<void>; defaultValues: SiteTheme }) {
+  const { register, handleSubmit, formState: { errors, isSubmitting }, reset } = useForm({ resolver: zodResolver(themeSchema), defaultValues });
+  
+  useEffect(() => {
+    reset(defaultValues);
+  }, [defaultValues, reset]);
+
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
       <Card>
@@ -192,7 +221,10 @@ function ThemeSettingsForm({ onSubmit, defaultValues }: { onSubmit: (data: z.inf
           ))}
         </CardContent>
         <CardFooter>
-            <Button type="submit">Save Changes</Button>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Save Changes
+            </Button>
         </CardFooter>
       </Card>
     </form>
@@ -213,8 +245,13 @@ function ContentManagementCard() {
     );
 }
 
-function FooterSettingsForm({ onSubmit, defaultValues }: { onSubmit: (data: z.infer<typeof footerSchema>) => void; defaultValues: FooterSettings }) {
-  const { control, register, handleSubmit, formState: { errors } } = useForm({ resolver: zodResolver(footerSchema), defaultValues });
+function FooterSettingsForm({ onSubmit, defaultValues }: { onSubmit: (data: z.infer<typeof footerSchema>) => Promise<void>; defaultValues: FooterSettings }) {
+  const { control, register, handleSubmit, formState: { errors, isSubmitting }, reset } = useForm({ resolver: zodResolver(footerSchema), defaultValues });
+  
+  useEffect(() => {
+    reset(defaultValues);
+  }, [defaultValues, reset]);
+  
   const { fields, append, remove } = useFieldArray({ control, name: 'columns' });
 
   return (
@@ -252,7 +289,10 @@ function FooterSettingsForm({ onSubmit, defaultValues }: { onSubmit: (data: z.in
           </div>
         </CardContent>
         <CardFooter>
-            <Button type="submit">Save Changes</Button>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Save Changes
+            </Button>
         </CardFooter>
       </Card>
     </form>

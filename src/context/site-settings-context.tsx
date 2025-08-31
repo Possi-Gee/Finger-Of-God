@@ -1,7 +1,8 @@
-
 'use client';
 
 import React, { createContext, useReducer, useEffect, type ReactNode, useState } from 'react';
+import { db } from '@/lib/firebase';
+import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 
 type Link = { id: number; label: string; url: string };
 type FooterColumn = { id: number; title: string; links: Link[] };
@@ -40,14 +41,12 @@ export type SiteSettingsState = {
   shippingFee: number;
   theme: SiteTheme;
   footer: FooterSettings;
+  loading: boolean;
 };
 
 type SiteSettingsAction =
-  | { type: 'SET_STATE'; payload: SiteSettingsState }
-  | { type: 'UPDATE_GENERAL_SETTINGS'; payload: { appName: string; logoUrl: string, fromEmail: string } }
-  | { type: 'UPDATE_COMMERCE'; payload: { taxRate: number; shippingFee: number } }
-  | { type: 'UPDATE_THEME'; payload: SiteTheme }
-  | { type: 'UPDATE_FOOTER'; payload: FooterSettings };
+  | { type: 'SET_STATE'; payload: Partial<SiteSettingsState> }
+  | { type: 'UPDATE_SETTINGS'; payload: Partial<Omit<SiteSettingsState, 'loading'>> };
 
 
 const initialState: SiteSettingsState = {
@@ -110,20 +109,15 @@ const initialState: SiteSettingsState = {
         instagram: '#'
     }
   },
+  loading: true,
 };
 
 const settingsReducer = (state: SiteSettingsState, action: SiteSettingsAction): SiteSettingsState => {
   switch (action.type) {
-    case 'UPDATE_GENERAL_SETTINGS':
-      return { ...state, appName: action.payload.appName, logoUrl: action.payload.logoUrl, fromEmail: action.payload.fromEmail };
-    case 'UPDATE_COMMERCE':
-       return { ...state, taxRate: action.payload.taxRate, shippingFee: action.payload.shippingFee };
-    case 'UPDATE_THEME':
-      return { ...state, theme: action.payload };
-    case 'UPDATE_FOOTER':
-        return { ...state, footer: action.payload };
+    case 'UPDATE_SETTINGS':
+       return { ...state, ...action.payload };
     case 'SET_STATE':
-      return action.payload;
+      return { ...state, ...action.payload, loading: false };
     default:
       return state;
   }
@@ -132,44 +126,50 @@ const settingsReducer = (state: SiteSettingsState, action: SiteSettingsAction): 
 export type SiteSettingsContextType = {
   state: SiteSettingsState;
   dispatch: React.Dispatch<SiteSettingsAction>;
+  updateSettings: (newSettings: Partial<Omit<SiteSettingsState, 'loading'>>) => Promise<void>;
 };
 
 export const SiteSettingsContext = createContext<SiteSettingsContextType | undefined>(undefined);
 
 export const SiteSettingsProvider = ({ children }: { children: ReactNode }) => {
   const [state, dispatch] = useReducer(settingsReducer, initialState);
-  const [isHydrated, setIsHydrated] = useState(false);
+  
+  const settingsDocRef = doc(db, 'site', 'settings');
 
   useEffect(() => {
-    try {
-      const storedState = localStorage.getItem('shopwave_settings');
-      if (storedState) {
-        const parsedState = JSON.parse(storedState);
-        // Basic validation
-        if (parsedState.appName && parsedState.theme && parsedState.footer && parsedState.taxRate !== undefined && parsedState.shippingFee !== undefined) {
-            dispatch({ type: 'SET_STATE', payload: parsedState });
+    const unsubscribe = onSnapshot(settingsDocRef, (doc) => {
+        if (doc.exists()) {
+            const data = doc.data() as Partial<SiteSettingsState>;
+            dispatch({ type: 'SET_STATE', payload: data });
+        } else {
+            // If no settings in DB, use initial state and set loading to false
+            dispatch({ type: 'SET_STATE', payload: {} });
         }
-      }
-    } catch (error) {
-      console.error("Failed to load site settings from localStorage", error);
-    } finally {
-        setIsHydrated(true);
-    }
+    }, (error) => {
+        console.error("Error fetching site settings:", error);
+        // On error, use initial state
+        dispatch({ type: 'SET_STATE', payload: {} });
+    });
+
+    return () => unsubscribe();
   }, []);
 
-  useEffect(() => {
-    if (isHydrated) {
-        try {
-          localStorage.setItem('shopwave_settings', JSON.stringify(state));
-        } catch (error) {
-          console.error("Failed to save site settings to localStorage", error);
-        }
-    }
-  }, [state, isHydrated]);
+  const updateSettings = async (newSettings: Partial<Omit<SiteSettingsState, 'loading'>>) => {
+      try {
+          await setDoc(settingsDocRef, newSettings, { merge: true });
+          // The onSnapshot listener will automatically update the state,
+          // so we don't need to dispatch here.
+      } catch (error) {
+          console.error("Failed to update site settings:", error);
+          // Optionally re-throw or handle the error in the UI
+          throw error;
+      }
+  };
+
 
   return (
-    <SiteSettingsContext.Provider value={{ state, dispatch }}>
-      {children}
+    <SiteSettingsContext.Provider value={{ state, dispatch, updateSettings }}>
+      {!state.loading ? children : null}
     </SiteSettingsContext.Provider>
   );
 };
