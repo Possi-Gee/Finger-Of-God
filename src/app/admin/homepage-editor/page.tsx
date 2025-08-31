@@ -10,8 +10,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Trash2, PlusCircle, GripVertical, Home } from 'lucide-react';
+import { Trash2, PlusCircle, GripVertical, Home, Loader2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useEffect } from 'react';
 
 const promotionSchema = z.object({
   id: z.number(),
@@ -40,27 +41,46 @@ const editorSchema = z.object({
 type EditorFormValues = z.infer<typeof editorSchema>;
 
 export default function HomepageEditorPage() {
-  const { state, dispatch } = useHomepage();
+  const { state, updateHomepage } = useHomepage();
   const { toast } = useToast();
 
-  const { control, register, handleSubmit, formState: { errors } } = useForm<EditorFormValues>({
+  const { control, register, handleSubmit, formState: { errors, isSubmitting }, reset } = useForm<EditorFormValues>({
     resolver: zodResolver(editorSchema),
-    defaultValues: state,
+    defaultValues: {
+      callToAction: state.callToAction,
+      promotions: state.promotions,
+      flashSale: state.flashSale,
+    },
   });
+  
+  useEffect(() => {
+    reset({
+      callToAction: state.callToAction,
+      promotions: state.promotions,
+      flashSale: state.flashSale,
+    });
+  }, [state, reset]);
 
   const { fields, append, remove, move } = useFieldArray({
     control,
     name: 'promotions',
   });
 
-  const onSubmit = (data: EditorFormValues) => {
-    dispatch({ type: 'UPDATE_CALL_TO_ACTION', payload: data.callToAction });
-    dispatch({ type: 'UPDATE_PROMOTIONS', payload: data.promotions });
-    dispatch({ type: 'UPDATE_FLASH_SALE', payload: data.flashSale });
-    toast({
-      title: 'Homepage Updated',
-      description: 'Your homepage content has been saved successfully.',
-    });
+  const onSubmit = async (data: EditorFormValues) => {
+    try {
+      await updateHomepage(data);
+      toast({
+        title: 'Homepage Updated',
+        description: 'Your homepage content has been saved successfully.',
+      });
+    } catch(error) {
+       toast({
+        title: 'Update Failed',
+        description: 'Could not save homepage content to the database.',
+        variant: 'destructive'
+      });
+      console.error("Failed to update homepage:", error);
+    }
   };
 
   const addPromotion = (type: 'image' | 'welcome') => {
@@ -177,7 +197,10 @@ export default function HomepageEditorPage() {
         </Card>
 
         <div className="flex justify-end">
-          <Button type="submit" size="lg">Save Changes</Button>
+          <Button type="submit" size="lg" disabled={isSubmitting}>
+            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+            Save Changes
+          </Button>
         </div>
       </form>
     </div>

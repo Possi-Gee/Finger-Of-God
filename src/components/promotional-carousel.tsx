@@ -15,10 +15,21 @@ import {
   CarouselDots,
 } from "@/components/ui/carousel"
 import { useHomepage } from '@/hooks/use-homepage';
+import { Skeleton } from "@/components/ui/skeleton";
 
 export function PromotionalCarousel() {
   const { state } = useHomepage();
-  const { promotions } = state;
+  const { promotions, loading } = state;
+
+  if (loading) {
+    return (
+       <div className="w-full bg-white py-4">
+        <div className="w-full max-w-6xl mx-auto p-1">
+          <Skeleton className="aspect-[3/1] w-full rounded-lg" />
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="w-full bg-white py-4">

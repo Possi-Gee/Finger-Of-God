@@ -1,35 +1,37 @@
+
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Products can be read by anyone, but only written by an admin
+  
+    // Helper function to check for admin role
+    function isAdmin() {
+      return request.auth != null && request.auth.token.email != null && request.auth.token.email in [
+        "temahfingerofgod@gmail.com"
+      ];
+    }
+  
+    // Products can be read by anyone, but only modified by admins
     match /products/{productId} {
       allow read: if true;
-      // You must be an admin to create, update, or delete products.
-      allow write: if request.auth != null && request.auth.token.email == "temahfingerofgod@gmail.com";
+      allow write: if isAdmin();
     }
-
-    // Users can only manage their own user document.
-    match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-    }
-
-    // Orders can be managed by any authenticated user.
-    // The logic in the app's queries ensures users only see their own orders,
-    // and admins can see all orders.
-    match /orders/{orderId} {
-      allow read, write, create, list: if request.auth != null;
-    }
-
-    // Site settings can be read by anyone, but only written by an admin.
+    
+    // Site settings can be read by anyone, but only modified by admins
     match /site/settings {
-        allow read: if true;
-        allow write: if request.auth != null && request.auth.token.email == "temahfingerofgod@gmail.com";
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+     // Homepage content can be read by anyone, but only modified by admins
+    match /site/homepage {
+      allow read: if true;
+      allow write: if isAdmin();
     }
 
-    // Default deny all other collections to ensure security.
-    match /{document=**} {
-      allow read, write: if false;
+    // Orders can be managed by admins, or by the user who created them
+    match /orders/{orderId} {
+       allow read, write: if request.auth != null;
     }
   }
 }

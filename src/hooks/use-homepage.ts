@@ -10,3 +10,5 @@ export const useHomepage = (): HomepageContextType => {
   }
   return context;
 };
+
+export * from '@/context/homepage-context';

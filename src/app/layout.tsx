@@ -48,12 +48,12 @@ function AppProviders({ children }: { children: React.ReactNode }) {
               <ProductProvider>
                 <WishlistProvider>
                   <CartProvider>
-                    <HomepageProvider>
-                      <OrderProvider>
+                    <OrderProvider>
+                       <HomepageProvider>
                         {children}
                         <Toaster />
-                      </OrderProvider>
-                    </HomepageProvider>
+                      </HomepageProvider>
+                    </OrderProvider>
                   </CartProvider>
                 </WishlistProvider>
               </ProductProvider>

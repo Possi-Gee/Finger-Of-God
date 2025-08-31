@@ -1,7 +1,9 @@
 
 'use client';
 
-import React, { createContext, useReducer, useEffect, type ReactNode, useState } from 'react';
+import React, { createContext, useReducer, useEffect, type ReactNode } from 'react';
+import { db } from '@/lib/firebase';
+import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 
 export interface Promotion {
   id: number;
@@ -23,13 +25,13 @@ export type HomepageState = {
   flashSale: {
     endDate: string;
   };
+  loading: boolean;
 };
 
 type HomepageAction =
-  | { type: 'SET_STATE'; payload: HomepageState }
-  | { type: 'UPDATE_CALL_TO_ACTION'; payload: { text: string } }
-  | { type: 'UPDATE_PROMOTIONS'; payload: Promotion[] }
-  | { type: 'UPDATE_FLASH_SALE'; payload: { endDate: string } };
+  | { type: 'SET_STATE'; payload: Partial<HomepageState> }
+  | { type: 'UPDATE_HOMEPAGE'; payload: Partial<Omit<HomepageState, 'loading'>> };
+
 
 const initialState: HomepageState = {
   callToAction: { text: 'Call to Order: 030 274 0642' },
@@ -48,18 +50,15 @@ const initialState: HomepageState = {
     { id: 4, type: 'image', content: 'https://picsum.photos/1200/400?random=3', alt: 'Promotion 3', dataAiHint: 'electronics promotion' },
   ],
   flashSale: { endDate: '2024-12-31T23:59' },
+  loading: true,
 };
 
 const homepageReducer = (state: HomepageState, action: HomepageAction): HomepageState => {
   switch (action.type) {
-    case 'UPDATE_CALL_TO_ACTION':
-      return { ...state, callToAction: action.payload };
-    case 'UPDATE_PROMOTIONS':
-      return { ...state, promotions: action.payload };
-    case 'UPDATE_FLASH_SALE':
-        return { ...state, flashSale: action.payload };
+    case 'UPDATE_HOMEPAGE':
+      return { ...state, ...action.payload };
     case 'SET_STATE':
-      return action.payload;
+      return { ...state, ...action.payload, loading: false };
     default:
       return state;
   }
@@ -68,45 +67,46 @@ const homepageReducer = (state: HomepageState, action: HomepageAction): Homepage
 export type HomepageContextType = {
   state: HomepageState;
   dispatch: React.Dispatch<HomepageAction>;
+  updateHomepage: (newHomepage: Partial<Omit<HomepageState, 'loading'>>) => Promise<void>;
 };
 
 export const HomepageContext = createContext<HomepageContextType | undefined>(undefined);
 
 export const HomepageProvider = ({ children }: { children: ReactNode }) => {
   const [state, dispatch] = useReducer(homepageReducer, initialState);
-  const [isHydrated, setIsHydrated] = useState(false);
+  
+  const homepageDocRef = doc(db, 'site', 'homepage');
 
   useEffect(() => {
-    try {
-      const storedState = localStorage.getItem('shopwave_homepage');
-      if (storedState) {
-        const parsedState = JSON.parse(storedState);
-        // Basic validation to ensure we don't load corrupted data
-        if (parsedState.callToAction && parsedState.promotions && parsedState.flashSale) {
-            dispatch({ type: 'SET_STATE', payload: parsedState });
+    const unsubscribe = onSnapshot(homepageDocRef, (doc) => {
+        if (doc.exists()) {
+            const data = doc.data() as Partial<HomepageState>;
+            dispatch({ type: 'SET_STATE', payload: data });
+        } else {
+            // If no settings in DB, use initial state and set loading to false
+            dispatch({ type: 'SET_STATE', payload: {} });
         }
-      }
-    } catch (error) {
-      console.error("Failed to load homepage state from localStorage", error);
-    } finally {
-        setIsHydrated(true);
-    }
+    }, (error) => {
+        console.error("Error fetching homepage settings:", error);
+        // On error, use initial state
+        dispatch({ type: 'SET_STATE', payload: {} });
+    });
+
+    return () => unsubscribe();
   }, []);
 
-  useEffect(() => {
-    if (isHydrated) {
-        try {
-          localStorage.setItem('shopwave_homepage', JSON.stringify(state));
-        } catch (error)
-     {
-          console.error("Failed to save homepage state to localStorage", error);
-        }
-    }
-  }, [state, isHydrated]);
+  const updateHomepage = async (newHomepage: Partial<Omit<HomepageState, 'loading'>>) => {
+      try {
+          await setDoc(homepageDocRef, newHomepage, { merge: true });
+      } catch (error) {
+          console.error("Failed to update homepage settings:", error);
+          throw error;
+      }
+  };
 
   return (
-    <HomepageContext.Provider value={{ state, dispatch }}>
-      {children}
+    <HomepageContext.Provider value={{ state, dispatch, updateHomepage }}>
+      {!state.loading ? children : null}
     </HomepageContext.Provider>
   );
 };
