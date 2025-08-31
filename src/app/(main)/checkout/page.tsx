@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -387,7 +386,7 @@ export default function CheckoutPage() {
               <CardHeader>
                 <CardTitle>Payment Method</CardTitle>
                 <CardDescription>Choose how you'd like to pay for your order.</CardDescription>
-              </Header>
+              </CardHeader>
               <CardContent>
                 <FormField
                   control={form.control}
