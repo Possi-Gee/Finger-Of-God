@@ -69,7 +69,7 @@ export function Header() {
           ) : (
             <Package className="h-6 w-6 text-primary" />
           )}
-           <span className="hidden font-bold sm:inline-block">{settings.appName}</span>
+           <span className="font-bold">{settings.appName}</span>
         </Link>
         
         <nav className="hidden md:flex flex-1 items-center space-x-6 text-sm font-medium">
