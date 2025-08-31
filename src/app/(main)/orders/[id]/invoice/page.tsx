@@ -5,6 +5,7 @@ import { useMemo, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useOrders } from '@/hooks/use-orders';
 import { useSiteSettings } from '@/hooks/use-site-settings';
+import { useHomepage } from '@/hooks/use-homepage';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
@@ -37,6 +38,7 @@ export default function InvoicePage() {
     const { id } = params;
     const { state: orderState } = useOrders();
     const { state: siteSettings } = useSiteSettings();
+    const { state: homepageState } = useHomepage();
     const invoiceRef = useRef<HTMLDivElement>(null);
     const [isDownloading, setIsDownloading] = useState(false);
 
@@ -105,6 +107,12 @@ export default function InvoicePage() {
     }
     
     const paymentStatus = getPaymentStatus(order.status);
+    
+    const contactNumber = useMemo(() => {
+        const ctaText = homepageState.callToAction.text;
+        const numberMatch = ctaText.match(/\b\d[\d\s-]+\d\b/);
+        return numberMatch ? numberMatch[0].trim() : '+233 123 456 789';
+    }, [homepageState.callToAction.text]);
 
 
     return (
@@ -208,7 +216,7 @@ export default function InvoicePage() {
 
                         <footer className="mt-12 pt-6 border-t text-center text-muted-foreground text-sm">
                             <p>Thank you for your business!</p>
-                            <p>{siteSettings.appName} | Accra, Ghana | +233 123 456 789</p>
+                            <p>{siteSettings.appName} | Accra, Ghana | {contactNumber}</p>
                         </footer>
                     </Card>
                 </div>
