@@ -37,13 +37,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
 
   useEffect(() => {
-    auth.tenantId = settings.appName;
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
       setLoading(false);
     });
     return () => unsubscribe();
-  }, [settings.appName]);
+  }, []);
 
   const signup = async (email: string, pass: string, name: string): Promise<User | null> => {
     try {
