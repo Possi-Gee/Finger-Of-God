@@ -39,7 +39,7 @@ function generateEmailHTML(title, body, order, appName) {
     const itemsHtml = order.items.map(item => `
         <tr style="border-bottom: 1px solid #ddd;">
             <td style="padding: 10px;">
-                <img src="${item.image}" alt="${item.name}" width="60" style="border-radius: 4px;">
+                <img src="${item.image}" alt="${item.name}" width="60" style="border-radius: 4px; object-fit: cover; aspect-ratio: 1/1;">
             </td>
             <td style="padding: 10px;">
                 ${item.name} (${item.variant.name})<br>
