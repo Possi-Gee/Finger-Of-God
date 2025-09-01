@@ -14,6 +14,7 @@ import {
     type User 
 } from 'firebase/auth';
 import { app } from '@/lib/firebase';
+import { useSiteSettings } from '@/hooks/use-site-settings';
 
 const auth = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
@@ -32,14 +33,17 @@ export const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const { state: settings } = useSiteSettings();
+
 
   useEffect(() => {
+    auth.tenantId = settings.appName;
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
       setLoading(false);
     });
     return () => unsubscribe();
-  }, []);
+  }, [settings.appName]);
 
   const signup = async (email: string, pass: string, name: string): Promise<User | null> => {
     try {
