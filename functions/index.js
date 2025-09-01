@@ -37,28 +37,53 @@ const ADMIN_EMAIL = functions.config().admin.email;
  */
 function generateEmailHTML(title, body, order, appName) {
     const itemsHtml = order.items.map(item => `
-        <tr style="border-bottom: 1px solid #ddd;">
-            <td style="padding: 10px;">
-                <img src="${item.image}" alt="${item.name}" width="60" style="border-radius: 4px; object-fit: cover; aspect-ratio: 1/1;">
+        <tr style="border-bottom: 1px solid #eaeaea;">
+            <td style="padding: 15px 0;">
+                <img src="${item.image}" alt="${item.name}" width="64" style="border-radius: 8px; object-fit: cover; aspect-ratio: 1/1; margin-right: 15px; vertical-align: middle;">
             </td>
-            <td style="padding: 10px;">
-                ${item.name} (${item.variant.name})<br>
-                <small>Qty: ${item.quantity}</small>
+            <td style="padding: 15px 0; vertical-align: top;">
+                <p style="margin: 0; font-weight: 600; font-size: 14px; color: #333;">${item.name}</p>
+                <p style="margin: 4px 0 0; color: #777; font-size: 12px;">${item.variant.name} &times; ${item.quantity}</p>
             </td>
-            <td style="padding: 10px; text-align: right;">GH₵${(item.variant.price * item.quantity).toFixed(2)}</td>
+            <td style="padding: 15px 0; text-align: right; font-weight: 600; font-size: 14px; color: #333;">
+                GH₵${(item.variant.price * item.quantity).toFixed(2)}
+            </td>
         </tr>
     `).join('');
 
+    const shippingAddressHtml = order.shippingAddress ? `
+        <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 10px; color: #333;">Shipping to</h3>
+        <p style="margin: 0; color: #555; line-height: 1.6;">
+            ${order.shippingAddress.fullName}<br>
+            ${order.shippingAddress.address}<br>
+            ${order.shippingAddress.city}, ${order.shippingAddress.state} ${order.shippingAddress.zip}<br>
+            ${order.shippingAddress.country}
+        </p>
+    ` : '';
+    
+    // A base URL should be configured for production environments
+    const orderUrl = `https://shopwave-6mh7a.web.app/orders/${order.id}`;
+
     return `
     <!DOCTYPE html>
-    <html>
+    <html lang="en">
     <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <style>
-            body { font-family: Arial, sans-serif; color: #333; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 8px; }
-            .header { text-align: center; padding-bottom: 20px; border-bottom: 1px solid #eee; }
-            .footer { text-align: center; padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #888; }
-            .button { background-color: #1976d2; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; display: inline-block; margin-top: 20px;}
+            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+            body { font-family: 'Inter', Arial, sans-serif; margin: 0; padding: 0; background-color: #f8f9fa; color: #333; }
+            .container { max-width: 600px; margin: 20px auto; padding: 30px; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+            .header { text-align: center; padding-bottom: 20px; border-bottom: 1px solid #eaeaea; }
+            .header h1 { font-size: 28px; font-weight: 700; color: #1a1a1a; margin: 0; }
+            .content { padding: 30px 0; }
+            .content h2 { font-size: 22px; font-weight: 600; color: #1a1a1a; margin-top: 0; margin-bottom: 15px; }
+            .content p { font-size: 16px; line-height: 1.6; color: #555; margin: 0 0 15px; }
+            .button-container { text-align: center; margin: 30px 0; }
+            .button { background-color: #1976d2; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: 600; font-size: 16px; }
+            .footer { text-align: center; padding-top: 20px; border-top: 1px solid #eaeaea; font-size: 12px; color: #888; }
+            table { width: 100%; border-collapse: collapse; }
+            .details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 30px; }
         </style>
     </head>
     <body>
@@ -66,29 +91,52 @@ function generateEmailHTML(title, body, order, appName) {
             <div class="header">
                 <h1>${appName}</h1>
             </div>
-            <h2>${title}</h2>
-            <p>${body}</p>
-            <h3>Order Summary (ID: #${order.id})</h3>
-            <table style="width: 100%; border-collapse: collapse;">
-                <thead>
-                    <tr>
-                        <th colspan="2" style="padding: 10px; text-align: left;">Item</th>
-                        <th style="padding: 10px; text-align: right;">Price</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${itemsHtml}
-                </tbody>
-                <tfoot>
-                    <tr><td colspan="3" style="padding-top: 20px;"></td></tr>
-                    <tr><td></td><td style="text-align: right; padding: 5px;">Subtotal:</td><td style="text-align: right;">GH₵${order.subtotal.toFixed(2)}</td></tr>
-                    <tr><td></td><td style="text-align: right; padding: 5px;">Shipping:</td><td style="text-align: right;">GH₵${order.shippingFee.toFixed(2)}</td></tr>
-                    <tr><td></td><td style="text-align: right; padding: 5px;">Tax:</td><td style="text-align: right;">GH₵${order.tax.toFixed(2)}</td></tr>
-                    <tr><td></td><td style="text-align: right; padding: 5px;"><strong>Total:</strong></td><td style="text-align: right;"><strong>GH₵${order.total.toFixed(2)}</strong></td></tr>
-                </tfoot>
-            </table>
+            <div class="content">
+                <h2>${title}</h2>
+                <p>${body}</p>
+
+                <div class="button-container">
+                    <a href="${orderUrl}" class="button">View Your Order</a>
+                </div>
+
+                <h3 style="font-size: 18px; font-weight: 600; margin-top: 30px; margin-bottom: 15px; color: #333;">Order Summary (ID: #${order.id})</h3>
+                <table>
+                    <tbody>
+                        ${itemsHtml}
+                    </tbody>
+                </table>
+
+                <table style="width: 100%; margin-top: 20px;">
+                    <tbody>
+                        <tr>
+                            <td style="padding: 5px 0; text-align: right; color: #555;">Subtotal:</td>
+                            <td style="padding: 5px 0; width: 100px; text-align: right;">GH₵${order.subtotal.toFixed(2)}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 5px 0; text-align: right; color: #555;">Shipping:</td>
+                            <td style="padding: 5px 0; text-align: right;">GH₵${order.shippingFee.toFixed(2)}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 5px 0; text-align: right; color: #555;">Tax:</td>
+                            <td style="padding: 5px 0; text-align: right;">GH₵${order.tax.toFixed(2)}</td>
+                        </tr>
+                        <tr style="border-top: 1px solid #eaeaea;">
+                            <td style="padding: 10px 0 0; text-align: right; font-weight: 700; font-size: 18px;">Total:</td>
+                            <td style="padding: 10px 0 0; text-align: right; font-weight: 700; font-size: 18px;">GH₵${order.total.toFixed(2)}</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <div class="details-grid">
+                    <div>
+                        ${shippingAddressHtml}
+                    </div>
+                </div>
+
+            </div>
              <div class="footer">
-                <p>Thank you for shopping with us!</p>
+                <p>Thank you for your purchase! If you have any questions, please contact our support team.</p>
+                <p>&copy; ${new Date().getFullYear()} ${appName}. All rights reserved.</p>
             </div>
         </div>
     </body>
@@ -116,7 +164,7 @@ exports.onOrderCreate = functions.firestore
             subject: `Your ${appName} Order Confirmation #${order.id}`,
             html: generateEmailHTML(
                 "Thanks for your order!",
-                `Hi ${order.shippingAddress.fullName}, we're getting your order ready. We'll notify you once it has shipped.`,
+                `Hi ${order.shippingAddress.fullName}, we're getting your order ready. We'll notify you once it has shipped. You can view its current status at any time.`,
                 order,
                 appName
             ),
@@ -140,9 +188,11 @@ exports.onOrderCreate = functions.firestore
             const customerEmailInfo = await transporter.sendMail(customerMailOptions);
             functions.logger.log("Successfully sent confirmation email to customer:", customerEmailInfo.response);
 
-            functions.logger.log("Sending notification email to admin:", ADMIN_EMAIL);
-            const adminEmailInfo = await transporter.sendMail(adminMailOptions);
-            functions.logger.log("Successfully sent admin notification email:", adminEmailInfo.response);
+            if (ADMIN_EMAIL) {
+                functions.logger.log("Sending notification email to admin:", ADMIN_EMAIL);
+                const adminEmailInfo = await transporter.sendMail(adminMailOptions);
+                functions.logger.log("Successfully sent admin notification email:", adminEmailInfo.response);
+            }
         } catch (error) {
             functions.logger.error("Error sending emails for order #" + order.id, {
                 errorMessage: error.message,
@@ -256,3 +306,5 @@ exports.onProductCreate = functions.firestore
       return null;
     }
   });
+
+    
