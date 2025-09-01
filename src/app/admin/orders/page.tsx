@@ -49,7 +49,7 @@ export default function AdminOrdersPage() {
         
         // Send email notification
         const emailResult = await sendOrderUpdateEmail({
-          orderId: order.id,
+          orderId: order.id.toString(),
           status: status,
           recipientEmail: order.shippingAddress.email,
           customerName: order.shippingAddress.fullName,
