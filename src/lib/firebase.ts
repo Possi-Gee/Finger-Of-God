@@ -9,7 +9,7 @@ const firebaseConfig = {
   "appId": "1:800300007748:web:627f0cb6d09321d989d711",
   "storageBucket": "shopwave-6mh7a.firebasestorage.app",
   "apiKey": "AIzaSyAvD2Tz2nEYI80Ni4Po2mKjDdepNwsNJxU",
-  "authDomain": "shopwave.firebaseapp.com",
+  "authDomain": "shopwave-6mh7a.firebaseapp.com",
   "measurementId": "",
   "messagingSenderId": "800300007748"
 };
