@@ -24,6 +24,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from '@/components/ui/dialog';
 import {
   AlertDialog,
@@ -262,8 +263,6 @@ export default function AdminProductsPage() {
       
       const productRef = doc(db, 'products', newProduct.id.toString());
       await setDoc(productRef, newProduct);
-      
-      // No longer dispatching optimistic update here to prevent duplicates
       
       toast({
         title: 'Product Added',
