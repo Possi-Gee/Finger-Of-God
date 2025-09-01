@@ -142,7 +142,8 @@ export default function CheckoutPage() {
 
     const { paymentMethod, deliveryMethod, orderNotes, email } = data;
     
-    const orderId = crypto.randomUUID();
+    // Generate a shorter, user-friendly order ID
+    const orderId = Date.now().toString().slice(-8);
 
     const newOrder: Order = {
       id: orderId,
