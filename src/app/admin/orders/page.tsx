@@ -13,6 +13,8 @@ import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { sendOrderUpdateEmail } from '@/ai/flows/send-order-update-email';
+import { useSiteSettings } from '@/hooks/use-site-settings';
 
 const getStatusClass = (status: Order['status']) => {
   switch (status) {
@@ -31,6 +33,7 @@ export default function AdminOrdersPage() {
   const { orders } = state;
   const router = useRouter();
   const { toast } = useToast();
+  const { state: siteSettings } = useSiteSettings();
 
   const handleStatusChange = async (order: Order, status: OrderStatus) => {
     try {
@@ -41,8 +44,30 @@ export default function AdminOrdersPage() {
 
         toast({
           title: 'Order Status Updated',
-          description: `Order #${order.id} is now ${status}. The customer will be notified.`
+          description: `Order #${order.id} is now ${status}.`
         });
+        
+        // Send email notification
+        const emailResult = await sendOrderUpdateEmail({
+          orderId: order.id,
+          status: status,
+          recipientEmail: order.shippingAddress.email,
+          customerName: order.shippingAddress.fullName,
+          appName: siteSettings.appName,
+        });
+
+        if (emailResult.success) {
+            toast({
+                title: 'Email Sent',
+                description: emailResult.message,
+            });
+        } else {
+             toast({
+                title: 'Email Failed',
+                description: emailResult.message,
+                variant: 'destructive',
+            });
+        }
         
     } catch(e) {
         toast({
