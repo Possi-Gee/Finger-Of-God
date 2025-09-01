@@ -27,6 +27,9 @@ const initialState: ProductState = {
 const productReducer = (state: ProductState, action: ProductAction): ProductState => {
   switch (action.type) {
     case 'ADD_PRODUCT': {
+       if (state.products.find(p => p.id === action.payload.id)) {
+        return state;
+      }
       return {
         ...state,
         products: [action.payload, ...state.products],
@@ -92,3 +95,5 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
     </ProductContext.Provider>
   );
 };
+
+    

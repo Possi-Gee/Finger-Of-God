@@ -24,7 +24,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import {
   AlertDialog,
@@ -74,7 +73,7 @@ const productSchema = z.object({
   name: z.string().min(3, 'Product name is required'),
   description: z.string().min(10, 'Description is required'),
   category: z.string().min(1, 'Category is required'),
-  images: z.array(z.string().url().or(z.string().startsWith('data:image'))).min(1, 'At least one product image is required.'),
+  images: z.array(z.string().url().or(z.string().startsWith('data:image'))).min(1, 'At least one product image is required.').max(2, 'A maximum of 2 images are allowed.'),
   features: z.string().optional(),
   rating: z.coerce.number().min(0).max(5, 'Rating must be between 0 and 5').default(0),
   reviews: z.coerce.number().min(0).default(0),
@@ -264,6 +263,8 @@ export default function AdminProductsPage() {
       const productRef = doc(db, 'products', newProduct.id.toString());
       await setDoc(productRef, newProduct);
       
+      // No longer dispatching optimistic update here to prevent duplicates
+      
       toast({
         title: 'Product Added',
         description: `${data.name} has been successfully added.`,
@@ -344,9 +345,28 @@ export default function AdminProductsPage() {
     return filtered;
 
   }, [products, searchTerm, filterCategory, sortBy]);
+  
+  const MAX_IMAGE_SIZE_BYTES = 500 * 1024; // 500 KB
 
   const handleImageAdd = (imageDataUri: string) => {
+     if (imageDataUri.length > MAX_IMAGE_SIZE_BYTES) {
+        toast({
+            title: "Image Too Large",
+            description: "Please upload an image smaller than 500 KB.",
+            variant: "destructive",
+        });
+        return;
+    }
+
     const currentImages = getValues('images') || [];
+    if (currentImages.length >= 2) {
+        toast({
+            title: 'Image Limit Reached',
+            description: 'You can only add a maximum of 2 images.',
+            variant: 'destructive',
+        });
+        return;
+    }
     setValue('images', [...currentImages, imageDataUri], { shouldValidate: true, shouldDirty: true });
   }
 
@@ -759,3 +779,5 @@ export default function AdminProductsPage() {
     </div>
   );
 }
+
+    
