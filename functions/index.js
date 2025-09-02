@@ -1,12 +1,16 @@
 
+/**
+ * IMPORTANT: This line must be at the very top to ensure all environment variables are loaded before any other code runs.
+ */
+require('dotenv').config();
+
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 
 admin.initializeApp();
 
+// These imports must come AFTER dotenv.config() is called.
 const { sendOrderUpdateEmail } = require('../dist/server/app/ai/flows/send-order-update-email');
-const { db } = require('../dist/server/lib/firebase');
-
 
 /**
  * Sends emails when a new order is created by invoking a Genkit flow.
