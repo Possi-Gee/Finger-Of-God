@@ -10,7 +10,8 @@ const admin = require("firebase-admin");
 admin.initializeApp();
 
 // These imports must come AFTER dotenv.config() is called.
-const { sendOrderUpdateEmail } = require('../dist/server/app/ai/flows/send-order-update-email');
+// CORRECTED PATH: Point to the compiled JS output in the `dist` directory.
+const { sendOrderUpdateEmail } = require('../dist/ai/flows/send-order-update-email');
 
 /**
  * Sends emails when a new order is created by invoking a Genkit flow.
