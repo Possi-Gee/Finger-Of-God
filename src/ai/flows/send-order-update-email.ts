@@ -2,7 +2,7 @@
 'use server';
 
 /**
- * @fileOverview A Genkit flow for sending order update emails.
+ * @fileOverview A Genkit flow for sending order update emails using Nodemailer.
  *
  * - sendOrderUpdateEmail - A function that sends an email notification to a customer when their order status changes.
  * - SendOrderUpdateEmailInput - The input type for the sendOrderUpdateEmail function.
@@ -141,12 +141,12 @@ const sendOrderUpdateEmailFlow = ai.defineFlow(
         EMAIL_PORT,
         EMAIL_USER,
         EMAIL_PASS,
-        SENDER_EMAIL,
+        SENDER_EMAIL, // This is used for the "From" display name
         ADMIN_EMAIL
     } = process.env;
 
-    if (!EMAIL_HOST || !EMAIL_PORT || !EMAIL_USER || !EMAIL_PASS || !SENDER_EMAIL) {
-        const errorMessage = 'Email service is not configured. Please set required EMAIL environment variables.';
+    if (!EMAIL_HOST || !EMAIL_PORT || !EMAIL_USER || !EMAIL_PASS) {
+        const errorMessage = 'Email service is not configured. Please set required EMAIL environment variables for Nodemailer.';
         console.error(errorMessage);
         return { success: false, message: errorMessage };
     }
@@ -164,9 +164,12 @@ const sendOrderUpdateEmailFlow = ai.defineFlow(
     const recipientType = recipientEmail === ADMIN_EMAIL ? 'admin' : 'customer';
 
     const { subject, html } = getEmailContent(status, orderId, customerName, appName, recipientType);
+    
+    // If SENDER_EMAIL is defined, use it for the display name, otherwise use the app name.
+    const fromAddress = SENDER_EMAIL ? `${SENDER_EMAIL} <${EMAIL_USER}>` : `"${appName}" <${EMAIL_USER}>`;
 
     const mailOptions = {
-      from: `"${appName}" <${SENDER_EMAIL}>`,
+      from: fromAddress,
       to: recipientEmail,
       subject: subject,
       html: html,
