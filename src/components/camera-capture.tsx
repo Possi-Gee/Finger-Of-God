@@ -16,12 +16,11 @@ export function CameraCapture({ onCapture }: CameraCaptureProps) {
   const { toast } = useToast();
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+  const [permissionState, setPermissionState] = useState<'prompt' | 'granted' | 'denied' | 'loading'>('loading');
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const streamRef = useRef<MediaStream | null>(null);
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
   const [currentDeviceId, setCurrentDeviceId] = useState<string | undefined>(undefined);
+  const streamRef = useRef<MediaStream | null>(null);
 
   const stopStream = useCallback(() => {
     if (streamRef.current) {
@@ -30,20 +29,33 @@ export function CameraCapture({ onCapture }: CameraCaptureProps) {
     }
   }, []);
 
-  const startStream = useCallback(async (deviceId: string) => {
+  const startStream = useCallback(async (deviceId?: string) => {
     stopStream();
+    setPermissionState('loading');
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { deviceId: { exact: deviceId } }
+        video: deviceId ? { deviceId: { exact: deviceId } } : true,
       });
       streamRef.current = stream;
+
+      const videoDevices = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'videoinput');
+      setDevices(videoDevices);
+      
+      if (!deviceId && videoDevices.length > 0) {
+        const backCam = videoDevices.find(d => d.label.toLowerCase().includes('back'));
+        setCurrentDeviceId(backCam?.deviceId || videoDevices[0].deviceId);
+      } else {
+         setCurrentDeviceId(deviceId);
+      }
+      
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
+        await videoRef.current.play();
       }
-      setHasPermission(true);
+      setPermissionState('granted');
     } catch (error) {
       console.error('Error starting video stream:', error);
-      setHasPermission(false);
+      setPermissionState('denied');
       toast({
         variant: 'destructive',
         title: 'Camera Access Denied',
@@ -51,52 +63,19 @@ export function CameraCapture({ onCapture }: CameraCaptureProps) {
       });
     }
   }, [stopStream, toast]);
-
+  
   useEffect(() => {
-    const initializeCamera = async () => {
-      if (capturedImage) return;
+    // This effect runs when the component mounts inside the dialog
+    startStream(currentDeviceId);
 
-      try {
-        // First, just get permission and list devices
-        const tempStream = await navigator.mediaDevices.getUserMedia({ video: true });
-        const allDevices = await navigator.mediaDevices.enumerateDevices();
-        const videoDevices = allDevices.filter(d => d.kind === 'videoinput');
-        setDevices(videoDevices);
-
-        if (videoDevices.length > 0) {
-           const backCamera = videoDevices.find(d => d.label.toLowerCase().includes('back'));
-           const initialDeviceId = backCamera?.deviceId || videoDevices[0].deviceId;
-           setCurrentDeviceId(initialDeviceId);
-        } else {
-           setHasPermission(false); // No video devices found
-        }
-        
-        // Stop the temporary stream used for permission
-        tempStream.getTracks().forEach(track => track.stop());
-
-      } catch (error) {
-        console.error('Error initializing camera:', error);
-        setHasPermission(false);
-      }
-    };
-    
-    initializeCamera();
-
+    // This is the cleanup function that runs when the dialog closes
     return () => {
       stopStream();
     };
-  }, [capturedImage]);
-  
-  useEffect(() => {
-      if (currentDeviceId && !capturedImage) {
-          startStream(currentDeviceId);
-      }
-  }, [currentDeviceId, startStream, capturedImage]);
-
+  }, []); // Run only once on mount
 
   const handleCapture = () => {
     if (videoRef.current && canvasRef.current) {
-      setIsProcessing(true);
       const video = videoRef.current;
       const canvas = canvasRef.current;
       canvas.width = video.videoWidth;
@@ -107,7 +86,6 @@ export function CameraCapture({ onCapture }: CameraCaptureProps) {
         setCapturedImage(canvas.toDataURL('image/jpeg'));
         stopStream();
       }
-      setIsProcessing(false);
     }
   };
 
@@ -119,44 +97,57 @@ export function CameraCapture({ onCapture }: CameraCaptureProps) {
 
   const handleRetake = () => {
     setCapturedImage(null);
-    // Let the useEffect hook re-initialize the camera
+    startStream(currentDeviceId);
   };
 
   const handleSwitchCamera = () => {
     if (devices.length < 2) return;
     const currentIndex = devices.findIndex(d => d.deviceId === currentDeviceId);
     const nextIndex = (currentIndex + 1) % devices.length;
-    setCurrentDeviceId(devices[nextIndex].deviceId);
-  }
+    const nextDeviceId = devices[nextIndex].deviceId;
+    setCurrentDeviceId(nextDeviceId);
+    startStream(nextDeviceId); // Restart stream with the new device
+  };
 
-  if (hasPermission === false) {
+  const renderContent = () => {
+    if (permissionState === 'loading') {
+      return (
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-white bg-black">
+          <Loader2 className="h-8 w-8 animate-spin" />
+          <p className="mt-2">Starting camera...</p>
+        </div>
+      );
+    }
+
+    if (permissionState === 'denied') {
+      return (
+         <div className="absolute inset-0 flex items-center justify-center text-white bg-black">
+            <Alert variant="destructive">
+                <VideoOff className="h-4 w-4" />
+                <AlertTitle>No Camera Access</AlertTitle>
+                <AlertDescription>
+                Could not access the camera. Please grant permission in your browser settings and ensure a camera is connected.
+                </AlertDescription>
+            </Alert>
+        </div>
+      );
+    }
+
     return (
-      <Alert variant="destructive">
-        <VideoOff className="h-4 w-4" />
-        <AlertTitle>No Camera Access</AlertTitle>
-        <AlertDescription>
-          Could not access the camera. Please grant permission in your browser settings and ensure a camera is connected.
-        </AlertDescription>
-      </Alert>
+      <>
+        {capturedImage ? (
+          <img src={capturedImage} alt="Captured" className="w-full h-full object-contain" />
+        ) : (
+          <video ref={videoRef} className="w-full h-full object-cover" autoPlay playsInline muted />
+        )}
+      </>
     );
-  }
+  };
 
   return (
     <div className="space-y-4">
       <div className="relative w-full aspect-video rounded-md overflow-hidden bg-black flex items-center justify-center">
-        {capturedImage ? (
-          <img src={capturedImage} alt="Captured" className="w-full h-full object-contain" />
-        ) : (
-           <>
-             <video ref={videoRef} className={cn("w-full h-full object-cover", hasPermission ? 'opacity-100' : 'opacity-0')} autoPlay playsInline muted />
-             {hasPermission === null && (
-                 <div className="absolute flex flex-col items-center text-white">
-                    <Loader2 className="h-8 w-8 animate-spin" />
-                    <p className="mt-2">Starting camera...</p>
-                 </div>
-             )}
-           </>
-        )}
+        {renderContent()}
         <canvas ref={canvasRef} className="hidden" />
       </div>
 
@@ -173,15 +164,16 @@ export function CameraCapture({ onCapture }: CameraCaptureProps) {
         ) : (
           <>
             {devices.length > 1 && (
-                <Button onClick={handleSwitchCamera} variant="outline" size="icon" className="h-16 w-16 rounded-full" aria-label="Switch Camera" disabled={isProcessing || !hasPermission}>
-                    <SwitchCamera className="h-8 w-8" />
-                </Button>
+              <Button onClick={handleSwitchCamera} variant="outline" size="icon" className="h-16 w-16 rounded-full" aria-label="Switch Camera" disabled={permissionState !== 'granted'}>
+                <SwitchCamera className="h-8 w-8" />
+              </Button>
             )}
-            <Button onClick={handleCapture} disabled={isProcessing || !hasPermission} size="lg" className="rounded-full h-16 w-16">
+            <Button onClick={handleCapture} disabled={permissionState !== 'granted'} size="lg" className="rounded-full h-16 w-16">
               <Camera className="h-8 w-8" />
               <span className="sr-only">Capture</span>
             </Button>
-            {devices.length > 1 && <div className="w-16"></div>}
+            {/* Placeholder to keep layout consistent */}
+            {devices.length > 1 && <div className="w-16"></div>} 
           </>
         )}
       </div>
