@@ -37,7 +37,7 @@ export function CameraCapture({ onCapture }: CameraCaptureProps) {
         streamRef.current = stream;
         if (videoRef.current) {
             videoRef.current.srcObject = stream;
-            setHasCameraPermission(true);
+            // The onloadedmetadata event will handle setting hasCameraPermission to true
         }
     } catch (error) {
         console.error('Error accessing camera:', error);
@@ -50,6 +50,24 @@ export function CameraCapture({ onCapture }: CameraCaptureProps) {
     }
   }, [cleanupStream, toast, hasCameraPermission]);
 
+  // Use a separate effect to handle video element events
+  useEffect(() => {
+    const video = videoRef.current;
+    
+    const handleCanPlay = () => {
+        setHasCameraPermission(true);
+    };
+
+    if (video) {
+        video.addEventListener('loadedmetadata', handleCanPlay);
+    }
+    
+    return () => {
+        if (video) {
+            video.removeEventListener('loadedmetadata', handleCanPlay);
+        }
+    };
+  }, []);
 
   useEffect(() => {
     // This effect now only requests permission and starts the stream
@@ -117,6 +135,12 @@ export function CameraCapture({ onCapture }: CameraCaptureProps) {
                     <Loader2 className="h-8 w-8 animate-spin" />
                     <p className="mt-2">Starting camera...</p>
                  </div>
+             )}
+             {hasCameraPermission === false && (
+                <div className="absolute flex flex-col items-center text-white">
+                    <VideoOff className="h-10 w-10" />
+                    <p className="mt-2">Camera permission denied</p>
+                </div>
              )}
            </>
         )}
