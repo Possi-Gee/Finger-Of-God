@@ -20,6 +20,8 @@ export function CameraCapture({ onCapture }: CameraCaptureProps) {
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const streamRef = useRef<MediaStream | null>(null);
+  const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
+  const [currentDeviceId, setCurrentDeviceId] = useState<string | undefined>(undefined);
 
 
   const cleanupStream = useCallback(() => {
@@ -29,17 +31,43 @@ export function CameraCapture({ onCapture }: CameraCaptureProps) {
     }
   }, []);
 
-  const startVideoStream = useCallback(async () => {
+  const getDevices = useCallback(async () => {
+    try {
+      const allDevices = await navigator.mediaDevices.enumerateDevices();
+      const videoDevices = allDevices.filter(device => device.kind === 'videoinput');
+      setDevices(videoDevices);
+      if (videoDevices.length > 0 && !currentDeviceId) {
+        // Prefer environment (back) camera first
+        const backCamera = videoDevices.find(d => d.label.toLowerCase().includes('back'));
+        setCurrentDeviceId(backCamera?.deviceId || videoDevices[0].deviceId);
+      }
+      if(videoDevices.length === 0){
+        setHasCameraPermission(false);
+      }
+    } catch (error) {
+       console.error('Error enumerating devices:', error);
+       setHasCameraPermission(false);
+    }
+  }, [currentDeviceId]);
+
+
+  const startVideoStream = useCallback(async (deviceId: string) => {
     if (hasCameraPermission === false || typeof window === 'undefined' || !navigator.mediaDevices) return;
     cleanupStream();
     try {
-        // Use a generic video constraint to avoid defaulting to phone cameras
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        const constraints = {
+            video: {
+                deviceId: { exact: deviceId }
+            }
+        };
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
         streamRef.current = stream;
         if (videoRef.current) {
             videoRef.current.srcObject = stream;
-            // The onloadedmetadata event will handle setting hasCameraPermission to true
         }
+         // Request devices again to get labels
+        await getDevices();
+
     } catch (error) {
         console.error('Error accessing camera:', error);
         setHasCameraPermission(false);
@@ -49,38 +77,33 @@ export function CameraCapture({ onCapture }: CameraCaptureProps) {
           description: 'Please enable camera permissions in your browser settings.',
         });
     }
-  }, [cleanupStream, toast, hasCameraPermission]);
+  }, [cleanupStream, toast, hasCameraPermission, getDevices]);
 
-  // Use a separate effect to handle video element events
   useEffect(() => {
     const video = videoRef.current;
-    
-    const handleCanPlay = () => {
-        setHasCameraPermission(true);
-    };
-
-    if (video) {
-        video.addEventListener('loadedmetadata', handleCanPlay);
-    }
-    
-    return () => {
-        if (video) {
-            video.removeEventListener('loadedmetadata', handleCanPlay);
-        }
-    };
+    const handleCanPlay = () => { setHasCameraPermission(true); };
+    if (video) { video.addEventListener('loadedmetadata', handleCanPlay); }
+    return () => { if (video) { video.removeEventListener('loadedmetadata', handleCanPlay); }};
   }, []);
 
   useEffect(() => {
-    // This effect now only requests permission and starts the stream
-    // when the component mounts or when retaking a photo.
     if (!capturedImage) {
-        startVideoStream();
+        // Initial permission request
+        if(hasCameraPermission === null) {
+            navigator.mediaDevices.getUserMedia({video: true})
+            .then(stream => {
+                cleanupStream(); // Stop the initial temporary stream
+                getDevices();
+            })
+            .catch(() => setHasCameraPermission(false));
+        } else if (currentDeviceId) {
+            startVideoStream(currentDeviceId);
+        }
     }
-
     return () => {
       cleanupStream();
     };
-  }, [capturedImage, startVideoStream, cleanupStream]);
+  }, [capturedImage, currentDeviceId, getDevices, startVideoStream, hasCameraPermission, cleanupStream]);
 
   const handleCapture = () => {
     if (videoRef.current && canvasRef.current) {
@@ -107,8 +130,16 @@ export function CameraCapture({ onCapture }: CameraCaptureProps) {
 
   const handleRetake = () => {
     setCapturedImage(null);
-    setHasCameraPermission(null); // Reset to trigger the useEffect to get the stream again
+    setHasCameraPermission(null);
+    setCurrentDeviceId(undefined); // Reset to re-trigger device fetching
   };
+
+  const handleSwitchCamera = () => {
+    if (devices.length < 2) return;
+    const currentIndex = devices.findIndex(d => d.deviceId === currentDeviceId);
+    const nextIndex = (currentIndex + 1) % devices.length;
+    setCurrentDeviceId(devices[nextIndex].deviceId);
+  }
 
 
   if (hasCameraPermission === false) {
@@ -148,7 +179,7 @@ export function CameraCapture({ onCapture }: CameraCaptureProps) {
         <canvas ref={canvasRef} className="hidden" />
       </div>
 
-      <div className="flex justify-center gap-4">
+      <div className="flex justify-center items-center gap-4">
         {capturedImage ? (
           <>
             <Button onClick={handleRetake} variant="outline">
@@ -159,10 +190,19 @@ export function CameraCapture({ onCapture }: CameraCaptureProps) {
             </Button>
           </>
         ) : (
-          <Button onClick={handleCapture} disabled={isProcessing || !hasCameraPermission} size="lg" className="rounded-full h-16 w-16">
-            <Camera className="h-8 w-8" />
-            <span className="sr-only">Capture</span>
-          </Button>
+          <>
+            {devices.length > 1 && (
+                <Button onClick={handleSwitchCamera} variant="outline" size="icon" className="h-16 w-16 rounded-full" aria-label="Switch Camera">
+                    <SwitchCamera className="h-8 w-8" />
+                </Button>
+            )}
+            <Button onClick={handleCapture} disabled={isProcessing || !hasCameraPermission} size="lg" className="rounded-full h-16 w-16">
+              <Camera className="h-8 w-8" />
+              <span className="sr-only">Capture</span>
+            </Button>
+             {/* Placeholder for alignment */}
+            {devices.length > 1 && <div className="w-16"></div>}
+          </>
         )}
       </div>
     </div>
