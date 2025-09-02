@@ -74,7 +74,7 @@ const productSchema = z.object({
   name: z.string().min(3, 'Product name is required'),
   description: z.string().min(10, 'Description is required'),
   category: z.string().min(1, 'Category is required'),
-  images: z.array(z.string().url().or(z.string().startsWith('data:image'))).min(1, 'At least one product image is required.').max(2, 'A maximum of 2 images are allowed.'),
+  images: z.array(z.string().url().or(z.string().startsWith('data:image'))).min(1, 'At least one product image is required.').max(5, 'A maximum of 5 images are allowed.'),
   features: z.string().optional(),
   rating: z.coerce.number().min(0).max(5, 'Rating must be between 0 and 5').default(0),
   reviews: z.coerce.number().min(0).default(0),
@@ -358,10 +358,10 @@ export default function AdminProductsPage() {
     }
 
     const currentImages = getValues('images') || [];
-    if (currentImages.length >= 2) {
+    if (currentImages.length >= 5) {
         toast({
             title: 'Image Limit Reached',
-            description: 'You can only add a maximum of 2 images.',
+            description: 'You can only add a maximum of 5 images.',
             variant: 'destructive',
         });
         return;
@@ -778,5 +778,7 @@ export default function AdminProductsPage() {
     </div>
   );
 }
+
+    
 
     
