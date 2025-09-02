@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Camera, SwitchCamera, VideoOff, Loader2 } from 'lucide-react';
 import { Alert, AlertTitle, AlertDescription } from './ui/alert';
+import { cn } from '@/lib/utils';
 
 interface CameraCaptureProps {
   onCapture: (imageDataUri: string) => void;
