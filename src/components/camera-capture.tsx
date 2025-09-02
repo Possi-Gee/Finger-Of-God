@@ -30,10 +30,11 @@ export function CameraCapture({ onCapture }: CameraCaptureProps) {
   }, []);
 
   const startVideoStream = useCallback(async () => {
-    if (hasCameraPermission === false || !navigator.mediaDevices) return;
+    if (hasCameraPermission === false || typeof window === 'undefined' || !navigator.mediaDevices) return;
     cleanupStream();
     try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+        // Use a generic video constraint to avoid defaulting to phone cameras
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
         streamRef.current = stream;
         if (videoRef.current) {
             videoRef.current.srcObject = stream;
