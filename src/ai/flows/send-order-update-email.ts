@@ -15,8 +15,8 @@ import nodemailer from 'nodemailer';
 
 const SendOrderUpdateEmailInputSchema = z.object({
   orderId: z.string().describe('The ID of the order.'),
-  status: z.string().describe('The new status of the order.'),
-  recipientEmail: z.string().email().describe('The email address of the customer.'),
+  status: z.string().describe('The new status of the order. Can be custom for different email types (e.g., "Confirmed").'),
+  recipientEmail: z.string().email().describe('The email address of the recipient (customer or admin).'),
   customerName: z.string().describe('The name of the customer.'),
   appName: z.string().describe('The name of the application.'),
 });
@@ -28,11 +28,27 @@ const SendOrderUpdateEmailOutputSchema = z.object({
 });
 export type SendOrderUpdateEmailOutput = z.infer<typeof SendOrderUpdateEmailOutputSchema>;
 
-const getEmailContent = (status: string, orderId: string, customerName: string, appName: string) => {
+const getEmailContent = (status: string, orderId: string, customerName: string, appName: string, recipient: 'customer' | 'admin') => {
     let subject = `Your ${appName} Order #${orderId} has been updated`;
     let html = `<p>Hi ${customerName},</p><p>There's an update on your order #${orderId}. The new status is: <strong>${status}</strong>.</p>`;
 
     switch (status.toLowerCase()) {
+        case 'confirmed':
+             subject = `✅ Your ${appName} Order Confirmation #${orderId}`;
+             html = `
+                <h2>Thanks for your order, ${customerName}!</h2>
+                <p>We've received your order #${orderId} and are getting it ready. We'll notify you as soon as it has shipped.</p>
+                <p>You can view your order details anytime by clicking the button below.</p>
+            `;
+            break;
+        case 'new order': // For Admin
+            subject = `🎉 New Order Received! #${orderId}`;
+            html = `
+                <h2>You've received a new order!</h2>
+                <p>A new order (#${orderId}) was placed by ${customerName}.</p>
+                <p>Please review it in the admin dashboard to begin processing.</p>
+            `;
+            break;
         case 'shipped':
             subject = `🚀 Your ${appName} Order #${orderId} Has Shipped!`;
             html = `
@@ -58,20 +74,31 @@ const getEmailContent = (status: string, orderId: string, customerName: string, 
             `;
             break;
     }
-     return { subject, html: styleEmail(html, appName) };
+     return { subject, html: styleEmail(html, appName, orderId, recipient) };
 };
 
-const styleEmail = (content: string, appName: string) => {
+const styleEmail = (content: string, appName: string, orderId: string, recipient: 'customer' | 'admin') => {
+    const orderUrl = recipient === 'customer' 
+      ? `https://shopwave-6mh7a.web.app/orders/${orderId}`
+      : `https://shopwave-6mh7a.web.app/admin/orders/${orderId}`;
+      
+    const buttonText = recipient === 'customer' ? 'View Your Order' : 'View in Admin';
+
     return `
       <!DOCTYPE html>
       <html>
       <head>
           <style>
-              body { font-family: Arial, sans-serif; color: #333; line-height: 1.6; }
-              .container { max-width: 600px; margin: 20px auto; padding: 20px; border: 1px solid #eee; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+              body { font-family: Arial, sans-serif; color: #333; line-height: 1.6; margin: 0; padding: 20px; background-color: #f4f4f4; }
+              .container { max-width: 600px; margin: 0 auto; padding: 30px; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); background-color: #fff; }
               .header { text-align: center; padding-bottom: 20px; border-bottom: 1px solid #eee; }
+              .header h1 { color: #1a1a1a; font-size: 24px; margin: 0;}
+              .content { padding: 20px 0; }
+              .button-container { text-align: center; margin-top: 20px; }
+              .button { background-color: #1976d2; color: #ffffff !important; padding: 12px 25px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold; }
               .footer { text-align: center; padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #888; }
               h2 { color: #1a1a1a; }
+              p { margin-bottom: 1em; }
           </style>
       </head>
       <body>
@@ -79,7 +106,12 @@ const styleEmail = (content: string, appName: string) => {
               <div class="header">
                   <h1>${appName}</h1>
               </div>
-              ${content}
+              <div class="content">
+                ${content}
+                <div class="button-container">
+                    <a href="${orderUrl}" class="button">${buttonText}</a>
+                </div>
+              </div>
               <div class="footer">
                   <p>Thank you for choosing ${appName}!</p>
               </div>
@@ -109,11 +141,12 @@ const sendOrderUpdateEmailFlow = ai.defineFlow(
         EMAIL_PORT,
         EMAIL_USER,
         EMAIL_PASS,
-        SENDER_EMAIL
+        SENDER_EMAIL,
+        ADMIN_EMAIL
     } = process.env;
 
     if (!EMAIL_HOST || !EMAIL_PORT || !EMAIL_USER || !EMAIL_PASS || !SENDER_EMAIL) {
-        const errorMessage = 'Email service is not configured. Please set EMAIL environment variables.';
+        const errorMessage = 'Email service is not configured. Please set required EMAIL environment variables.';
         console.error(errorMessage);
         return { success: false, message: errorMessage };
     }
@@ -127,8 +160,10 @@ const sendOrderUpdateEmailFlow = ai.defineFlow(
         pass: EMAIL_PASS,
       },
     });
+    
+    const recipientType = recipientEmail === ADMIN_EMAIL ? 'admin' : 'customer';
 
-    const { subject, html } = getEmailContent(status, orderId, customerName, appName);
+    const { subject, html } = getEmailContent(status, orderId, customerName, appName, recipientType);
 
     const mailOptions = {
       from: `"${appName}" <${SENDER_EMAIL}>`,
