@@ -10,7 +10,7 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'genkit';
+import { z } from 'zod';
 import { db } from '@/lib/firebase';
 import { collection, getDocs, where, query, or } from 'firebase/firestore';
 import type { Product } from '@/lib/products';
@@ -52,9 +52,10 @@ const searchProducts = ai.defineTool(
     async (input) => {
         console.log(`Searching products with query: ${input.query}`);
         const productsRef = collection(db, 'products');
-
-        // Simple text search: check for matches in name, category, or description.
-        // For a real-world app, a dedicated search service like Algolia or a vector DB would be better.
+        
+        // Firestore doesn't support full-text search natively.
+        // For a real app, use a dedicated search service like Algolia or a vector DB.
+        // This is a workaround to perform a "contains" search by fetching all docs.
         const allProductsSnapshot = await getDocs(productsRef);
         const allProducts: Product[] = [];
         allProductsSnapshot.forEach((doc) => {
@@ -65,8 +66,7 @@ const searchProducts = ai.defineTool(
         const filteredProducts = allProducts.filter(product => 
             product.name.toLowerCase().includes(queryLower) ||
             product.category.toLowerCase().includes(queryLower) ||
-            product.description.toLowerCase().includes(queryLower) ||
-            (product.features && product.features.toLowerCase().includes(queryLower))
+            product.description.toLowerCase().includes(queryLower)
         );
         
         console.log(`Found ${filteredProducts.length} products for query: "${input.query}"`);
