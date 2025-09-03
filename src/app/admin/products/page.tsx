@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
@@ -546,6 +547,12 @@ export default function AdminProductsPage() {
                                 </Button>
                             </DialogTrigger>
                             <DialogContent className="max-w-2xl">
+                                <DialogHeader>
+                                    <DialogTitle>Capture Image</DialogTitle>
+                                    <DialogDescription>
+                                        Position the product in the frame and click capture.
+                                    </DialogDescription>
+                                </DialogHeader>
                                 <CameraCapture onCapture={handleCameraCapture} />
                             </DialogContent>
                         </Dialog>
