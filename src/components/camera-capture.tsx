@@ -38,6 +38,10 @@ export function CameraCapture({ onCapture }: CameraCaptureProps) {
         video: deviceId ? { deviceId: { exact: deviceId } } : { facingMode: 'environment' },
       };
 
+      if (!navigator.mediaDevices?.getUserMedia) {
+        throw new Error('Camera not supported on this browser.');
+      }
+
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
       streamRef.current = stream;
 
@@ -72,7 +76,7 @@ export function CameraCapture({ onCapture }: CameraCaptureProps) {
     return () => {
       stopStream();
     };
-  }, [startStream]);
+  }, [startStream, stopStream]);
 
 
   const handleCapture = () => {
