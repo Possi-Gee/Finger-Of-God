@@ -2,7 +2,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Home, Heart, ShoppingCart, User, Wrench, History } from 'lucide-react';
+import { Home, Heart, ShoppingCart, User, Wrench, History, Sparkles } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useCart } from '@/hooks/use-cart';
@@ -11,7 +11,7 @@ import { useEffect, useState } from 'react';
 
 const navItems = [
   { href: '/', label: 'Home', icon: Home },
-  { href: '/wishlist', label: 'Wishlist', icon: Heart },
+  { href: '/personal-shopper', label: 'AI Shopper', icon: Sparkles },
   { href: '/orders', label: 'Orders', icon: History },
   { href: '/cart', label: 'Cart', icon: ShoppingCart },
   { href: '/profile', label: 'Profile', icon: User },

@@ -2,7 +2,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Package, Sun, Moon, Wrench, User, LogIn, LogOut, Home, Heart, ShoppingCart, History } from 'lucide-react';
+import { Package, Sun, Moon, Wrench, User, LogIn, LogOut, Home, Heart, ShoppingCart, History, Sparkles } from 'lucide-react';
 import { useTheme } from '@/context/theme-provider';
 import { Button } from '@/components/ui/button';
 import { useSiteSettings } from '@/hooks/use-site-settings';
@@ -26,9 +26,10 @@ import { useEffect, useState } from 'react';
 
 const mainNavItems = [
   { href: '/', label: 'Home', icon: Home },
-  { href: '/wishlist', label: 'Wishlist', icon: Heart },
+  { href: '/personal-shopper', label: 'AI Shopper', icon: Sparkles },
   { href: '/orders', label: 'Orders', icon: History },
   { href: '/cart', label: 'Cart', icon: ShoppingCart },
+  { href: '/wishlist', label: 'Wishlist', icon: Heart },
 ];
 
 export function Header() {
