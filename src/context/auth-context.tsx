@@ -11,6 +11,7 @@ import {
     GoogleAuthProvider,
     signInWithPopup,
     updateProfile,
+    updatePassword,
     type User 
 } from 'firebase/auth';
 import { app } from '@/lib/firebase';
@@ -26,6 +27,8 @@ interface AuthContextType {
   login: (email: string, pass: string) => Promise<User | null>;
   logout: () => Promise<void>;
   loginWithGoogle: () => Promise<User | null>;
+  updateUserProfile: (name: string) => Promise<void>;
+  updateUserPassword: (newPassword: string) => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -104,7 +107,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const value = { user, loading, signup, login, logout, loginWithGoogle };
+  const updateUserProfile = async (name: string) => {
+    if (auth.currentUser) {
+        await updateProfile(auth.currentUser, { displayName: name });
+        setUser({ ...auth.currentUser }); // Force refresh of user state
+    } else {
+        throw new Error("No user is currently signed in.");
+    }
+  };
+
+  const updateUserPassword = async (newPassword: string) => {
+    if (auth.currentUser) {
+        try {
+            await updatePassword(auth.currentUser, newPassword);
+        } catch (error: any) {
+            console.error("Password update error:", error);
+             if (error.code === 'auth/requires-recent-login') {
+                throw new Error("This action is sensitive and requires recent authentication. Please log out and log back in to change your password.");
+            }
+            throw new Error(error.message || 'An unexpected error occurred while updating the password.');
+        }
+    } else {
+        throw new Error("No user is currently signed in.");
+    }
+  };
+
+  const value = { user, loading, signup, login, logout, loginWithGoogle, updateUserProfile, updateUserPassword };
 
   return (
     <AuthContext.Provider value={value}>
