@@ -53,9 +53,6 @@ const searchProducts = ai.defineTool(
         console.log(`Searching products with query: ${input.query}`);
         const productsRef = collection(db, 'products');
         
-        // Firestore doesn't support full-text search natively.
-        // For a real app, use a dedicated search service like Algolia or a vector DB.
-        // This is a workaround to perform a "contains" search by fetching all docs.
         const allProductsSnapshot = await getDocs(productsRef);
         const allProducts: Product[] = [];
         allProductsSnapshot.forEach((doc) => {
