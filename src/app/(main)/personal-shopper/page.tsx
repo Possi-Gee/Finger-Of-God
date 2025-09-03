@@ -40,9 +40,10 @@ export default function PersonalShopperPage() {
     }
   };
 
-  const recommendedProducts = productState.products.filter(p => 
-    recommendation?.products.some(rec => rec.id === p.id)
-  );
+  const recommendedProducts = recommendation?.products.map(recProduct => 
+    productState.products.find(p => p.id === recProduct.id)
+  ).filter(p => p !== undefined);
+
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -82,10 +83,10 @@ export default function PersonalShopperPage() {
                     <p className="text-center text-lg">{recommendation.recommendationText}</p>
                 </div>
               
-              {recommendation.products.length > 0 ? (
+              {recommendedProducts && recommendedProducts.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {productState.loading ? (
-                     [...Array(recommendation.products.length)].map((_, i) => (
+                     [...Array(recommendedProducts.length)].map((_, i) => (
                         <Card key={i}>
                             <Skeleton className="aspect-square w-full" />
                             <CardContent className="p-4 space-y-2">
@@ -97,7 +98,7 @@ export default function PersonalShopperPage() {
                     ))
                   ) : (
                     recommendedProducts.map(product => (
-                      <ProductCard key={product.id} product={product} />
+                      product && <ProductCard key={product.id} product={product} />
                     ))
                   )}
                 </div>
