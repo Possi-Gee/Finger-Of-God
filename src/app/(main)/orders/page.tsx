@@ -1,7 +1,8 @@
 
 'use client';
 
-import { useOrders, type Order } from '@/hooks/use-orders';
+import { useOrders } from '@/hooks/use-orders';
+import type { Order } from '@/context/order-context';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';

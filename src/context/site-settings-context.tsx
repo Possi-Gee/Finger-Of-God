@@ -1,11 +1,12 @@
+
 'use client';
 
 import React, { createContext, useReducer, useEffect, type ReactNode, useState } from 'react';
 import { db } from '@/lib/firebase';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 
-type Link = { id: number; label: string; url: string };
-type FooterColumn = { id: number; title: string; links: Link[] };
+export type Link = { id: number; label: string; url: string };
+export type FooterColumn = { id: number; title: string; links: Link[] };
 
 export type SiteTheme = {
   background: string;

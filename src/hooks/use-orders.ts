@@ -2,6 +2,7 @@
 'use client';
 import { useContext } from 'react';
 import { OrderContext, type OrderContextType } from '@/context/order-context';
+export type { Order, OrderStatus } from '@/context/order-context';
 
 export const useOrders = (): OrderContextType => {
   const context = useContext(OrderContext);

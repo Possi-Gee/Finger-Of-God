@@ -101,6 +101,7 @@ export default function CheckoutPage() {
       cardNumber: '',
       expiryDate: '',
       cvv: '',
+      mobileMoneyProvider: undefined,
       mobileMoneyNumber: '',
       orderNotes: '',
     }

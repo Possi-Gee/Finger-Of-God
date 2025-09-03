@@ -1,7 +1,8 @@
 
 'use client';
 
-import { useOrders, type Order, type OrderStatus } from '@/hooks/use-orders';
+import { useOrders } from '@/hooks/use-orders';
+import type { Order, OrderStatus } from '@/context/order-context';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';

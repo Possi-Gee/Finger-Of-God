@@ -2,7 +2,8 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { useOrders, type Order, type OrderStatus } from '@/hooks/use-orders';
+import { useOrders } from '@/hooks/use-orders';
+import type { Order, OrderStatus } from '@/context/order-context';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
