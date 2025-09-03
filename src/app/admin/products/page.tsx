@@ -51,12 +51,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, Loader2, Bot, Edit, Trash2, Search, Package, Camera, Upload } from 'lucide-react';
+import { PlusCircle, Loader2, Bot, Edit, Trash2, Search, Package, Upload } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
-import { CameraCapture } from '@/components/camera-capture';
 
 // Helper function to generate unique IDs
 const generateUniqueId = () => crypto.randomUUID();
@@ -89,7 +88,6 @@ export default function AdminProductsPage() {
   const { state: productState, dispatch: productDispatch } = useProduct();
   const { products } = productState;
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
@@ -376,11 +374,6 @@ export default function AdminProductsPage() {
   }
 
 
-  const handleImageCapture = (imageDataUri: string) => {
-    handleImageAdd(imageDataUri);
-    setIsCameraOpen(false);
-  };
-
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -538,21 +531,6 @@ export default function AdminProductsPage() {
                           <Upload className="mr-2 h-4 w-4" />
                           Upload from Device
                        </Button>
-                       <Dialog open={isCameraOpen} onOpenChange={setIsCameraOpen}>
-                         <DialogTrigger asChild>
-                            <Button type="button" variant="outline" size="sm">
-                                <Camera className="mr-2 h-4 w-4" />
-                                Use Camera
-                            </Button>
-                         </DialogTrigger>
-                         <DialogContent>
-                            <DialogHeader>
-                                <DialogTitle>Capture Image</DialogTitle>
-                                <DialogDescription>Center the product in the frame and click capture.</DialogDescription>
-                            </DialogHeader>
-                            <CameraCapture onCapture={handleImageCapture} />
-                         </DialogContent>
-                       </Dialog>
                     </div>
                     {errors.images && <p className="text-sm text-destructive mt-1">{errors.images.message || (errors.images as any)._errors.join(', ')}</p>}
                   </Card>
@@ -778,7 +756,3 @@ export default function AdminProductsPage() {
     </div>
   );
 }
-
-    
-
-    
