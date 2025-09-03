@@ -62,17 +62,14 @@ const searchProducts = ai.defineTool(
             allProducts.push(doc.data() as Product);
         });
 
-        const queryWords = input.query.toLowerCase().split(/\s+/).filter(Boolean);
+        const searchTerm = input.query.toLowerCase();
 
         const filteredProducts = allProducts.filter(product => {
-            const productNameWords = product.name.toLowerCase().split(/\s+/);
-            const productCategoryWords = product.category.toLowerCase().split(/\s+/);
-            const productDescriptionWords = product.description.toLowerCase().split(/\s+/);
+            const nameMatch = product.name.toLowerCase().includes(searchTerm);
+            const categoryMatch = product.category.toLowerCase().includes(searchTerm);
+            const descriptionMatch = product.description.toLowerCase().includes(searchTerm);
             
-            const productWords = new Set([...productNameWords, ...productCategoryWords, ...productDescriptionWords]);
-
-            // Check if at least one query word is present in the product's text fields
-            return queryWords.some(queryWord => productWords.has(queryWord));
+            return nameMatch || categoryMatch || descriptionMatch;
         });
         
         console.log(`Found ${filteredProducts.length} products for query: "${input.query}"`);
