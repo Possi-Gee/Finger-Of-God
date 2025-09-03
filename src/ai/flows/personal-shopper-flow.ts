@@ -12,7 +12,7 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import { db } from '@/lib/firebase';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, where, query, or } from 'firebase/firestore';
 import type { Product } from '@/lib/products';
 
 // Define the input schema for the personal shopper flow
@@ -37,45 +37,67 @@ const SuggestProductsOutputSchema = z.object({
 export type SuggestProductsOutput = z.infer<typeof SuggestProductsOutputSchema>;
 
 /**
- * Fetches all products from the Firestore database.
- * This is a simplified approach for demonstration. For larger product catalogs,
- * a more sophisticated retrieval or search mechanism (like a vector database) would be better.
+ * A tool that searches the product database based on a query.
+ * This is more efficient than sending the entire product list to the model.
  */
-async function getAllProducts(): Promise<Product[]> {
-  const productsCol = collection(db, 'products');
-  const snapshot = await getDocs(productsCol);
-  const products: Product[] = [];
-  snapshot.forEach((doc) => {
-    products.push(doc.data() as Product);
-  });
-  return products;
-}
+const searchProducts = ai.defineTool(
+    {
+        name: 'searchProducts',
+        description: 'Search for products available in the store based on a user query. Returns a list of products that match the query.',
+        inputSchema: z.object({
+            query: z.string().describe('The search query. Can be a product name, category, or description.'),
+        }),
+        outputSchema: z.array(z.custom<Product>()),
+    },
+    async (input) => {
+        console.log(`Searching products with query: ${input.query}`);
+        const productsRef = collection(db, 'products');
+
+        // Simple text search: check for matches in name, category, or description.
+        // For a real-world app, a dedicated search service like Algolia or a vector DB would be better.
+        const allProductsSnapshot = await getDocs(productsRef);
+        const allProducts: Product[] = [];
+        allProductsSnapshot.forEach((doc) => {
+            allProducts.push(doc.data() as Product);
+        });
+
+        const queryLower = input.query.toLowerCase();
+        const filteredProducts = allProducts.filter(product => 
+            product.name.toLowerCase().includes(queryLower) ||
+            product.category.toLowerCase().includes(queryLower) ||
+            product.description.toLowerCase().includes(queryLower) ||
+            (product.features && product.features.toLowerCase().includes(queryLower))
+        );
+        
+        console.log(`Found ${filteredProducts.length} products for query: "${input.query}"`);
+        // Return a limited number of products to avoid overwhelming the model
+        return filteredProducts.slice(0, 10);
+    }
+);
+
 
 // Define the main function that the client will call
 export async function suggestProducts(input: SuggestProductsInput): Promise<SuggestProductsOutput> {
   return personalShopperFlow(input);
 }
 
-// Define the Genkit prompt
+// Define the Genkit prompt, now with the searchProducts tool.
 const prompt = ai.definePrompt({
   name: 'personalShopperPrompt',
-  input: { schema: z.object({ query: z.string(), products: z.any() }) },
+  input: { schema: z.object({ query: z.string() }) },
   output: { schema: SuggestProductsOutputSchema },
+  tools: [searchProducts],
   prompt: `You are a friendly and helpful AI Personal Shopper for an online store called "ShopWave".
 Your goal is to help users find the perfect products based on their needs.
 
 Analyze the user's query: "{{query}}"
 
-Here is the list of available products in JSON format:
-\`\`\`json
-{{{json products}}}
-\`\`\`
-
-Based on the user's query and the product list, please provide:
-1. A conversational and helpful response.
+Use the 'searchProducts' tool to find products that match the user's request.
+Based on the search results, please provide:
+1. A conversational and helpful response to the user.
 2. A list of 1 to 4 product recommendations that best match the query. For each recommendation, provide the product ID, name, and a short, compelling reason why it's a good fit for the user.
 
-If no products match, politely inform the user and suggest they try a different search. Do not recommend products that are not in the list.
+If the tool returns no products, politely inform the user and suggest they try a different search. Do not recommend products that you did not find using the tool.
 `,
 });
 
@@ -87,19 +109,18 @@ const personalShopperFlow = ai.defineFlow(
     outputSchema: SuggestProductsOutputSchema,
   },
   async (input) => {
-    // Fetch all products from the database
-    const products = await getAllProducts();
-
-    // Call the AI prompt with the user's query and the product list
-    const { output } = await prompt({ query: input.query, products });
+    // The AI will now decide when and how to call the `searchProducts` tool.
+    // We no longer need to manually fetch all products.
+    const { output } = await prompt({ query: input.query });
 
     if (!output) {
       throw new Error('The AI failed to generate a response.');
     }
     
-    // Filter out any recommended products that don't actually exist in our database
-    // to prevent the AI from hallucinating products.
-    const validProductIds = new Set(products.map(p => p.id));
+    // The output should already be valid as the AI is using the tool results.
+    // A final validation step can still be useful as a safeguard.
+    const allProductsSnapshot = await getDocs(collection(db, 'products'));
+    const validProductIds = new Set(allProductsSnapshot.docs.map(doc => doc.id));
     const validRecommendations = output.products.filter(p => validProductIds.has(p.id));
     
     return {
