@@ -97,12 +97,9 @@ export default function CheckoutPage() {
       state: '',
       zip: '',
       country: 'USA',
-      // @ts-ignore
       cardNumber: '',
       expiryDate: '',
       cvv: '',
-      mobileMoneyProvider: undefined,
-      mobileMoneyNumber: '',
       orderNotes: '',
     }
   });
