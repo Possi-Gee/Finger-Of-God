@@ -50,6 +50,8 @@ export function CameraCapture({ onCapture }: CameraCaptureProps) {
       const constraints: MediaStreamConstraints = {
         video: {
           deviceId: deviceId ? { exact: deviceId } : undefined,
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
         },
       };
 
@@ -58,6 +60,7 @@ export function CameraCapture({ onCapture }: CameraCaptureProps) {
 
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
+        // The `play()` call is crucial for some browsers.
         await videoRef.current.play();
       }
       
@@ -76,7 +79,9 @@ export function CameraCapture({ onCapture }: CameraCaptureProps) {
   }, [stopStream, toast]);
 
   useEffect(() => {
+    // Only start the stream when the component mounts.
     startStream();
+    // Stop the stream when the component unmounts.
     return () => {
       stopStream();
     };
@@ -92,7 +97,7 @@ export function CameraCapture({ onCapture }: CameraCaptureProps) {
       if (context) {
         context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
         setCapturedImage(canvas.toDataURL('image/jpeg'));
-        stopStream();
+        stopStream(); // Stop the stream after capturing
       }
     }
   };
@@ -105,6 +110,7 @@ export function CameraCapture({ onCapture }: CameraCaptureProps) {
 
   const handleRetake = () => {
     setCapturedImage(null);
+    // Restart the stream with the currently selected device.
     if(devices.length > 0) {
         startStream(devices[currentDeviceIndex].deviceId);
     } else {
@@ -146,7 +152,8 @@ export function CameraCapture({ onCapture }: CameraCaptureProps) {
         </div>
       );
     }
-
+    
+    // Always render the video element to avoid issues with refs
     return <video ref={videoRef} className="w-full h-full object-cover" autoPlay playsInline muted />;
   };
 
