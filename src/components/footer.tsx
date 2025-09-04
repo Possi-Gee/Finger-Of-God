@@ -4,11 +4,14 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useSiteSettings } from '@/hooks/use-site-settings';
-import { ShoppingBag } from 'lucide-react';
+import { ShoppingBag, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useProduct } from '@/hooks/use-product';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
+import { useToast } from '@/hooks/use-toast';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+
 
 const TwitterIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg fill="currentColor" viewBox="0 0 24 24" {...props}>
@@ -31,6 +34,10 @@ const InstagramIcon = (props: React.SVGProps<SVGSVGElement>) => (
 export function Footer() {
   const { state: settings } = useSiteSettings();
   const { state: productState } = useProduct();
+  const { toast } = useToast();
+  const [email, setEmail] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const productCategories = useMemo(() => {
     return [...new Set(productState.products.map((p) => p.category))].sort();
@@ -48,6 +55,26 @@ export function Footer() {
 
   const otherColumns = settings.footer.columns.filter(c => c.title.toLowerCase() !== 'shop');
   const footerColumns = [shopColumn, ...otherColumns];
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    if (!email) {
+      setError("Please enter your email address.");
+      return;
+    }
+    setIsSubmitting(true);
+
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    setIsSubmitting(false);
+    setEmail('');
+    toast({
+      title: "Subscribed!",
+      description: "Thanks for joining our newsletter.",
+    });
+  };
 
 
   return (
@@ -84,9 +111,25 @@ export function Footer() {
           <div className="col-span-2 md:col-span-4 lg:col-span-1">
              <h4 className="font-semibold">Subscribe to our newsletter</h4>
             <p className="text-sm text-muted-foreground mt-2 mb-4">Get the latest deals and updates straight to your inbox.</p>
-            <form className="flex w-full max-w-sm items-center space-x-2">
-              <Input type="email" placeholder="Email" />
-              <Button type="submit">Subscribe</Button>
+            <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-2">
+                <div className="flex items-center space-x-2">
+                  <Input 
+                    type="email" 
+                    placeholder="Email" 
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    disabled={isSubmitting}
+                  />
+                  <Button type="submit" disabled={isSubmitting}>
+                     {isSubmitting && <Loader2 className="mr-2 animate-spin" />}
+                    Subscribe
+                  </Button>
+                </div>
+                 {error && (
+                  <Alert variant="destructive" className="mt-2">
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                )}
             </form>
           </div>
         </div>
@@ -102,3 +145,4 @@ export function Footer() {
     </footer>
   );
 }
+
