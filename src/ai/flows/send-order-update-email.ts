@@ -107,6 +107,7 @@ const getEmailContent = (
                  html = `
                     <h2>Great News, ${customerName}!</h2>
                     <p>Your order #${orderId} is now ready for you to pick up at our store.</p>
+                    ${itemsHtml}
                  `;
                   if (paymentMethod === 'on_delivery' && total) {
                     html += `<p><b>Please remember to bring GH₵${total.toFixed(2)} to complete your payment.</b></p>`;
@@ -139,6 +140,8 @@ const getEmailContent = (
                 <p>If you have any questions, please feel free to contact our support team.</p>
             `;
             break;
+        default:
+             html += itemsHtml; // Ensure summary is shown for generic updates too
     }
      return { subject, html: styleEmail(html, appName, orderId, recipient) };
 };
@@ -149,9 +152,9 @@ const styleEmail = (content: string, appName: string, orderId: string, recipient
     
     const buttonUrl = recipient === 'admin' 
       ? `${baseUrl}/admin/orders/${orderId}`
-      : baseUrl;
+      : `${baseUrl}/orders/${orderId}`;
       
-    const buttonText = recipient === 'customer' ? 'Continue Shopping' : 'View in Admin';
+    const buttonText = recipient === 'customer' ? 'View Order in Store' : 'View in Admin Panel';
 
     return `
       <!DOCTYPE html>
