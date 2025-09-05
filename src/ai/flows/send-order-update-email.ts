@@ -141,7 +141,6 @@ const sendOrderUpdateEmailFlow = ai.defineFlow(
         EMAIL_PORT,
         EMAIL_USER,
         EMAIL_PASS,
-        SENDER_EMAIL,
         ADMIN_EMAIL
     } = process.env;
 
@@ -165,8 +164,7 @@ const sendOrderUpdateEmailFlow = ai.defineFlow(
 
     const { subject, html } = getEmailContent(status, orderId, customerName, appName, recipientType);
     
-    const fromName = SENDER_EMAIL || appName;
-    const fromAddress = `"${fromName}" <${EMAIL_USER}>`;
+    const fromAddress = `"${appName}" <${EMAIL_USER}>`;
 
     const mailOptions = {
       from: fromAddress,
