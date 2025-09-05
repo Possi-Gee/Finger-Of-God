@@ -55,6 +55,9 @@ export default function AdminOrdersPage() {
           recipientEmail: order.shippingAddress.email,
           customerName: order.shippingAddress.fullName,
           appName: siteSettings.appName,
+          deliveryMethod: order.deliveryMethod,
+          paymentMethod: order.paymentMethod,
+          total: order.total
         });
 
         if (emailResult.success) {
@@ -133,7 +136,7 @@ export default function AdminOrdersPage() {
                                 onClick={() => handleStatusChange(order, status)}
                                 disabled={order.status === status}
                             >
-                                Mark as {status}
+                                Mark as {order.deliveryMethod === 'pickup' && status === 'Shipped' ? 'Ready for Pickup' : status}
                             </DropdownMenuItem>
                         ))}
                       </DropdownMenuContent>

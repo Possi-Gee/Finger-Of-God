@@ -34,6 +34,9 @@ exports.onOrderCreate = functions.firestore
               recipientEmail: order.shippingAddress.email,
               customerName: order.shippingAddress.fullName,
               appName: appName,
+              deliveryMethod: order.deliveryMethod,
+              paymentMethod: order.paymentMethod,
+              total: order.total
             });
 
             if (customerEmailResult.success) {
