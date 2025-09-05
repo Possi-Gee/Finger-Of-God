@@ -64,16 +64,21 @@ const getEmailContent = (
     const itemsHtml = items && items.length > 0 ? `
       <h3>Order Summary</h3>
       <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
-        ${items.map(item => `
+        ${items.map(item => {
+          // Use a reliable placeholder if the image source is from picsum.
+          const imageSrc = item.image.includes('picsum.photos') 
+            ? `https://placehold.co/64x64/EFEFEF/333333?text=${item.name.charAt(0)}` 
+            : item.image;
+          return `
           <tr style="border-bottom: 1px solid #eee;">
-            <td style="padding: 10px 0;"><img src="${item.image}" alt="${item.name}" width="60" style="border-radius: 4px;"/></td>
+            <td style="padding: 10px 0;"><img src="${imageSrc}" alt="${item.name}" width="64" height="64" style="border-radius: 4px; object-fit: cover;"/></td>
             <td style="padding: 10px; vertical-align: top;">
               ${item.name} (${item.variant.name})<br>
               <span style="color: #888;">Qty: ${item.quantity}</span>
             </td>
             <td style="padding: 10px; text-align: right; vertical-align: top;">GH₵${(item.variant.price * item.quantity).toFixed(2)}</td>
           </tr>
-        `).join('')}
+        `}).join('')}
       </table>
       <p style="text-align: right; font-size: 1.2em; font-weight: bold;">Total: GH₵${total?.toFixed(2)}</p>
     ` : '';
