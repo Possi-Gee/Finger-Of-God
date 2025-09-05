@@ -14,6 +14,7 @@ import { Printer, ArrowLeft, Loader2, Download } from 'lucide-react';
 import Image from 'next/image';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { useAuth } from '@/hooks/use-auth';
 
 const getPaymentMethodName = (method: string) => {
     const names: { [key: string]: string } = {
@@ -37,6 +38,7 @@ export default function InvoicePage() {
     const router = useRouter();
     const { id } = params;
     const { state: orderState } = useOrders();
+    const { loading: authLoading } = useAuth();
     const { state: siteSettings } = useSiteSettings();
     const { state: homepageState } = useHomepage();
     const invoiceRef = useRef<HTMLDivElement>(null);
@@ -58,7 +60,7 @@ export default function InvoicePage() {
         try {
             const canvas = await html2canvas(invoiceRef.current, {
                 scale: 2, // Higher scale for better quality
-                useCORS: true, // This is the crucial fix
+                useCORS: true, 
                 backgroundColor: null,
             });
 
@@ -85,7 +87,7 @@ export default function InvoicePage() {
     };
 
 
-    if (orderState.loading) {
+    if (authLoading || orderState.loading) {
         return (
              <div className="container mx-auto px-4 py-8 text-center">
                 <Loader2 className="mx-auto h-12 w-12 animate-spin" />
@@ -98,7 +100,7 @@ export default function InvoicePage() {
         return (
             <div className="container mx-auto px-4 py-8 text-center">
                 <h1 className="text-2xl font-bold">Order Not Found</h1>
-                <p className="text-muted-foreground mt-2">The order you are looking for does not exist.</p>
+                <p className="text-muted-foreground mt-2">The order you are looking for does not exist or you may not have permission to view it.</p>
                  <Button onClick={() => router.push('/orders')} className="mt-6">
                     Back to My Orders
                 </Button>

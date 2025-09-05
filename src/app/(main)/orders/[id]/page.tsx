@@ -3,7 +3,6 @@
 
 import { useParams, useRouter } from 'next/navigation';
 import { useOrders } from '@/hooks/use-orders';
-import type { Order } from '@/context/order-context';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -13,6 +12,8 @@ import Link from 'next/link';
 import { ArrowLeft, CheckCircle, Package, Truck, User, Store, CircleDot, FileText, MessageSquare, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useMemo } from 'react';
+import { useAuth } from '@/hooks/use-auth';
+import type { Order } from '@/context/order-context';
 
 const getStatusClass = (status: Order['status']) => {
   switch (status) {
@@ -94,13 +95,14 @@ export default function OrderDetailPage() {
   const params = useParams();
   const router = useRouter();
   const { id } = params;
-  const { state } = useOrders();
+  const { state: orderState } = useOrders();
+  const { loading: authLoading } = useAuth();
 
   const order = useMemo(() => {
-    return state.orders.find((o) => o.id.toString() === id);
-  }, [id, state.orders]);
+    return orderState.orders.find((o) => o.id.toString() === id);
+  }, [id, orderState.orders]);
   
-  if (state.loading) {
+  if (authLoading || orderState.loading) {
     return (
       <div className="container mx-auto px-4 py-8 text-center">
         <Loader2 className="mx-auto h-12 w-12 animate-spin" />
@@ -113,7 +115,7 @@ export default function OrderDetailPage() {
     return (
       <div className="container mx-auto px-4 py-8 text-center">
         <h1 className="text-2xl font-bold">Order Not Found</h1>
-        <p className="text-muted-foreground mt-2">The order you are looking for does not exist.</p>
+        <p className="text-muted-foreground mt-2">The order you are looking for does not exist or you may not have permission to view it.</p>
         <Button asChild className="mt-6">
           <Link href="/orders">Back to My Orders</Link>
         </Button>
