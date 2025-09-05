@@ -109,9 +109,12 @@ const getEmailContent = (
 };
 
 const styleEmail = (content: string, appName: string, orderId: string, recipient: 'customer' | 'admin') => {
+    // Use environment variable for the base URL, fallback to Vercel URL
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || `https://${process.env.VERCEL_URL}` || 'http://localhost:9002';
+    
     const orderUrl = recipient === 'customer' 
-      ? `https://shopwave-6mh7a.web.app/orders/${orderId}`
-      : `https://shopwave-6mh7a.web.app/admin/orders/${orderId}`;
+      ? `${baseUrl}/orders/${orderId}`
+      : `${baseUrl}/admin/orders/${orderId}`;
       
     const buttonText = recipient === 'customer' ? 'View Your Order' : 'View in Admin';
 
