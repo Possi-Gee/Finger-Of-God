@@ -36,7 +36,8 @@ exports.onOrderCreate = functions.firestore
               appName: appName,
               deliveryMethod: order.deliveryMethod,
               paymentMethod: order.paymentMethod,
-              total: order.total
+              total: order.total,
+              items: order.items,
             });
 
             if (customerEmailResult.success) {
@@ -56,6 +57,8 @@ exports.onOrderCreate = functions.firestore
                     recipientEmail: ADMIN_EMAIL,
                     customerName: order.shippingAddress.fullName, // Admin might want to know customer name
                     appName: appName,
+                    items: order.items,
+                    total: order.total,
                  });
 
                  if (adminEmailResult.success) {

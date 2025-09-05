@@ -84,7 +84,8 @@ export default function AdminOrderDetailPage() {
               appName: siteSettings.appName,
               deliveryMethod: order.deliveryMethod,
               paymentMethod: order.paymentMethod,
-              total: order.total
+              total: order.total,
+              items: order.items,
             });
 
             if (emailResult.success) {

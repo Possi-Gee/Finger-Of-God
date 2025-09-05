@@ -13,6 +13,21 @@ import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import nodemailer from 'nodemailer';
 
+const CartItemSchema = z.object({
+  id: z.string(),
+  productId: z.string(),
+  name: z.string(),
+  image: z.string().url(),
+  quantity: z.number(),
+  variant: z.object({
+    id: z.string(),
+    name: z.string(),
+    price: z.number(),
+    originalPrice: z.number().optional(),
+    stock: z.number(),
+  })
+});
+
 const SendOrderUpdateEmailInputSchema = z.object({
   orderId: z.string().describe('The ID of the order.'),
   status: z.string().describe('The new status of the order. Can be custom for different email types (e.g., "Confirmed").'),
@@ -22,6 +37,7 @@ const SendOrderUpdateEmailInputSchema = z.object({
   deliveryMethod: z.string().optional().describe('The delivery method for the order (e.g., "pickup", "delivery").'),
   paymentMethod: z.string().optional().describe('The payment method for the order (e.g., "on_delivery").'),
   total: z.number().optional().describe('The total amount of the order.'),
+  items: z.array(CartItemSchema).optional().describe('The items in the order.'),
 });
 export type SendOrderUpdateEmailInput = z.infer<typeof SendOrderUpdateEmailInputSchema>;
 
@@ -37,14 +53,30 @@ const getEmailContent = (
     customerName: string, 
     appName: string, 
     recipient: 'customer' | 'admin',
-    deliveryMethod?: string,
-    paymentMethod?: string,
-    total?: number
+    input: SendOrderUpdateEmailInput
 ) => {
+    const { deliveryMethod, paymentMethod, total, items } = input;
     let subject = `Your ${appName} Order #${orderId} has been updated`;
     let html = `<p>Hi ${customerName},</p><p>There's an update on your order #${orderId}. The new status is: <strong>${status}</strong>.</p>`;
 
     const isPickup = deliveryMethod === 'pickup';
+
+    const itemsHtml = items && items.length > 0 ? `
+      <h3>Order Summary</h3>
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+        ${items.map(item => `
+          <tr style="border-bottom: 1px solid #eee;">
+            <td style="padding: 10px 0;"><img src="${item.image}" alt="${item.name}" width="60" style="border-radius: 4px;"/></td>
+            <td style="padding: 10px; vertical-align: top;">
+              ${item.name} (${item.variant.name})<br>
+              <span style="color: #888;">Qty: ${item.quantity}</span>
+            </td>
+            <td style="padding: 10px; text-align: right; vertical-align: top;">GH₵${(item.variant.price * item.quantity).toFixed(2)}</td>
+          </tr>
+        `).join('')}
+      </table>
+      <p style="text-align: right; font-size: 1.2em; font-weight: bold;">Total: GH₵${total?.toFixed(2)}</p>
+    ` : '';
 
     switch (status.toLowerCase()) {
         case 'confirmed':
@@ -52,19 +84,20 @@ const getEmailContent = (
              html = `
                 <h2>Thanks for your order, ${customerName}!</h2>
                 <p>We've received your order #${orderId} and are getting it ready. We'll notify you as soon as it's ready for pickup or has shipped.</p>
+                ${itemsHtml}
              `;
 
              if (isPickup && paymentMethod === 'on_delivery' && total) {
                 html += `<p><b>Please remember to bring GH₵${total.toFixed(2)} when you come to pick up your order.</b></p>`;
              }
              
-             html += `<p>You can view your order details anytime by clicking the button below.</p>`;
             break;
         case 'new order': // For Admin
             subject = `🎉 New Order Received! #${orderId}`;
             html = `
                 <h2>You've received a new order!</h2>
                 <p>A new order (#${orderId}) was placed by ${customerName}.</p>
+                ${itemsHtml}
                 <p>Please review it in the admin dashboard to begin processing.</p>
             `;
             break;
@@ -83,8 +116,9 @@ const getEmailContent = (
                 subject = `🚀 Your ${appName} Order #${orderId} Has Shipped!`;
                 html = `
                     <h2>Great News, ${customerName}!</h2>
-                    <p>Your order #${orderId} is on its way to you. You can track its progress from your order history page.</p>
+                    <p>Your order #${orderId} is on its way to you.</p>
                     <p>We're so excited for you to receive your items!</p>
+                    ${itemsHtml}
                 `;
             }
             break;
@@ -93,6 +127,7 @@ const getEmailContent = (
              html = `
                 <h2>Hooray, ${customerName}!</h2>
                 <p>Your order #${orderId} has arrived. We hope you enjoy your new items!</p>
+                ${itemsHtml}
                 <p>Thank you for shopping with us.</p>
             `;
             break;
@@ -112,11 +147,11 @@ const styleEmail = (content: string, appName: string, orderId: string, recipient
     // Use environment variable for the base URL, with fallbacks for Vercel and local dev.
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:9002');
     
-    const orderUrl = recipient === 'customer' 
-      ? `${baseUrl}/orders/${orderId}`
-      : `${baseUrl}/admin/orders/${orderId}`;
+    const buttonUrl = recipient === 'admin' 
+      ? `${baseUrl}/admin/orders/${orderId}`
+      : baseUrl;
       
-    const buttonText = recipient === 'customer' ? 'View Your Order' : 'View in Admin';
+    const buttonText = recipient === 'customer' ? 'Continue Shopping' : 'View in Admin';
 
     return `
       <!DOCTYPE html>
@@ -143,7 +178,7 @@ const styleEmail = (content: string, appName: string, orderId: string, recipient
               <div class="content">
                 ${content}
                 <div class="button-container">
-                    <a href="${orderUrl}" class="button">${buttonText}</a>
+                    <a href="${buttonUrl}" class="button">${buttonText}</a>
                 </div>
               </div>
               <div class="footer">
@@ -168,7 +203,7 @@ const sendOrderUpdateEmailFlow = ai.defineFlow(
     outputSchema: SendOrderUpdateEmailOutputSchema,
   },
   async (input) => {
-    const { orderId, status, recipientEmail, customerName, appName, deliveryMethod, paymentMethod, total } = input;
+    const { orderId, status, recipientEmail, customerName, appName } = input;
     
     const {
         EMAIL_HOST,
@@ -196,7 +231,7 @@ const sendOrderUpdateEmailFlow = ai.defineFlow(
     
     const recipientType = recipientEmail === ADMIN_EMAIL ? 'admin' : 'customer';
 
-    const { subject, html } = getEmailContent(status, orderId, customerName, appName, recipientType, deliveryMethod, paymentMethod, total);
+    const { subject, html } = getEmailContent(status, orderId, customerName, appName, recipientType, input);
     
     const fromAddress = `"${appName}" <${EMAIL_USER}>`;
 
