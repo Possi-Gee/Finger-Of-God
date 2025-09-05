@@ -109,8 +109,8 @@ const getEmailContent = (
 };
 
 const styleEmail = (content: string, appName: string, orderId: string, recipient: 'customer' | 'admin') => {
-    // Use environment variable for the base URL, fallback to Vercel URL
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || `https://${process.env.VERCEL_URL}` || 'http://localhost:9002';
+    // Use environment variable for the base URL, with fallbacks for Vercel and local dev.
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:9002');
     
     const orderUrl = recipient === 'customer' 
       ? `${baseUrl}/orders/${orderId}`
