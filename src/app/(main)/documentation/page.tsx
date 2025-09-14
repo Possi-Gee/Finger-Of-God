@@ -4,7 +4,7 @@
 import { useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Download, FileText, Loader2 } from 'lucide-react';
+import { Download, FileText, Loader2, User, UserCog } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
@@ -47,7 +47,7 @@ export default function DocumentationPage() {
                             <FileText /> Finger Of God Technical Documentation
                         </CardTitle>
                         <CardDescription className="mt-2">
-                            An overview of the project's architecture, technologies, and features.
+                            A comprehensive guide to the project's architecture, features, and usage.
                         </CardDescription>
                     </div>
                     <div id="download-button" className="print:hidden">
@@ -62,7 +62,7 @@ export default function DocumentationPage() {
                  <section>
                     <h2 className="text-2xl font-semibold border-b pb-2 mb-4">1. Project Overview</h2>
                     <p className="text-muted-foreground">
-                        Finger Of God is a modern, full-stack e-commerce application built with Next.js and Firebase. It provides a complete shopping experience, including product browsing, a shopping cart, secure checkout, user authentication, and an admin dashboard for store management. The application is designed to be scalable, performant, and easily customizable.
+                        Finger Of God is a modern, full-stack e-commerce application built with Next.js and Firebase. It provides a complete shopping experience, including product browsing, a shopping cart, secure checkout, user authentication, and an admin dashboard for store management. The application is designed to be scalable, performant, and easily customizable, with AI-powered features to streamline administrative tasks.
                     </p>
                 </section>
 
@@ -71,7 +71,7 @@ export default function DocumentationPage() {
                     <ul className="list-disc list-inside space-y-2 text-muted-foreground">
                         <li><strong>Frontend Framework:</strong> Next.js (with App Router) & React</li>
                         <li><strong>Backend & Database:</strong> Firebase (Firestore, Authentication, Cloud Functions)</li>
-                        <li><strong>Generative AI:</strong> Genkit (for AI-powered features like product description generation)</li>
+                        <li><strong>Generative AI:</strong> Genkit (for AI-powered features like product description generation and email automation)</li>
                         <li><strong>UI Components:</strong> ShadCN UI, Radix UI</li>
                         <li><strong>Styling:</strong> Tailwind CSS</li>
                         <li><strong>Form Management:</strong> React Hook Form with Zod for validation</li>
@@ -90,10 +90,11 @@ export default function DocumentationPage() {
                                     <li>Product catalog with search and category filters.</li>
                                     <li>Detailed product pages with multiple images and variants.</li>
                                     <li>Shopping cart and persistent wishlist.</li>
-                                    <li>Secure checkout with multiple payment options.</li>
+                                    <li>Secure checkout with multiple payment options (Card, Mobile Money, Pay on Delivery).</li>
                                     <li>User authentication (Email/Password & Google).</li>
                                     <li>Order history and detailed order tracking.</li>
                                     <li>Push notifications for new products.</li>
+                                    <li>Dynamic Flash Sales and promotional carousels.</li>
                                 </ul>
                             </CardContent>
                         </Card>
@@ -105,8 +106,9 @@ export default function DocumentationPage() {
                                     <li>Full product management (CRUD operations).</li>
                                     <li>AI-powered product description generation.</li>
                                     <li>Order management with status updates.</li>
-                                    <li>Automated email notifications for customers.</li>
-                                    <li>Global site settings and homepage customization.</li>
+                                    <li>Automated, customized email notifications for customers.</li>
+                                    <li>Global site settings (name, logo, theme, fees).</li>
+                                    <li>Homepage content management (promotions, sales).</li>
                                 </ul>
                             </CardContent>
                         </Card>
@@ -120,6 +122,7 @@ export default function DocumentationPage() {
 ├── app/                  # Next.js App Router
 │   ├── (main)/           # Main application routes (customer-facing)
 │   ├── admin/            # Admin panel routes
+│   ├── api/              # API routes (not used, server actions preferred)
 │   ├── layout.tsx        # Root layout
 │   └── globals.css       # Global styles and theme
 ├── components/           # Reusable React components
@@ -131,9 +134,67 @@ export default function DocumentationPage() {
 └── functions/            # Firebase Cloud Functions (for triggers)`}
                     </pre>
                 </section>
+
+                <section>
+                    <h2 className="text-2xl font-semibold border-b pb-2 mb-4">5. User Guide</h2>
+                    
+                    <Card className="mb-6">
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2"><User /> For Customers</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div>
+                                <h4 className="font-semibold">Browsing Products</h4>
+                                <p className="text-sm text-muted-foreground">On the homepage, you can find products by using the search bar to look for a specific item or by selecting a category from the dropdown menu to filter the view.</p>
+                            </div>
+                             <div>
+                                <h4 className="font-semibold">Placing an Order</h4>
+                                <p className="text-sm text-muted-foreground">Click on any product to view its details. If the product has options (e.g., size, color), select your desired variant. Choose a quantity and click "Add to Cart". You can continue shopping or go to your cart to checkout.</p>
+                            </div>
+                             <div>
+                                <h4 className="font-semibold">Checkout Process</h4>
+                                <p className="text-sm text-muted-foreground">In your cart, review your items and proceed to checkout. You must be logged in. Choose a delivery method (Home Delivery or In-store Pickup). Fill in your shipping address if applicable, then select a payment method. You can pay by Card, Mobile Money, or choose to Pay on Delivery.</p>
+                            </div>
+                            <div>
+                                <h4 className="font-semibold">Managing Your Account</h4>
+                                <p className="text-sm text-muted-foreground">Click on your profile icon in the header to access your account. From here you can go to "My Orders" to view your order history and track progress, or "My Wishlist" to see saved items. You can also update your display name and password.</p>
+                            </div>
+                             <div>
+                                <h4 className="font-semibold">Receiving Notifications</h4>
+                                <p className="text-sm text-muted-foreground">A prompt may appear asking for permission to send notifications. If you accept, you will receive browser push notifications about new products as soon as they are added to the store.</p>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                     <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2"><UserCog /> For Administrators</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                             <div>
+                                <h4 className="font-semibold">Accessing the Admin Panel</h4>
+                                <p className="text-sm text-muted-foreground">Navigate to `/admin/dashboard` or click the Wrench icon in the header. Only authorized admin accounts can access this area. The dashboard provides an overview of revenue, sales, and recent orders.</p>
+                            </div>
+                            <div>
+                                <h4 className="font-semibold">Product Management</h4>
+                                <p className="text-sm text-muted-foreground">In the "Products" tab, you can manage your inventory. Click "Add Product" to open a dialog. Fill in the details, upload images, and add variants (e.g., 'Single' for individual sale, or packs like '12-Pack'). Use the "Generate with AI" button after filling in the name and features to create a product description automatically. You can edit or delete products from the main table.</p>
+                            </div>
+                             <div>
+                                <h4 className="font-semibold">Order Management</h4>
+                                <p className="text-sm text-muted-foreground">The "Orders" tab lists all customer orders. Click on an order to view its details. You can update the order status (e.g., 'Pending', 'Shipped', 'Delivered'). Changing the status will automatically trigger a customized email notification to the customer.</p>
+                            </div>
+                             <div>
+                                <h4 className="font-semibold">Site & Homepage Settings</h4>
+                                <p className="text-sm text-muted-foreground">Under "Settings", you can change the App Name, Logo, Theme Colors, Tax Rate, and Shipping Fees. Under "Homepage", you can edit the text in the top announcement bar, set the countdown for flash sales, and manage the slides in the promotional carousel.</p>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </section>
             </CardContent>
         </Card>
       </div>
     </div>
   );
 }
+
+    
