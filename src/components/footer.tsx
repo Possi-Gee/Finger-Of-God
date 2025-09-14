@@ -4,7 +4,7 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useSiteSettings } from '@/hooks/use-site-settings';
-import { ShoppingBag, Loader2 } from 'lucide-react';
+import { ShoppingBag, Loader2, FileText } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useProduct } from '@/hooks/use-product';
@@ -104,6 +104,14 @@ export function Footer() {
                             <Link href={link.url} className="text-muted-foreground hover:text-primary">{link.label}</Link>
                         </li>
                     ))}
+                     {column.title.toLowerCase() === 'company' && (
+                        <li>
+                           <Link href="/documentation" className="text-muted-foreground hover:text-primary flex items-center gap-1">
+                                <FileText className="h-4 w-4"/>
+                                Technical Docs
+                            </Link>
+                        </li>
+                    )}
                 </ul>
             </div>
           ))}
