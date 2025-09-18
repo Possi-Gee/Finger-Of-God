@@ -110,7 +110,7 @@ export default function AdminManagementPage() {
         setIsDialogOpen(false);
         reset();
       } else {
-        throw new Error((result.data as any).error || 'An unknown error occurred.');
+        throw new Error((result.data as any).message || 'An unknown error occurred.');
       }
     } catch (error: any) {
       console.error('Failed to create admin user:', error);
