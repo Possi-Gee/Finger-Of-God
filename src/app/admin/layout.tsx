@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -144,12 +145,6 @@ function AdminLayoutContent({ children, adminRole }: { children: React.ReactNode
     });
   }
 
-  menuItems.push({
-      href: '/',
-      label: 'Back to Shop',
-      icon: Home,
-  });
-
   const getIsActive = (href: string) => {
     if (href === '/admin/dashboard') {
       return pathname === href;
@@ -184,6 +179,14 @@ function AdminLayoutContent({ children, adminRole }: { children: React.ReactNode
                       </SidebarMenuButton>
                       </SidebarMenuItem>
                   ))}
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild tooltip={{ children: 'Back to Shop' }}>
+                        <Link href="/">
+                            <Home />
+                            <span>Back to Shop</span>
+                        </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
                   </SidebarMenu>
               </SidebarGroup>
               </SidebarContent>
