@@ -3,37 +3,34 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Allow logged-in users to read their own user data and public data
-    match /users/{userId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth.uid == userId;
+    // Helper function to check for admin roles
+    function isAdmin() {
+      return request.auth != null && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role in ['admin', 'superadmin'];
     }
     
-    // Products can be read by anyone, but only written by admins.
+    // Products: Public can read, admins can write
     match /products/{productId} {
       allow read: if true;
-      allow write: if request.auth != null && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role in ['admin', 'superadmin'];
+      allow write: if isAdmin();
     }
 
-    // Orders can be created by any authenticated user.
-    // They can only be read or updated by the user who created them or by an admin.
-    match /orders/{orderId} {
-        allow create: if request.auth != null;
-        allow read, update: if request.auth != null && (resource.data.userId == request.auth.uid || get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role in ['admin', 'superadmin']);
-    }
-    
-    // Site settings can be read by anyone, but only updated by an admin.
+    // Site settings: Public can read, admins can write
     match /site/{docId} {
-        allow read: if true;
-        allow write: if request.auth != null && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role in ['admin', 'superadmin'];
+      allow read: if true;
+      allow write: if isAdmin();
     }
     
-    // Allow authenticated users to read from the admins collection to check roles.
-    // Writing is restricted to a Cloud Function (implicitly handled by Admin SDK).
+    // Orders: Users can manage their own, admins can manage all
+    match /orders/{orderId} {
+      allow read, update: if (request.auth != null && resource.data.userId == request.auth.uid) || isAdmin();
+      allow create: if request.auth != null;
+      allow write: if isAdmin(); // Admins can create/update/delete any order
+    }
+
+    // Admins collection: Authenticated users can read (to check their own role), superadmins can write
     match /admins/{adminId} {
       allow read: if request.auth != null;
-      allow write: if false; // Disallow client-side writes for security
+      allow write: if request.auth != null && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == 'superadmin';
     }
-
   }
 }
