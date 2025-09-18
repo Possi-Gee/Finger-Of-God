@@ -123,3 +123,55 @@ exports.onProductCreate = functions.firestore
       return null;
     }
   });
+
+/**
+ * A callable Cloud Function to securely create a new admin user.
+ */
+exports.createAdminUser = functions.https.onCall(async (data, context) => {
+  // 1. Authentication Check: Ensure the user calling the function is a super admin.
+  // The UID of the super admin should be stored securely, e.g., in environment variables.
+  // For this example, we'll check against a hardcoded email for simplicity, but using UID is better.
+  const SUPER_ADMIN_EMAIL = "temahfingerofgod@gmail.com";
+  
+  if (context.auth.token.email !== SUPER_ADMIN_EMAIL) {
+    throw new functions.https.HttpsError(
+      'permission-denied',
+      'You must be a super admin to perform this action.'
+    );
+  }
+
+  // 2. Data Validation
+  const { email, password, expiresAt } = data;
+  if (!email || !password || !expiresAt) {
+    throw new functions.https.HttpsError(
+      'invalid-argument',
+      'The function must be called with email, password, and expiresAt arguments.'
+    );
+  }
+
+  try {
+    // 3. Create User in Firebase Auth
+    const userRecord = await admin.auth().createUser({
+      email: email,
+      password: password,
+      displayName: 'Admin User', // Or pass this in `data`
+    });
+
+    // 4. Store Admin Role and Expiration in Firestore
+    await admin.firestore().collection('admins').doc(userRecord.uid).set({
+      email: email,
+      role: 'admin',
+      expiresAt: expiresAt, // Store as ISO string
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    return { success: true, message: `Admin user ${email} created successfully.` };
+
+  } catch (error) {
+    console.error("Error in createAdminUser function:", error);
+    if (error.code === 'auth/email-already-exists') {
+        throw new functions.https.HttpsError('already-exists', 'This email is already in use by another account.');
+    }
+    throw new functions.https.HttpsError('internal', 'An unexpected error occurred while creating the admin user.');
+  }
+});

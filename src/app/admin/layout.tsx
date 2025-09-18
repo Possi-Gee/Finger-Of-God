@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -12,33 +11,74 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from '@/components/ui/sidebar';
-import { Bot, Package, Home, LayoutDashboard, Settings, ShoppingCart, Loader2, ShieldX } from 'lucide-react';
+import { Bot, Package, Home, LayoutDashboard, Settings, ShoppingCart, Loader2, ShieldX, Users } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { AdminBottomNavbar } from '@/components/admin-bottom-navbar';
 import { useAuth } from '@/hooks/use-auth';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+
+type AdminRole = 'admin' | 'superadmin';
+
+interface AdminInfo {
+    email: string;
+    role: AdminRole;
+    expiresAt?: string;
+}
 
 // --- Admin Configuration ---
-// Add the email addresses of authorized admins to this array.
-const ADMIN_EMAILS = [
-  "temahfingerofgod@gmail.com",
-];
+// This is now just the fallback/bootstrap super admin.
+const SUPER_ADMIN_EMAIL = "temahfingerofgod@gmail.com";
 // -------------------------
 
 function AdminAuthGuard({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const [adminInfo, setAdminInfo] = useState<AdminInfo | null>(null);
+  const [isCheckingAdmin, setIsCheckingAdmin] = useState(true);
 
   useEffect(() => {
-    if (!loading && !user) {
-      // If not logged in, redirect to login page
+    if (loading) return;
+
+    if (!user) {
       router.push('/login?redirect=/admin/dashboard');
+      return;
     }
+
+    const checkAdminStatus = async () => {
+        setIsCheckingAdmin(true);
+        if (user.email === SUPER_ADMIN_EMAIL) {
+            setAdminInfo({ email: user.email, role: 'superadmin' });
+            setIsCheckingAdmin(false);
+            return;
+        }
+
+        const adminDocRef = doc(db, 'admins', user.uid);
+        const adminDoc = await getDoc(adminDocRef);
+
+        if (adminDoc.exists()) {
+            const adminData = adminDoc.data() as Omit<AdminInfo, 'email'>;
+            const now = new Date();
+            const expiresAt = adminData.expiresAt ? new Date(adminData.expiresAt) : null;
+
+            if (!expiresAt || expiresAt > now) {
+                setAdminInfo({ ...adminData, email: user.email! });
+            } else {
+                setAdminInfo(null); // Expired
+            }
+        } else {
+            setAdminInfo(null);
+        }
+        setIsCheckingAdmin(false);
+    };
+
+    checkAdminStatus();
   }, [user, loading, router]);
   
-  if (loading) {
+  if (loading || isCheckingAdmin) {
     return (
       <div className="flex h-screen items-center justify-center">
         <Loader2 className="h-12 w-12 animate-spin" />
@@ -46,14 +86,7 @@ function AdminAuthGuard({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!user) {
-    // This will be shown briefly before the redirect effect kicks in
-    return null; 
-  }
-  
-  const isAuthorized = ADMIN_EMAILS.includes(user.email || '');
-
-  if (!isAuthorized) {
+  if (!adminInfo) {
     return (
       <div className="flex h-screen items-center justify-center p-4">
         <Alert variant="destructive" className="max-w-md">
@@ -68,15 +101,11 @@ function AdminAuthGuard({ children }: { children: React.ReactNode }) {
     );
   }
 
-  return <>{children}</>;
+  return <AdminLayoutContent adminRole={adminInfo.role}>{children}</AdminLayoutContent>;
 }
 
 
-export default function AdminLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+function AdminLayoutContent({ children, adminRole }: { children: React.ReactNode, adminRole: AdminRole }) {
   const pathname = usePathname();
 
   const menuItems = [
@@ -105,12 +134,21 @@ export default function AdminLayout({
       label: 'Settings',
       icon: Settings,
     },
-     {
+  ];
+
+  if (adminRole === 'superadmin') {
+    menuItems.push({
+        href: '/admin/admins',
+        label: 'Admins',
+        icon: Users,
+    });
+  }
+
+  menuItems.push({
       href: '/',
       label: 'Back to Shop',
       icon: Home,
-    },
-  ];
+  });
 
   const getIsActive = (href: string) => {
     if (href === '/admin/dashboard') {
@@ -123,7 +161,6 @@ export default function AdminLayout({
   }
 
   return (
-    <AdminAuthGuard>
       <SidebarProvider>
         <div className="md:hidden">
           <AdminBottomNavbar />
@@ -159,6 +196,13 @@ export default function AdminLayout({
           <div className="p-4 md:p-6 pb-20 md:pb-6">{children}</div>
         </SidebarInset>
       </SidebarProvider>
-    </AdminAuthGuard>
   );
+}
+
+export default function AdminLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+    return <AdminAuthGuard>{children}</AdminAuthGuard>
 }
