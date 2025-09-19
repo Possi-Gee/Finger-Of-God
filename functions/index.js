@@ -128,16 +128,28 @@ exports.onProductCreate = functions.firestore
  * A callable Cloud Function to securely create a new admin user.
  */
 exports.createAdminUser = functions.https.onCall(async (data, context) => {
-  // 1. Authentication Check: Ensure the user calling the function is a super admin.
-  // The UID of the super admin should be stored securely, e.g., in environment variables.
-  // For this example, we'll check against a hardcoded email for simplicity, but using UID is better.
-  const SUPER_ADMIN_EMAIL = "temahfingerofgod@gmail.com";
-  
-  if (context.auth.token.email !== SUPER_ADMIN_EMAIL) {
+  // 1. Authentication Check: Ensure the user calling the function is an authenticated super admin.
+  if (!context.auth) {
     throw new functions.https.HttpsError(
-      'permission-denied',
-      'You must be a super admin to perform this action.'
+      'unauthenticated',
+      'You must be authenticated to perform this action.'
     );
+  }
+
+  const callerUid = context.auth.uid;
+  const adminDocRef = admin.firestore().collection('admins').doc(callerUid);
+  
+  try {
+    const adminDoc = await adminDocRef.get();
+    if (!adminDoc.exists() || adminDoc.data().role !== 'superadmin') {
+       throw new functions.https.HttpsError(
+        'permission-denied',
+        'You must be a super admin to perform this action.'
+      );
+    }
+  } catch (error) {
+     console.error("Error checking admin status:", error);
+     throw new functions.https.HttpsError('internal', 'Could not verify admin permissions.');
   }
 
   // 2. Data Validation
@@ -154,7 +166,7 @@ exports.createAdminUser = functions.https.onCall(async (data, context) => {
     const userRecord = await admin.auth().createUser({
       email: email,
       password: password,
-      displayName: 'Admin User', // Or pass this in `data`
+      displayName: 'Admin User',
     });
 
     // 4. Store Admin Role and Expiration in Firestore
@@ -171,6 +183,10 @@ exports.createAdminUser = functions.https.onCall(async (data, context) => {
     console.error("Error in createAdminUser function:", error);
     if (error.code === 'auth/email-already-exists') {
         throw new functions.https.HttpsError('already-exists', 'This email is already in use by another account.');
+    }
+    // This will catch Firestore permission errors if the rules are wrong
+    if (error.code === 'permission-denied') {
+        throw new functions.https.HttpsError('permission-denied', 'The server does not have permission to create this admin. Check Firestore rules.');
     }
     throw new functions.https.HttpsError('internal', 'An unexpected error occurred while creating the admin user.');
   }
