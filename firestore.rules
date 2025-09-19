@@ -3,32 +3,35 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper function to check if a user has an admin entry
+    // --- Helper Functions ---
+
+    // Checks if the requesting user has a document in the /admins collection
     function hasAdminEntry() {
       return exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
 
-    // Helper function to get admin data
+    // Retrieves the admin data for the requesting user
     function getAdminData() {
       return get(/databases/$(database)/documents/admins/$(request.auth.uid)).data;
     }
 
-    // Helper function to check if an admin's access is not expired
+    // Checks if the admin's access has not expired. No 'expiresAt' field means permanent access.
     function isNotExpired() {
       let adminData = getAdminData();
-      // If expiresAt doesn't exist, they are a permanent admin (like the superadmin)
-      return !('expiresAt' in adminData) || (request.time < timestamp.value(adminData.expiresAt));
+      return !('expiresAt' in adminData) || request.time < timestamp.parse(adminData.expiresAt);
     }
     
-    // Check if the user is an admin or superadmin with valid access
+    // Checks if the user is a valid admin (has an entry and is not expired)
     function isAdmin() {
       return hasAdminEntry() && isNotExpired();
     }
     
-    // Check if the user is specifically a superadmin
+    // Checks if the user is specifically a superadmin
     function isSuperAdmin() {
       return isAdmin() && getAdminData().role == 'superadmin';
     }
+
+    // --- Collection Rules ---
 
     // Products: Public can read, Admins can write
     match /products/{productId} {
@@ -48,8 +51,9 @@ service cloud.firestore {
       allow create: if request.auth.uid == request.resource.data.userId;
     }
     
-    // Admins Collection: Authenticated users can read to verify their own status.
-    // SuperAdmins can create/delete other admin documents.
+    // Admins Collection:
+    // - Any authenticated user can read (to check their own status).
+    // - Only SuperAdmins can create or delete admin records.
     match /admins/{userId} {
       allow read: if request.auth != null;
       allow create, delete: if isSuperAdmin();
