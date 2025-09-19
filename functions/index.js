@@ -129,28 +129,42 @@ exports.onProductCreate = functions.firestore
  */
 exports.createAdminUser = functions.https.onCall(async (data, context) => {
   // 1. Authentication Check: Ensure the user calling the function is an authenticated super admin.
-  if (!context.auth) {
+  if (!context.auth || !context.auth.token.email) {
     throw new functions.https.HttpsError(
       'unauthenticated',
-      'You must be authenticated to perform this action.'
+      'You must be authenticated with an email to perform this action.'
+    );
+  }
+  
+  const SUPER_ADMIN_EMAIL = "temahfingerofgod@gmail.com";
+  const callerEmail = context.auth.token.email;
+  const callerUid = context.auth.uid;
+  let isSuperAdmin = false;
+
+  // Check if the caller is the hardcoded super admin email.
+  if (callerEmail === SUPER_ADMIN_EMAIL) {
+      isSuperAdmin = true;
+  } else {
+      // If not, check the 'admins' collection in Firestore.
+      const adminDocRef = admin.firestore().collection('admins').doc(callerUid);
+      try {
+          const adminDoc = await adminDocRef.get();
+          if (adminDoc.exists() && adminDoc.data().role === 'superadmin') {
+              isSuperAdmin = true;
+          }
+      } catch (error) {
+          console.error("Error checking admin status:", error);
+          throw new functions.https.HttpsError('internal', 'Could not verify admin permissions.');
+      }
+  }
+
+  if (!isSuperAdmin) {
+    throw new functions.https.HttpsError(
+      'permission-denied',
+      'You must be a super admin to perform this action.'
     );
   }
 
-  const callerUid = context.auth.uid;
-  const adminDocRef = admin.firestore().collection('admins').doc(callerUid);
-  
-  try {
-    const adminDoc = await adminDocRef.get();
-    if (!adminDoc.exists() || adminDoc.data().role !== 'superadmin') {
-       throw new functions.https.HttpsError(
-        'permission-denied',
-        'You must be a super admin to perform this action.'
-      );
-    }
-  } catch (error) {
-     console.error("Error checking admin status:", error);
-     throw new functions.https.HttpsError('internal', 'Could not verify admin permissions.');
-  }
 
   // 2. Data Validation
   const { email, password, expiresAt } = data;

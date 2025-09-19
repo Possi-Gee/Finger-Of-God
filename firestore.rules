@@ -15,9 +15,11 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/admins/$(request.auth.uid)).data;
     }
 
-    // Checks if the admin's access has not expired. No 'expiresAt' field means permanent access.
+    // Checks if the admin's access has not expired.
     function isNotExpired() {
       let adminData = getAdminData();
+      // No 'expiresAt' field means permanent access (for the superadmin).
+      // Otherwise, check if the current time is before the expiration time.
       return !('expiresAt' in adminData) || request.time < timestamp.parse(adminData.expiresAt);
     }
     
@@ -26,36 +28,34 @@ service cloud.firestore {
       return hasAdminEntry() && isNotExpired();
     }
     
-    // Checks if the user is specifically a superadmin
+    // Checks if the user is a superadmin
     function isSuperAdmin() {
+      // A user is a superadmin if they are an admin and their role is 'superadmin'
       return isAdmin() && getAdminData().role == 'superadmin';
     }
 
     // --- Collection Rules ---
 
-    // Products: Public can read, Admins can write
     match /products/{productId} {
       allow read: if true;
       allow write: if isAdmin();
     }
 
-    // Site settings: Public can read, Admins can write
     match /site/{docId} {
       allow read: if true;
       allow write: if isAdmin();
     }
 
-    // Orders: Users can manage their own, Admins can manage all
     match /orders/{orderId} {
       allow read, update: if request.auth.uid == resource.data.userId || isAdmin();
       allow create: if request.auth.uid == request.resource.data.userId;
     }
     
-    // Admins Collection:
-    // - Any authenticated user can read (to check their own status).
-    // - Only SuperAdmins can create or delete admin records.
     match /admins/{userId} {
       allow read: if request.auth != null;
+      // create/delete is handled by the Cloud Function which has elevated privileges.
+      // The function itself contains the superadmin check.
+      // This rule just needs to allow a superadmin to trigger that function.
       allow create, delete: if isSuperAdmin();
     }
   }
