@@ -3,39 +3,46 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper function to check if a user's UID is in the admins collection
-    function isUserAdmin(userId) {
-      return exists(/databases/$(database)/documents/admins/$(userId));
-    }
-
-    // Helper function to get a user's role
-    function getUserRole(userId) {
-      return get(/databases/$(database)/documents/admins/$(userId)).data.role;
+    // Helper function to check if a user is an admin or superadmin and not expired
+    function isAuthorizedAdmin() {
+      let adminDoc = get(/databases/$(database)/documents/admins/$(request.auth.uid));
+      if (!adminDoc.exists()) {
+        return false;
+      }
+      let adminData = adminDoc.data;
+      let isNotExpired = !('expiresAt' in adminData) || (request.time < timestamp.value(adminData.expiresAt));
+      return isNotExpired;
     }
     
+    // Helper function to check if a user is a SUPER admin
+    function isSuperAdmin() {
+      let adminDoc = get(/databases/$(database)/documents/admins/$(request.auth.uid));
+      return isAuthorizedAdmin() && adminDoc.data.role == 'superadmin';
+    }
+
     // Products: Public can read, Admins can write
     match /products/{productId} {
       allow read: if true;
-      allow write: if isUserAdmin(request.auth.uid);
+      allow create, update, delete: if isAuthorizedAdmin();
     }
 
     // Site settings: Public can read, Admins can write
     match /site/{docId} {
       allow read: if true;
-      allow write: if isUserAdmin(request.auth.uid);
+      allow write: if isAuthorizedAdmin();
     }
 
     // Orders: Users can manage their own, Admins can manage all
     match /orders/{orderId} {
-      allow read, update: if request.auth.uid == resource.data.userId || isUserAdmin(request.auth.uid);
+      allow read, update: if request.auth.uid == resource.data.userId || isAuthorizedAdmin();
       allow create: if request.auth.uid == request.resource.data.userId;
     }
     
-    // Admins Collection: Authenticated users can read. SuperAdmins can write.
+    // Admins Collection: Authenticated users can read their own doc, superadmins can manage all docs.
     match /admins/{userId} {
-      allow read: if request.auth != null;
-      // Allow creation/deletion of admins only by a superadmin
-      allow write: if isUserAdmin(request.auth.uid) && getUserRole(request.auth.uid) == 'superadmin';
+      allow read: if request.auth.uid == userId || isSuperAdmin();
+      // Allow a superadmin to create/delete admin records.
+      allow write: if isSuperAdmin();
     }
   }
 }
