@@ -2,7 +2,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Home, Package, Settings, ShoppingCart, LayoutDashboard, Users } from 'lucide-react';
+import { Home, Package, Settings, ShoppingCart, LayoutDashboard } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/use-auth';
@@ -10,64 +10,21 @@ import { useEffect, useState } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
-const SUPER_ADMIN_EMAIL = "temahfingerofgod@gmail.com";
+interface AdminBottomNavbarProps {
+  adminRole: 'admin' | 'superadmin';
+}
 
-const baseNavItems = [
+const navItems = [
   { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/admin/orders', label: 'Orders', icon: ShoppingCart },
   { href: '/admin/products', label: 'Products', icon: Package },
+  { href: '/admin/settings', label: 'Settings', icon: Settings },
+  { href: '/', label: 'Shop', icon: Home }
 ];
 
-const regularAdminNavItems = [
-    { href: '/admin/settings', label: 'Settings', icon: Settings },
-    { href: '/', label: 'Shop', icon: Home }
-];
-
-const superAdminExtraItems = [
-    { href: '/admin/admins', label: 'Admins', icon: Users },
-    { href: '/', label: 'Shop', icon: Home }
-];
-
-
-
-export function AdminBottomNavbar() {
+export function AdminBottomNavbar({ adminRole }: AdminBottomNavbarProps) {
   const pathname = usePathname();
-  const { user, loading } = useAuth();
-  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
-
-  useEffect(() => {
-    const checkAdminRole = async () => {
-        if (user && user.email === SUPER_ADMIN_EMAIL) {
-            setIsSuperAdmin(true);
-            return;
-        }
-
-        if (user) {
-            try {
-                const adminDocRef = doc(db, 'admins', user.uid);
-                const adminDoc = await getDoc(adminDocRef);
-                if (adminDoc.exists() && adminDoc.data().role === 'superadmin') {
-                    setIsSuperAdmin(true);
-                } else {
-                    setIsSuperAdmin(false);
-                }
-            } catch (e) {
-                console.error("Error checking admin role:", e);
-                setIsSuperAdmin(false);
-            }
-        }
-    };
-
-    if (!loading) {
-        checkAdminRole();
-    }
-  }, [user, loading]);
   
-  const navItems = isSuperAdmin 
-    ? [...baseNavItems, ...superAdminExtraItems]
-    : [...baseNavItems, ...regularAdminNavItems];
-
-
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container grid h-16 grid-cols-5 max-w-screen-2xl items-center justify-around">

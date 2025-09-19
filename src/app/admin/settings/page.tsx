@@ -10,12 +10,39 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Trash2, PlusCircle, Palette, Text, Link as LinkIcon, Percent, Landmark, Image as ImageIcon, Home, Edit, Mail, Loader2 } from 'lucide-react';
+import { Trash2, PlusCircle, Palette, Text, Link as LinkIcon, Percent, Landmark, Image as ImageIcon, Home, Edit, Mail, Loader2, Users, MoreHorizontal } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ProfileListItem } from '@/components/profile-list-item';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useAuth } from '@/hooks/use-auth';
+import { collection, onSnapshot, doc, deleteDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { getFunctions, httpsCallable } from 'firebase/functions';
+import { format } from 'date-fns';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+
 
 // Schemas for each form section
 const generalSchema = z.object({ 
@@ -59,9 +86,30 @@ const footerSchema = z.object({
   })
 });
 
+// For Admin Management
+type AdminUser = {
+  id: string; // This will be the UID from Firebase Auth
+  email: string;
+  role: 'admin' | 'superadmin';
+  expiresAt?: Date;
+};
+
+const addAdminSchema = z.object({
+  email: z.string().email('Please enter a valid email address.'),
+  password: z.string().min(6, 'Password must be at least 6 characters.'),
+  expiresAt: z.string().refine((val) => !isNaN(Date.parse(val)), { message: "Please select a valid expiration date." }),
+});
+
+type AddAdminFormValues = z.infer<typeof addAdminSchema>;
+const SUPER_ADMIN_EMAIL = "temahfingerofgod@gmail.com";
+
+
 export default function SiteSettingsPage() {
   const { state, updateSettings } = useSiteSettings();
+  const { user } = useAuth();
   const { toast } = useToast();
+  
+  const isSuperAdmin = user?.email === SUPER_ADMIN_EMAIL;
 
   const createSubmitHandler = (toastTitle: string) => async (data: any) => {
     try {
@@ -89,6 +137,7 @@ export default function SiteSettingsPage() {
       
       <GeneralSettingsForm onSubmit={createSubmitHandler('General Settings Updated')} defaultValues={{ appName: state.appName, logoUrl: state.logoUrl, fromEmail: state.fromEmail }} />
       <CommerceSettingsForm onSubmit={createSubmitHandler('Commerce Settings Updated')} defaultValues={{ taxRate: state.taxRate, shippingFee: state.shippingFee }} />
+      {isSuperAdmin && <AdminManagementCard />}
       <ThemeSettingsForm onSubmit={createSubmitHandler('Theme Updated')} defaultValues={state.theme} />
       <ContentManagementCard />
       <FooterSettingsForm onSubmit={createSubmitHandler('Footer Updated')} defaultValues={state.footer} />
@@ -312,5 +361,214 @@ function FieldArrayLinks({ colIndex, control, register }: { colIndex: number; co
       ))}
       <Button type="button" size="sm" variant="secondary" onClick={() => append({ id: Date.now(), label: '', url: '' })}><PlusCircle className="mr-2" /> Add Link</Button>
     </div>
+  );
+}
+
+
+function AdminManagementCard() {
+  const [admins, setAdmins] = useState<AdminUser[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [adminToDelete, setAdminToDelete] = useState<AdminUser | null>(null);
+  const { toast } = useToast();
+  const functions = getFunctions();
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<AddAdminFormValues>({
+    resolver: zodResolver(addAdminSchema),
+  });
+
+  useEffect(() => {
+    setLoading(true);
+    const adminsColRef = collection(db, 'admins');
+    const unsubscribe = onSnapshot(adminsColRef, (snapshot) => {
+      const adminsData = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+        expiresAt: doc.data().expiresAt ? new Date(doc.data().expiresAt) : undefined,
+      })) as AdminUser[];
+      setAdmins(adminsData);
+      setLoading(false);
+    }, (error) => {
+        console.error("Failed to fetch admins:", error);
+        setLoading(false);
+        toast({
+            title: 'Error',
+            description: 'Could not fetch the list of admins.',
+            variant: 'destructive'
+        });
+    });
+
+    return () => unsubscribe();
+  }, [toast]);
+
+  const onSubmit = async (data: AddAdminFormValues) => {
+    const createAdminUser = httpsCallable(functions, 'createAdminUser');
+    try {
+      const result = await createAdminUser({
+        email: data.email,
+        password: data.password,
+        expiresAt: new Date(data.expiresAt).toISOString(),
+      });
+
+      if ((result.data as any).success) {
+        toast({
+          title: 'Admin Created',
+          description: `User ${data.email} has been granted admin access.`,
+        });
+        setIsDialogOpen(false);
+        reset();
+      } else {
+        throw new Error((result.data as any).message || 'An unknown error occurred.');
+      }
+    } catch (error: any) {
+      console.error('Failed to create admin user:', error);
+      toast({
+        title: 'Creation Failed',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleDeleteClick = (admin: AdminUser) => {
+    setAdminToDelete(admin);
+    setIsDeleteConfirmOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!adminToDelete) return;
+    try {
+      await deleteDoc(doc(db, 'admins', adminToDelete.id));
+      toast({
+        title: 'Admin Removed',
+        description: `Access for ${adminToDelete.email} has been revoked.`,
+        variant: 'destructive',
+      });
+    } catch (error) {
+        console.error("Failed to remove admin:", error);
+        toast({ title: 'Error', description: 'Could not remove admin.', variant: 'destructive'});
+    }
+    setIsDeleteConfirmOpen(false);
+    setAdminToDelete(null);
+  };
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div>
+          <CardTitle className="flex items-center gap-2"><Users /> Admin Management</CardTitle>
+          <CardDescription>Create and manage temporary admin users.</CardDescription>
+        </div>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <PlusCircle className="mr-2" />
+              New Admin
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Create Temporary Admin</DialogTitle>
+              <DialogDescription>
+                This will create a new user with temporary admin access. They can log in with the email and password you provide.
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleSubmit(onSubmit)} id="add-admin-form" className="space-y-4">
+              <div>
+                <Label htmlFor="email">Email Address</Label>
+                <Input id="email" {...register('email')} />
+                {errors.email && <p className="text-sm text-destructive mt-1">{errors.email.message}</p>}
+              </div>
+              <div>
+                <Label htmlFor="password">Password</Label>
+                <Input id="password" type="password" {...register('password')} />
+                {errors.password && <p className="text-sm text-destructive mt-1">{errors.password.message}</p>}
+              </div>
+               <div>
+                <Label htmlFor="expiresAt">Expiration Date</Label>
+                <Input id="expiresAt" type="datetime-local" {...register('expiresAt')} />
+                {errors.expiresAt && <p className="text-sm text-destructive mt-1">{errors.expiresAt.message}</p>}
+              </div>
+            </form>
+            <DialogFooter>
+              <Button type="button" variant="ghost" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
+              <Button type="submit" form="add-admin-form" disabled={isSubmitting}>
+                {isSubmitting && <Loader2 className="mr-2 animate-spin" />}
+                Create Admin
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </CardHeader>
+      <CardContent>
+         {loading ? (
+           <div className="flex justify-center items-center h-40">
+              <Loader2 className="h-8 w-8 animate-spin" />
+          </div>
+         ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Email</TableHead>
+                <TableHead>Role</TableHead>
+                <TableHead>Expires On</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {admins.map((admin) => (
+                <TableRow key={admin.id}>
+                  <TableCell className="font-medium">{admin.email}</TableCell>
+                  <TableCell>{admin.role}</TableCell>
+                   <TableCell>
+                    {admin.expiresAt ? format(admin.expiresAt, "PPP p") : 'Never'}
+                   </TableCell>
+                  <TableCell className="text-right">
+                     <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="h-8 w-8 p-0" disabled={admin.role === 'superadmin'}>
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleDeleteClick(admin)} className="text-destructive">
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          <span>Revoke Access</span>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+         )}
+         {admins.length === 0 && !loading && (
+          <div className="text-center p-8 text-muted-foreground">No temporary admins found.</div>
+         )}
+      </CardContent>
+      <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will revoke admin access for "{adminToDelete?.email}". They will no longer be able to access the dashboard. This does not delete their login account.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Revoke Access
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </Card>
   );
 }

@@ -58,22 +58,28 @@ function AdminAuthGuard({ children }: { children: React.ReactNode }) {
         }
 
         const adminDocRef = doc(db, 'admins', user.uid);
-        const adminDoc = await getDoc(adminDocRef);
+        try {
+            const adminDoc = await getDoc(adminDocRef);
 
-        if (adminDoc.exists()) {
-            const adminData = adminDoc.data() as Omit<AdminInfo, 'email'>;
-            const now = new Date();
-            const expiresAt = adminData.expiresAt ? new Date(adminData.expiresAt) : null;
+            if (adminDoc.exists()) {
+                const adminData = adminDoc.data() as Omit<AdminInfo, 'email'>;
+                const now = new Date();
+                const expiresAt = adminData.expiresAt ? new Date(adminData.expiresAt) : null;
 
-            if (!expiresAt || expiresAt > now) {
-                setAdminInfo({ ...adminData, email: user.email! });
+                if (!expiresAt || expiresAt > now) {
+                    setAdminInfo({ ...adminData, email: user.email! });
+                } else {
+                    setAdminInfo(null); // Expired
+                }
             } else {
-                setAdminInfo(null); // Expired
+                setAdminInfo(null);
             }
-        } else {
+        } catch (error) {
+            console.error("Error checking admin status:", error);
             setAdminInfo(null);
+        } finally {
+            setIsCheckingAdmin(false);
         }
-        setIsCheckingAdmin(false);
     };
 
     checkAdminStatus();
@@ -137,14 +143,6 @@ function AdminLayoutContent({ children, adminRole }: { children: React.ReactNode
     },
   ];
 
-  if (adminRole === 'superadmin') {
-    menuItems.push({
-        href: '/admin/admins',
-        label: 'Admins',
-        icon: Users,
-    });
-  }
-
   const getIsActive = (href: string) => {
     if (href === '/admin/dashboard') {
       return pathname === href;
@@ -158,7 +156,7 @@ function AdminLayoutContent({ children, adminRole }: { children: React.ReactNode
   return (
       <SidebarProvider>
         <div className="md:hidden">
-          <AdminBottomNavbar />
+          <AdminBottomNavbar adminRole={adminRole}/>
         </div>
         <div className="hidden md:block">
           <Sidebar>
