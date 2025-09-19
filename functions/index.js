@@ -187,7 +187,7 @@ exports.createAdminUser = functions.https.onCall(async (data, context) => {
     await admin.firestore().collection('admins').doc(userRecord.uid).set({
       email: email,
       role: 'admin',
-      expiresAt: expiresAt, // Store as ISO string
+      expiresAt: admin.firestore.Timestamp.fromDate(new Date(expiresAt)), // Store as Firestore Timestamp
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 

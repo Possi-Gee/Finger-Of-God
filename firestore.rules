@@ -5,30 +5,31 @@ service cloud.firestore {
 
     // --- Helper Functions ---
 
-    // Checks if the requesting user has a document in the /admins collection
+    // Checks if the requesting user has a document in the /admins collection.
     function hasAdminEntry() {
       return exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
 
-    // Retrieves the admin data for the requesting user
+    // Retrieves the admin data for the requesting user.
     function getAdminData() {
       return get(/databases/$(database)/documents/admins/$(request.auth.uid)).data;
     }
 
-    // Checks if the admin's access has not expired.
+    // Checks if the admin's access is not expired.
+    // This assumes 'expiresAt' is stored as a Firestore timestamp.
     function isNotExpired() {
       let adminData = getAdminData();
-      // No 'expiresAt' field means permanent access (for the superadmin).
-      // Otherwise, check if the current time is before the expiration time.
-      return !('expiresAt' in adminData) || request.time < timestamp.parse(adminData.expiresAt);
+      // If 'expiresAt' field doesn't exist, access is permanent (for the superadmin).
+      // Otherwise, check if the current request time is before the expiration timestamp.
+      return !('expiresAt' in adminData) || request.time < adminData.expiresAt;
     }
     
-    // Checks if the user is a valid admin (has an entry and is not expired)
+    // Checks if the user is a valid admin (has an entry and is not expired).
     function isAdmin() {
       return hasAdminEntry() && isNotExpired();
     }
     
-    // Checks if the user is a superadmin
+    // Checks if the user is a superadmin.
     function isSuperAdmin() {
       // A user is a superadmin if they are an admin and their role is 'superadmin'
       return isAdmin() && getAdminData().role == 'superadmin';
@@ -36,26 +37,29 @@ service cloud.firestore {
 
     // --- Collection Rules ---
 
+    // Products: Public can read, Admins can write.
     match /products/{productId} {
       allow read: if true;
       allow write: if isAdmin();
     }
 
+    // Site settings: Public can read, Admins can write.
     match /site/{docId} {
       allow read: if true;
       allow write: if isAdmin();
     }
 
+    // Orders: Users can manage their own, Admins can manage all.
     match /orders/{orderId} {
       allow read, update: if request.auth.uid == resource.data.userId || isAdmin();
       allow create: if request.auth.uid == request.resource.data.userId;
     }
     
+    // Admins Collection:
+    // - Authenticated users can read (to verify their own status).
+    // - SuperAdmins can create or delete other admin records.
     match /admins/{userId} {
       allow read: if request.auth != null;
-      // create/delete is handled by the Cloud Function which has elevated privileges.
-      // The function itself contains the superadmin check.
-      // This rule just needs to allow a superadmin to trigger that function.
       allow create, delete: if isSuperAdmin();
     }
   }
