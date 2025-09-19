@@ -18,9 +18,16 @@ const baseNavItems = [
   { href: '/admin/products', label: 'Products', icon: Package },
 ];
 
-const superAdminNavItem = { href: '/admin/admins', label: 'Admins', icon: Users };
-const settingsNavItem = { href: '/admin/settings', label: 'Settings', icon: Settings };
-const shopNavItem = { href: '/', label: 'Shop', icon: Home };
+const regularAdminNavItems = [
+    { href: '/admin/settings', label: 'Settings', icon: Settings },
+    { href: '/', label: 'Shop', icon: Home }
+];
+
+const superAdminExtraItems = [
+    { href: '/admin/admins', label: 'Admins', icon: Users },
+    { href: '/', label: 'Shop', icon: Home }
+];
+
 
 
 export function AdminBottomNavbar() {
@@ -36,11 +43,16 @@ export function AdminBottomNavbar() {
         }
 
         if (user) {
-            const adminDocRef = doc(db, 'admins', user.uid);
-            const adminDoc = await getDoc(adminDocRef);
-            if (adminDoc.exists() && adminDoc.data().role === 'superadmin') {
-                setIsSuperAdmin(true);
-            } else {
+            try {
+                const adminDocRef = doc(db, 'admins', user.uid);
+                const adminDoc = await getDoc(adminDocRef);
+                if (adminDoc.exists() && adminDoc.data().role === 'superadmin') {
+                    setIsSuperAdmin(true);
+                } else {
+                    setIsSuperAdmin(false);
+                }
+            } catch (e) {
+                console.error("Error checking admin role:", e);
                 setIsSuperAdmin(false);
             }
         }
@@ -52,8 +64,8 @@ export function AdminBottomNavbar() {
   }, [user, loading]);
   
   const navItems = isSuperAdmin 
-    ? [...baseNavItems, superAdminNavItem, shopNavItem]
-    : [...baseNavItems, settingsNavItem, shopNavItem];
+    ? [...baseNavItems, ...superAdminExtraItems]
+    : [...baseNavItems, ...regularAdminNavItems];
 
 
   return (
