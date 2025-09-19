@@ -2,45 +2,40 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // Helper function to check if a user is an admin.
-    // It checks the /admins collection for a document matching the user's UID.
+
+    // Helper function to check if a user is an admin or superadmin
     function isAdmin() {
       return exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
+    
+    // Helper function to check if an admin's access has expired
+    function isNotExpired() {
+      let adminData = get(/databases/$(database)/documents/admins/$(request.auth.uid)).data;
+      return !('expiresAt' in adminData) || (request.time < timestamp.value(adminData.expiresAt));
+    }
 
-    // Products are publicly readable, but only admins can write.
+    // Products: Public can read, Admins can write
     match /products/{productId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if isAdmin() && isNotExpired();
     }
 
-    // Site settings are publicly readable, but only admins can write.
+    // Site settings: Public can read, Admins can write
     match /site/{docId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if isAdmin() && isNotExpired();
     }
 
-    // Users can create and manage their own orders. Admins can manage all orders.
+    // Orders: Users can manage their own, Admins can manage all
     match /orders/{orderId} {
-      allow read: if request.auth.uid == resource.data.userId || isAdmin();
+      allow read, update: if request.auth.uid == resource.data.userId || (isAdmin() && isNotExpired());
       allow create: if request.auth.uid == request.resource.data.userId;
-      allow update: if isAdmin() || request.auth.uid == resource.data.userId;
-      allow delete: if isAdmin();
     }
-
-    // Authenticated users can read the admins collection to check roles.
-    // Only superadmins (defined in security rules or a separate field) can write.
-    // For now, we will restrict writes completely from the client for safety.
-    match /admins/{adminId} {
+    
+    // Admins Collection: Authenticated users can read to verify their own status, SuperAdmins can write
+    match /admins/{userId} {
       allow read: if request.auth != null;
-      // Writes to the admins collection should only be done via a secure Cloud Function.
-      allow write: if false; 
-    }
-
-    // Default deny all other access.
-    match /{document=**} {
-      allow read, write: if false;
+      allow write: if isAdmin() && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == 'superadmin' && isNotExpired();
     }
   }
 }
