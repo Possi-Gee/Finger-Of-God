@@ -141,11 +141,11 @@ exports.createAdminUser = functions.https.onCall(async (data, context) => {
   const callerUid = context.auth.uid;
   let isSuperAdmin = false;
 
-  // Check if the caller is the hardcoded super admin email.
+  // Check if the caller is the hardcoded super admin email first.
   if (callerEmail === SUPER_ADMIN_EMAIL) {
       isSuperAdmin = true;
   } else {
-      // If not, check the 'admins' collection in Firestore.
+      // If not, then check the 'admins' collection in Firestore for other superadmins.
       const adminDocRef = admin.firestore().collection('admins').doc(callerUid);
       try {
           const adminDoc = await adminDocRef.get();
