@@ -3,46 +3,55 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper Functions
+    // --- Helper Functions ---
+
+    // Checks if the requesting user is authenticated.
     function isAuth() {
       return request.auth != null;
     }
 
+    // Checks if the user has an entry in the /admins collection.
     function isAdmin() {
       return isAuth() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
 
+    // Checks if the user is a superadmin.
     function isSuperAdmin() {
-      return isAuth() && isAdmin() && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == 'superadmin';
+      return isAdmin() && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == 'superadmin';
     }
 
+    // Checks if the user is the owner of a document.
     function isOwner(userId) {
       return isAuth() && request.auth.uid == userId;
     }
 
-    // Publicly readable collections
+    // --- Collection Rules ---
+
+    // Products: Public can read, Admins can write.
     match /products/{productId} {
       allow read: if true;
       allow write: if isAdmin();
     }
 
+    // Site settings: Public can read, Admins can write.
     match /site/{docId} {
       allow read: if true;
       allow write: if isAdmin();
     }
-    
-    // User-specific collections
+
+    // Orders: Users can manage their own, Admins can manage all.
     match /orders/{orderId} {
       allow read, update: if isOwner(resource.data.userId) || isAdmin();
       allow create: if isOwner(request.resource.data.userId);
     }
-    
-    // Admin-only collections
+
+    // Admins Collection:
+    // This collection is now managed manually in the Firebase Console.
+    // These rules allow authenticated admins to read the data to verify permissions.
     match /admins/{userId} {
-      // Only superadmins should be able to view the list of other admins.
-      allow read, list: if isSuperAdmin();
-      // Only superadmins can add or remove admins via the Cloud Function.
-      allow create, delete: if isSuperAdmin();
+      allow read: if isAdmin();
+      // Write access is not granted from the client to prevent modification.
+      allow write: if false; 
     }
   }
 }
