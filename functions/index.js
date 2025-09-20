@@ -141,16 +141,20 @@ exports.createAdminUser = functions.https.onCall(async (data, context) => {
   const callerUid = context.auth.uid;
   let isSuperAdmin = false;
 
-  // Check if the caller is the hardcoded super admin email first.
+  // **CORRECTED LOGIC**: First, check if the caller is the hardcoded super admin email.
   if (callerEmail === SUPER_ADMIN_EMAIL) {
       isSuperAdmin = true;
   } else {
-      // If not, then check the 'admins' collection in Firestore for other superadmins.
+      // If not, THEN check the 'admins' collection in Firestore for other superadmins.
       const adminDocRef = admin.firestore().collection('admins').doc(callerUid);
       try {
           const adminDoc = await adminDocRef.get();
           if (adminDoc.exists() && adminDoc.data().role === 'superadmin') {
-              isSuperAdmin = true;
+              const expiresAt = adminDoc.data().expiresAt ? adminDoc.data().expiresAt.toDate() : null;
+              // Check if the temporary superadmin account is expired
+              if (!expiresAt || expiresAt > new Date()) {
+                isSuperAdmin = true;
+              }
           }
       } catch (error) {
           console.error("Error checking admin status:", error);
