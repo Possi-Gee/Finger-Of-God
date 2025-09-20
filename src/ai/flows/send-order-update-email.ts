@@ -10,7 +10,7 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'genkit';
+import { z } from 'zod';
 import nodemailer from 'nodemailer';
 
 const CartItemSchema = z.object({
@@ -57,7 +57,7 @@ const getEmailContent = (
 ) => {
     const { deliveryMethod, paymentMethod, total, items } = input;
     let subject = `Your ${appName} Order #${orderId} has been updated`;
-    let html = `<p>Hi ${customerName},</p><p>There's an update on your order #${orderId}. The new status is: <strong>${status}</strong>.</p>`;
+    let mainContent = `<p>Hi ${customerName},</p><p>There's an update on your order #${orderId}. The new status is: <strong>${status}</strong>.</p>`;
 
     const isPickup = deliveryMethod === 'pickup';
 
@@ -86,69 +86,66 @@ const getEmailContent = (
     switch (status.toLowerCase()) {
         case 'confirmed':
              subject = `✅ Your ${appName} Order Confirmation #${orderId}`;
-             html = `
+             mainContent = `
                 <h2>Thanks for your order, ${customerName}!</h2>
                 <p>We've received your order #${orderId} and are getting it ready. We'll notify you as soon as it's ready for pickup or has shipped.</p>
-                ${itemsHtml}
              `;
 
              if (isPickup && paymentMethod === 'on_delivery' && total) {
-                html += `<p><b>Please remember to bring GH₵${total.toFixed(2)} when you come to pick up your order.</b></p>`;
+                mainContent += `<p><b>Please remember to bring GH₵${total.toFixed(2)} when you come to pick up your order.</b></p>`;
              }
              
             break;
         case 'new order': // For Admin
             subject = `🎉 New Order Received! #${orderId}`;
-            html = `
+            mainContent = `
                 <h2>You've received a new order!</h2>
                 <p>A new order (#${orderId}) was placed by ${customerName}.</p>
-                ${itemsHtml}
                 <p>Please review it in the admin dashboard to begin processing.</p>
             `;
             break;
         case 'shipped':
             if (isPickup) {
                  subject = `✅ Your ${appName} Order #${orderId} is Ready for Pickup!`;
-                 html = `
+                 mainContent = `
                     <h2>Great News, ${customerName}!</h2>
                     <p>Your order #${orderId} is now ready for you to pick up at our store.</p>
-                    ${itemsHtml}
                  `;
                   if (paymentMethod === 'on_delivery' && total) {
-                    html += `<p><b>Please remember to bring GH₵${total.toFixed(2)} to complete your payment.</b></p>`;
+                    mainContent += `<p><b>Please remember to bring GH₵${total.toFixed(2)} to complete your payment.</b></p>`;
                  }
-                 html += `<p>We look forward to seeing you!</p>`;
+                 mainContent += `<p>We look forward to seeing you!</p>`;
             } else {
                 subject = `🚀 Your ${appName} Order #${orderId} Has Shipped!`;
-                html = `
+                mainContent = `
                     <h2>Great News, ${customerName}!</h2>
                     <p>Your order #${orderId} is on its way to you.</p>
                     <p>We're so excited for you to receive your items!</p>
-                    ${itemsHtml}
                 `;
             }
             break;
         case 'delivered':
              subject = `✅ Your ${appName} Order #${orderId} Has Been Delivered!`;
-             html = `
+             mainContent = `
                 <h2>Hooray, ${customerName}!</h2>
                 <p>Your order #${orderId} has arrived. We hope you enjoy your new items!</p>
-                ${itemsHtml}
                 <p>Thank you for shopping with us.</p>
             `;
             break;
         case 'cancelled':
             subject = `Your ${appName} Order #${orderId} Has Been Cancelled`;
-            html = `
+            mainContent = `
                 <h2>Order Cancellation</h2>
                 <p>Hi ${customerName}, as requested, your order #${orderId} has been cancelled.</p>
                 <p>If you have any questions, please feel free to contact our support team.</p>
             `;
             break;
-        default:
-             html += itemsHtml; // Ensure summary is shown for generic updates too
     }
-     return { subject, html: styleEmail(html, appName, orderId, recipient) };
+    
+    // Append the order summary at the end
+    const finalHtml = `${mainContent}${itemsHtml}`;
+
+    return { subject, html: styleEmail(finalHtml, appName, orderId, recipient) };
 };
 
 const styleEmail = (content: string, appName: string, orderId: string, recipient: 'customer' | 'admin') => {
@@ -171,10 +168,11 @@ const styleEmail = (content: string, appName: string, orderId: string, recipient
               .header { text-align: center; padding-bottom: 20px; border-bottom: 1px solid #eee; }
               .header h1 { color: #1a1a1a; font-size: 24px; margin: 0;}
               .content { padding: 20px 0; }
-              .button-container { text-align: center; margin-top: 20px; }
+              .button-container { text-align: center; margin-top: 20px; margin-bottom: 20px; }
               .button { background-color: #1976d2; color: #ffffff !important; padding: 12px 25px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold; }
               .footer { text-align: center; padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #888; }
               h2 { color: #1a1a1a; }
+              h3 { border-bottom: 1px solid #eee; padding-bottom: 10px; margin-top: 30px; }
               p { margin-bottom: 1em; }
           </style>
       </head>
