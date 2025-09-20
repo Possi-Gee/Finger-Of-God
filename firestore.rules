@@ -1,57 +1,52 @@
+
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // --- Helper Functions ---
-
-    // Checks if the requesting user is authenticated.
+    // Helper Functions
     function isAuth() {
       return request.auth != null;
     }
 
-    // Checks if the user has an entry in the /admins collection.
     function isAdmin() {
       return isAuth() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
 
-    // Checks if the user is a superadmin.
     function isSuperAdmin() {
-      return isAdmin() && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == 'superadmin';
+      // The initial superadmin might not have a doc, so we also check the email claim.
+      return isAuth() && 
+        (request.auth.token.email == "temahfingerofgod@gmail.com" || 
+         (isAdmin() && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == 'superadmin'));
     }
 
-    // Checks if the user is the owner of a document.
     function isOwner(userId) {
       return isAuth() && request.auth.uid == userId;
     }
 
-    // --- Collection Rules ---
-
-    // Products: Public can read, Admins can write.
+    // Publicly readable collections
     match /products/{productId} {
       allow read: if true;
       allow write: if isAdmin();
     }
 
-    // Site settings: Public can read, Admins can write.
     match /site/{docId} {
       allow read: if true;
       allow write: if isAdmin();
     }
-
-    // Orders: Users can manage their own, Admins can manage all.
+    
+    // User-specific collections
     match /orders/{orderId} {
       allow read, update: if isOwner(resource.data.userId) || isAdmin();
       allow create: if isOwner(request.resource.data.userId);
     }
-
-    // Admins Collection:
-    // This collection is now managed manually in the Firebase Console.
-    // These rules allow authenticated admins to read the data to verify permissions.
+    
+    // Admin-only collections
     match /admins/{userId} {
-      allow read: if isAdmin();
-      // Write access is not granted from the client to prevent modification.
-      allow write: if false; 
+      // Only superadmins should be able to view the list of other admins.
+      allow list, read: if isSuperAdmin();
+      // This is now a manual process in the console, so we don't need app-based rules for write.
+      allow create, update, delete: if false; 
     }
   }
 }

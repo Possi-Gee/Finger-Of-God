@@ -10,11 +10,16 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Trash2, PlusCircle, Palette, Text, Link as LinkIcon, Percent, Landmark, Image as ImageIcon, Home, Edit, Mail, Loader2 } from 'lucide-react';
+import { Trash2, PlusCircle, Palette, Text, Link as LinkIcon, Percent, Landmark, Image as ImageIcon, Home, Edit, Mail, Loader2, Users } from 'lucide-react';
 import Image from 'next/image';
 import { ProfileListItem } from '@/components/profile-list-item';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useAuth } from '@/hooks/use-auth';
+import { collection, doc, getDoc, onSnapshot } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { Table, TableBody, TableCell, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
 
 // Schemas for each form section
 const generalSchema = z.object({ 
@@ -92,12 +97,7 @@ export default function SiteSettingsPage() {
       <ThemeSettingsForm onSubmit={createSubmitHandler('Theme Updated')} defaultValues={state.theme} />
       <ContentManagementCard />
       <FooterSettingsForm onSubmit={createSubmitHandler('Footer Updated')} defaultValues={state.footer} />
-       <Alert>
-            <AlertTitle className="font-bold">Admin Management</AlertTitle>
-            <AlertDescription>
-                To add or remove administrators, please manage user roles directly in your Firebase Console under the Firestore `admins` collection.
-            </AlertDescription>
-        </Alert>
+      <AdminManagementCard />
     </div>
   );
 }
@@ -251,13 +251,13 @@ function ContentManagementCard() {
 }
 
 function FooterSettingsForm({ onSubmit, defaultValues }: { onSubmit: (data: z.infer<typeof footerSchema>) => Promise<void>; defaultValues: FooterSettings }) {
-  const { control, register, handleSubmit, formState: { errors, isSubmitting }, reset, useFieldArray } = useForm({ resolver: zodResolver(footerSchema), defaultValues });
+  const { control, register, handleSubmit, formState: { errors, isSubmitting }, reset } = useForm({ resolver: zodResolver(footerSchema), defaultValues });
+  
+  const { fields, append, remove } = useFieldArray({ control, name: 'columns' });
   
   useEffect(() => {
     reset(defaultValues);
   }, [defaultValues, reset]);
-  
-  const { fields, append, remove } = useFieldArray({ control, name: 'columns' });
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
@@ -305,7 +305,6 @@ function FooterSettingsForm({ onSubmit, defaultValues }: { onSubmit: (data: z.in
 }
 
 function FieldArrayLinks({ colIndex, control, register }: { colIndex: number; control: any, register: any }) {
-  const { fields, append, remove, useFieldArray } = useForm();
   const { fields: linkFields, append: appendLink, remove: removeLink } = useFieldArray({ control, name: `columns.${colIndex}.links` });
   return (
     <div className="space-y-2 pl-4 border-l-2">
@@ -320,3 +319,128 @@ function FieldArrayLinks({ colIndex, control, register }: { colIndex: number; co
     </div>
   );
 }
+
+
+function AdminManagementCard() {
+  const { user } = useAuth();
+  const [currentUserRole, setCurrentUserRole] = useState<string | null>(null);
+  const [admins, setAdmins] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Check current user's role
+  useEffect(() => {
+    if (!user) return;
+    const userAdminDoc = doc(db, 'admins', user.uid);
+    const unsubscribe = onSnapshot(userAdminDoc, (doc) => {
+      if (doc.exists() && doc.data().role === 'superadmin') {
+        setCurrentUserRole('superadmin');
+      } else {
+        setCurrentUserRole(doc.data()?.role || null);
+      }
+    });
+    return () => unsubscribe();
+  }, [user]);
+
+  // Fetch all admins if current user is superadmin
+  useEffect(() => {
+    if (currentUserRole !== 'superadmin') {
+      setAdmins([]);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    const adminsCol = collection(db, 'admins');
+    const unsubscribe = onSnapshot(adminsCol, (snapshot) => {
+      const adminList = snapshot.docs.map(doc => {
+        const data = doc.data();
+        // Correctly convert Firestore Timestamp to JS Date
+        const expiresAt = data.expiresAt?.toDate ? data.expiresAt.toDate() : null;
+        return {
+          id: doc.id,
+          ...data,
+          expiresAt: expiresAt,
+        };
+      });
+      setAdmins(adminList);
+      setLoading(false);
+    }, (error) => {
+      console.error("Failed to fetch admins:", error);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [currentUserRole]);
+
+  const getBadgeVariant = (expiresAt: Date | null) => {
+    if (!expiresAt) return 'secondary';
+    const now = new Date();
+    const isExpired = now > expiresAt;
+    return isExpired ? 'destructive' : 'outline';
+  };
+
+  const getExpiryText = (expiresAt: Date | null) => {
+    if (!expiresAt) return 'Never';
+    const now = new Date();
+    const isExpired = now > expiresAt;
+    return `${isExpired ? 'Expired on' : 'Expires on'} ${expiresAt.toLocaleDateString()}`;
+  };
+
+  if (currentUserRole !== 'superadmin') {
+    return null; // Don't render this card if user is not a superadmin
+  }
+
+  return (
+    <>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2"><Users /> Admin Management</CardTitle>
+          <CardDescription>
+            View current administrators and their access status. Admin roles must be managed directly in the Firebase Console.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="flex items-center justify-center p-8">
+              <Loader2 className="h-8 w-8 animate-spin" />
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Expires</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {admins.length > 0 ? admins.map((admin: any) => (
+                  <TableRow key={admin.id}>
+                    <TableCell className="font-medium">{admin.email}</TableCell>
+                    <TableCell>
+                      <Badge variant={admin.role === 'superadmin' ? 'default' : 'secondary'}>
+                        {admin.role}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={getBadgeVariant(admin.expiresAt)}>
+                        {getExpiryText(admin.expiresAt)}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                )) : (
+                  <TableRow>
+                    <TableCell colSpan={3} className="h-24 text-center">
+                      No administrators found.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+    </>
+  );
+}
+
