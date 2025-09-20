@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useForm } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useSiteSettings, type SiteTheme, type FooterSettings } from '@/hooks/use-site-settings';
@@ -10,22 +10,23 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Trash2, PlusCircle, Palette, Text, Link as LinkIcon, Percent, Landmark, Image as ImageIcon, Home, Edit, Mail, Loader2, Users } from 'lucide-react';
+import { Trash2, PlusCircle, Palette, Text, Link as LinkIcon, Percent, Landmark, Image as ImageIcon, Home, Edit, Mail, Loader2, Users, ShieldAlert } from 'lucide-react';
 import Image from 'next/image';
 import { ProfileListItem } from '@/components/profile-list-item';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/use-auth';
-import { collection, doc, getDoc, onSnapshot } from 'firebase/firestore';
+import { collection, doc, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { Table, TableBody, TableCell, TableHeader, TableRow } from '@/components/ui/table';
+import { Table, TableBody, TableCell, TableHeader, TableRow, TableHead } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+
 
 // Schemas for each form section
 const generalSchema = z.object({ 
   appName: z.string().min(1, 'App name is required'),
   logoUrl: z.string().url().or(z.literal('')),
-  fromEmail: z.string().email('A valid email is required'),
 });
 const commerceSchema = z.object({
   taxRate: z.coerce.number().min(0, 'Tax rate must be a positive number'),
@@ -40,7 +41,7 @@ const themeSchema = z.object({
   'accent-foreground': z.string().min(1),
   card: z.string().min(1),
   'card-foreground': z.string().min(1),
-  popover: z.string().min(1),
+popover: z.string().min(1),
   'popover-foreground': z.string().min(1),
   border: z.string().min(1),
   input: z.string().min(1),
@@ -87,12 +88,12 @@ export default function SiteSettingsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="text-center">
+      <div className="flex items-center gap-4">
         <h1 className="text-3xl font-bold">Site Settings</h1>
-        <p className="text-muted-foreground mt-2">Manage the global settings for your application.</p>
       </div>
+      <p className="text-muted-foreground">Manage the global settings for your application.</p>
       
-      <GeneralSettingsForm onSubmit={createSubmitHandler('General Settings Updated')} defaultValues={{ appName: state.appName, logoUrl: state.logoUrl, fromEmail: state.fromEmail }} />
+      <GeneralSettingsForm onSubmit={createSubmitHandler('General Settings Updated')} defaultValues={{ appName: state.appName, logoUrl: state.logoUrl }} />
       <CommerceSettingsForm onSubmit={createSubmitHandler('Commerce Settings Updated')} defaultValues={{ taxRate: state.taxRate, shippingFee: state.shippingFee }} />
       <ThemeSettingsForm onSubmit={createSubmitHandler('Theme Updated')} defaultValues={state.theme} />
       <ContentManagementCard />
@@ -117,7 +118,7 @@ function GeneralSettingsForm({ onSubmit, defaultValues }: { onSubmit: (data: z.i
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><Text /> General</CardTitle>
-          <CardDescription>Basic application settings like name, logo, and sending email address.</CardDescription>
+          <CardDescription>Basic application settings like name and logo.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
@@ -135,23 +136,11 @@ function GeneralSettingsForm({ onSubmit, defaultValues }: { onSubmit: (data: z.i
               </div>
             )}
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="fromEmail">"From" Email Address</Label>
-            <Input id="fromEmail" {...register('fromEmail')} />
-            {errors.fromEmail && <p className="text-sm text-destructive mt-1">{errors.fromEmail.message}</p>}
-             <Alert className="mt-2">
-                <Mail className="h-4 w-4" />
-                <AlertTitle>Important: Sending Email</AlertTitle>
-                <AlertDescription>
-                  For testing, you can use `onboarding@resend.dev` to send emails **to your own verified email address only**. To send emails to your customers, you must use an email from a custom domain that you have verified in your Resend account.
-                </AlertDescription>
-            </Alert>
-          </div>
         </CardContent>
         <CardFooter>
           <Button type="submit" disabled={isSubmitting}>
              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Save Changes
+            Save General Settings
           </Button>
         </CardFooter>
       </Card>
@@ -194,7 +183,7 @@ function CommerceSettingsForm({ onSubmit, defaultValues }: { onSubmit: (data: z.
         <CardFooter>
             <Button type="submit" disabled={isSubmitting}>
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Save Changes
+              Save Commerce Settings
             </Button>
         </CardFooter>
       </Card>
@@ -228,7 +217,7 @@ function ThemeSettingsForm({ onSubmit, defaultValues }: { onSubmit: (data: z.inf
         <CardFooter>
             <Button type="submit" disabled={isSubmitting}>
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Save Changes
+              Save Theme
             </Button>
         </CardFooter>
       </Card>
@@ -296,7 +285,7 @@ function FooterSettingsForm({ onSubmit, defaultValues }: { onSubmit: (data: z.in
         <CardFooter>
             <Button type="submit" disabled={isSubmitting}>
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Save Changes
+              Save Footer
             </Button>
         </CardFooter>
       </Card>
@@ -330,13 +319,16 @@ function AdminManagementCard() {
   // Check current user's role
   useEffect(() => {
     if (!user) return;
+    
+    // Hardcoded check for the primary superadmin
+    if (user.email === 'temahfingerofgod@gmail.com') {
+        setCurrentUserRole('superadmin');
+        return;
+    }
+
     const userAdminDoc = doc(db, 'admins', user.uid);
     const unsubscribe = onSnapshot(userAdminDoc, (doc) => {
-      if (doc.exists() && doc.data().role === 'superadmin') {
-        setCurrentUserRole('superadmin');
-      } else {
         setCurrentUserRole(doc.data()?.role || null);
-      }
     });
     return () => unsubscribe();
   }, [user]);
@@ -393,11 +385,40 @@ function AdminManagementCard() {
   return (
     <>
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2"><Users /> Admin Management</CardTitle>
-          <CardDescription>
-            View current administrators and their access status. Admin roles must be managed directly in the Firebase Console.
-          </CardDescription>
+        <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2"><Users /> Admin Management</CardTitle>
+              <CardDescription>
+                View current administrators and their access status.
+              </CardDescription>
+            </div>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline">
+                    <ShieldAlert className="mr-2" />
+                    How to Manage Admins
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Managing Administrator Access</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Administrator roles and access must be managed directly in your Firebase Firestore database for security reasons.
+                    <ol className="list-decimal list-inside mt-4 space-y-2 text-left">
+                        <li>Go to your Firebase project console.</li>
+                        <li>Navigate to the **Firestore Database** section.</li>
+                        <li>Find the **`admins`** collection.</li>
+                        <li>To add a new admin, create a new document. The Document ID must be the user's UID from the Authentication tab.</li>
+                        <li>Set the fields: `email` (string), `role` (string: 'admin' or 'superadmin'), and optionally `expiresAt` (timestamp).</li>
+                        <li>To remove an admin, simply delete their document from the collection.</li>
+                    </ol>
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogAction>Got it</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
         </CardHeader>
         <CardContent>
           {loading ? (
@@ -431,7 +452,7 @@ function AdminManagementCard() {
                 )) : (
                   <TableRow>
                     <TableCell colSpan={3} className="h-24 text-center">
-                      No administrators found.
+                      No administrators found in Firestore.
                     </TableCell>
                   </TableRow>
                 )}
@@ -443,4 +464,3 @@ function AdminManagementCard() {
     </>
   );
 }
-
