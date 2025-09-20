@@ -27,7 +27,7 @@ type AdminRole = 'admin' | 'superadmin';
 interface AdminInfo {
     email: string;
     role: AdminRole;
-    expiresAt?: string;
+    expiresAt?: Date;
 }
 
 // --- Admin Configuration ---
@@ -62,14 +62,17 @@ function AdminAuthGuard({ children }: { children: React.ReactNode }) {
             const adminDoc = await getDoc(adminDocRef);
 
             if (adminDoc.exists()) {
-                const adminData = adminDoc.data() as Omit<AdminInfo, 'email'> & { expiresAt?: { toDate: () => Date } };
+                const adminData = adminDoc.data() as Omit<AdminInfo, 'email' | 'expiresAt'> & { expiresAt?: { toDate: () => Date } };
                 const now = new Date();
                 
-                // Correctly convert Firestore Timestamp to JS Date if it exists
-                const expiresAt = adminData.expiresAt ? adminData.expiresAt.toDate() : null;
+                const expiresAt = adminData.expiresAt ? adminData.expiresAt.toDate() : undefined;
 
                 if (!expiresAt || expiresAt > now) {
-                    setAdminInfo({ ...adminData, email: user.email! });
+                    setAdminInfo({ 
+                        email: user.email!, 
+                        role: adminData.role,
+                        expiresAt: expiresAt
+                    });
                 } else {
                     setAdminInfo(null); // Expired
                 }
