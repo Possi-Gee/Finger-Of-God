@@ -3,62 +3,45 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // --- Helper Functions ---
-
-    // Checks if the requesting user has a document in the /admins collection.
-    function hasAdminEntry() {
-      return exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    // Helper Functions
+    function isAuth() {
+      return request.auth != null;
     }
 
-    // Retrieves the admin data for the requesting user.
-    function getAdminData() {
-      return get(/databases/$(database)/documents/admins/$(request.auth.uid)).data;
-    }
-
-    // Checks if the admin's access is not expired.
-    // This assumes 'expiresAt' is stored as a Firestore timestamp.
-    function isNotExpired() {
-      let adminData = getAdminData();
-      // If 'expiresAt' field doesn't exist, access is permanent (for the superadmin).
-      // Otherwise, check if the current request time is before the expiration timestamp.
-      return !('expiresAt' in adminData) || request.time < adminData.expiresAt;
-    }
-
-    // Checks if the user is a valid admin.
     function isAdmin() {
-      return hasAdminEntry() && isNotExpired();
+      return isAuth() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
 
-    // Checks if the user is a superadmin.
     function isSuperAdmin() {
-      return isAdmin() && getAdminData().role == 'superadmin';
+      return isAuth() && isAdmin() && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == 'superadmin';
     }
 
-    // --- Collection Rules ---
+    function isOwner(userId) {
+      return isAuth() && request.auth.uid == userId;
+    }
 
-    // Products: Public can read, Admins can write.
+    // Publicly readable collections
     match /products/{productId} {
       allow read: if true;
       allow write: if isAdmin();
     }
 
-    // Site settings: Public can read, Admins can write.
     match /site/{docId} {
       allow read: if true;
       allow write: if isAdmin();
     }
-
-    // Orders: Users can manage their own, Admins can manage all.
+    
+    // User-specific collections
     match /orders/{orderId} {
-      allow read, update: if request.auth.uid == resource.data.userId || isAdmin();
-      allow create: if request.auth.uid == request.resource.data.userId;
+      allow read, update: if isOwner(resource.data.userId) || isAdmin();
+      allow create: if isOwner(request.resource.data.userId);
     }
-
-    // Admins Collection:
-    // - Only a superadmin can list and read the entire collection.
-    // - SuperAdmins can create or delete documents.
+    
+    // Admin-only collections
     match /admins/{userId} {
-      allow list, read: if isSuperAdmin();
+      // Only superadmins should be able to view the list of other admins.
+      allow read, list: if isSuperAdmin();
+      // Only superadmins can add or remove admins via the Cloud Function.
       allow create, delete: if isSuperAdmin();
     }
   }
