@@ -23,15 +23,14 @@ service cloud.firestore {
       // Otherwise, check if the current request time is before the expiration timestamp.
       return !('expiresAt' in adminData) || request.time < adminData.expiresAt;
     }
-    
-    // Checks if the user is a valid admin (has an entry and is not expired).
+
+    // Checks if the user is a valid admin.
     function isAdmin() {
       return hasAdminEntry() && isNotExpired();
     }
-    
+
     // Checks if the user is a superadmin.
     function isSuperAdmin() {
-      // A user is a superadmin if they are an admin and their role is 'superadmin'
       return isAdmin() && getAdminData().role == 'superadmin';
     }
 
@@ -54,12 +53,12 @@ service cloud.firestore {
       allow read, update: if request.auth.uid == resource.data.userId || isAdmin();
       allow create: if request.auth.uid == request.resource.data.userId;
     }
-    
+
     // Admins Collection:
-    // - Authenticated users can read (to verify their own status).
-    // - SuperAdmins can create or delete other admin records.
+    // - Only a superadmin can list and read the entire collection.
+    // - SuperAdmins can create or delete documents.
     match /admins/{userId} {
-      allow read: if request.auth != null;
+      allow list, read: if isSuperAdmin();
       allow create, delete: if isSuperAdmin();
     }
   }
