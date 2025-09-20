@@ -62,9 +62,11 @@ function AdminAuthGuard({ children }: { children: React.ReactNode }) {
             const adminDoc = await getDoc(adminDocRef);
 
             if (adminDoc.exists()) {
-                const adminData = adminDoc.data() as Omit<AdminInfo, 'email'>;
+                const adminData = adminDoc.data() as Omit<AdminInfo, 'email'> & { expiresAt?: { toDate: () => Date } };
                 const now = new Date();
-                const expiresAt = adminData.expiresAt ? new Date(adminData.expiresAt) : null;
+                
+                // Correctly convert Firestore Timestamp to JS Date if it exists
+                const expiresAt = adminData.expiresAt ? adminData.expiresAt.toDate() : null;
 
                 if (!expiresAt || expiresAt > now) {
                     setAdminInfo({ ...adminData, email: user.email! });
