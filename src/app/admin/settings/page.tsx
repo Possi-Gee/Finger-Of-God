@@ -389,11 +389,13 @@ function AdminManagementCard() {
     const unsubscribe = onSnapshot(adminsColRef, (snapshot) => {
       const adminsData = snapshot.docs.map((doc) => {
         const data = doc.data();
+        // Correctly handle the Timestamp object
         const expiresAtTimestamp = data.expiresAt as Timestamp | undefined;
         return {
           id: doc.id,
           email: data.email,
           role: data.role,
+          // Convert timestamp to JS Date object
           expiresAt: expiresAtTimestamp ? expiresAtTimestamp.toDate() : undefined,
         } as AdminUser;
       });
@@ -464,107 +466,109 @@ function AdminManagementCard() {
   };
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <div>
-          <CardTitle className="flex items-center gap-2"><Users /> Admin Management</CardTitle>
-          <CardDescription>Create and manage temporary admin users.</CardDescription>
-        </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <PlusCircle className="mr-2" />
-              New Admin
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Create Temporary Admin</DialogTitle>
-              <DialogDescription>
-                This will create a new user with temporary admin access. They can log in with the email and password you provide.
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleSubmit(onSubmit)} id="add-admin-form" className="space-y-4">
-              <div>
-                <Label htmlFor="email">Email Address</Label>
-                <Input id="email" {...register('email')} />
-                {errors.email && <p className="text-sm text-destructive mt-1">{errors.email.message}</p>}
-              </div>
-              <div>
-                <Label htmlFor="password">Password</Label>
-                <Input id="password" type="password" {...register('password')} />
-                {errors.password && <p className="text-sm text-destructive mt-1">{errors.password.message}</p>}
-              </div>
-               <div>
-                <Label htmlFor="expiresAt">Expiration Date</Label>
-                <Input id="expiresAt" type="datetime-local" {...register('expiresAt')} />
-                {errors.expiresAt && <p className="text-sm text-destructive mt-1">{errors.expiresAt.message}</p>}
-              </div>
-            </form>
-            <DialogFooter>
-              <Button type="button" variant="ghost" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
-              <Button type="submit" form="add-admin-form" disabled={isSubmitting}>
-                {isSubmitting && <Loader2 className="mr-2 animate-spin" />}
-                Create Admin
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </CardHeader>
-      <CardContent>
-         {loading ? (
-           <div className="flex justify-center items-center h-40">
-              <Loader2 className="h-8 w-8 animate-spin" />
+    <>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2"><Users /> Admin Management</CardTitle>
+            <CardDescription>Create and manage temporary admin users.</CardDescription>
           </div>
-         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Email</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Expires On</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {admins.map((admin) => (
-                <TableRow key={admin.id}>
-                  <TableCell className="font-medium">{admin.email}</TableCell>
-                  <TableCell>{admin.role}</TableCell>
-                   <TableCell>
-                    {admin.expiresAt ? format(admin.expiresAt, "PPP p") : 'Never'}
-                   </TableCell>
-                  <TableCell className="text-right">
-                     <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0" disabled={admin.role === 'superadmin'}>
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleDeleteClick(admin)} className="text-destructive">
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          <span>Revoke Access</span>
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <PlusCircle className="mr-2" />
+                New Admin
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Create Temporary Admin</DialogTitle>
+                <DialogDescription>
+                  This will create a new user with temporary admin access. They can log in with the email and password you provide.
+                </DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleSubmit(onSubmit)} id="add-admin-form" className="space-y-4">
+                <div>
+                  <Label htmlFor="email">Email Address</Label>
+                  <Input id="email" {...register('email')} />
+                  {errors.email && <p className="text-sm text-destructive mt-1">{errors.email.message}</p>}
+                </div>
+                <div>
+                  <Label htmlFor="password">Password</Label>
+                  <Input id="password" type="password" {...register('password')} />
+                  {errors.password && <p className="text-sm text-destructive mt-1">{errors.password.message}</p>}
+                </div>
+                 <div>
+                  <Label htmlFor="expiresAt">Expiration Date</Label>
+                  <Input id="expiresAt" type="datetime-local" {...register('expiresAt')} />
+                  {errors.expiresAt && <p className="text-sm text-destructive mt-1">{errors.expiresAt.message}</p>}
+                </div>
+              </form>
+              <DialogFooter>
+                <Button type="button" variant="ghost" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
+                <Button type="submit" form="add-admin-form" disabled={isSubmitting}>
+                  {isSubmitting && <Loader2 className="mr-2 animate-spin" />}
+                  Create Admin
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </CardHeader>
+        <CardContent>
+           {loading ? (
+             <div className="flex justify-center items-center h-40">
+                <Loader2 className="h-8 w-8 animate-spin" />
+            </div>
+           ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Expires On</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-         )}
-         {admins.length === 0 && !loading && (
-          <div className="text-center p-8 text-muted-foreground">No temporary admins found.</div>
-         )}
-      </CardContent>
+              </TableHeader>
+              <TableBody>
+                {admins.map((admin) => (
+                  <TableRow key={admin.id}>
+                    <TableCell className="font-medium">{admin.email}</TableCell>
+                    <TableCell>{admin.role}</TableCell>
+                     <TableCell>
+                      {admin.expiresAt ? format(admin.expiresAt, "PPP p") : 'Never'}
+                     </TableCell>
+                    <TableCell className="text-right">
+                       <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" className="h-8 w-8 p-0" disabled={admin.role === 'superadmin'}>
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleDeleteClick(admin)} className="text-destructive">
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            <span>Revoke Access</span>
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+           )}
+           {admins.length === 0 && !loading && (
+            <div className="text-center p-8 text-muted-foreground">No temporary admins found.</div>
+           )}
+        </CardContent>
+      </Card>
       <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
               This will revoke admin access for "{adminToDelete?.email}". They will no longer be able to access the dashboard. This does not delete their login account.
-            </Aler tDescription>
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
@@ -574,6 +578,6 @@ function AdminManagementCard() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </Card>
+    </>
   );
 }
