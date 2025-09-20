@@ -404,16 +404,18 @@ function AdminManagementCard() {
                   <AlertDialogTitle>Managing Administrator Access</AlertDialogTitle>
                   <AlertDialogDescription>
                     Administrator roles and access must be managed directly in your Firebase Firestore database for security reasons.
-                    <ol className="list-decimal list-inside mt-4 space-y-2 text-left">
-                        <li>Go to your Firebase project console.</li>
-                        <li>Navigate to the **Firestore Database** section.</li>
-                        <li>Find the **`admins`** collection.</li>
-                        <li>To add a new admin, create a new document. The Document ID must be the user's UID from the Authentication tab.</li>
-                        <li>Set the fields: `email` (string), `role` (string: 'admin' or 'superadmin'), and optionally `expiresAt` (timestamp).</li>
-                        <li>To remove an admin, simply delete their document from the collection.</li>
-                    </ol>
                   </AlertDialogDescription>
                 </AlertDialogHeader>
+                <div className="text-sm text-muted-foreground">
+                  <ol className="list-decimal list-inside space-y-2">
+                      <li>Go to your Firebase project console.</li>
+                      <li>Navigate to the **Firestore Database** section.</li>
+                      <li>Find the **`admins`** collection.</li>
+                      <li>To add a new admin, create a new document. The Document ID must be the user's UID from the Authentication tab.</li>
+                      <li>Set the fields: `email` (string), `role` (string: 'admin' or 'superadmin'), and optionally `expiresAt` (timestamp).</li>
+                      <li>To remove an admin, simply delete their document from the collection.</li>
+                  </ol>
+                </div>
                 <AlertDialogFooter>
                   <AlertDialogAction>Got it</AlertDialogAction>
                 </AlertDialogFooter>
