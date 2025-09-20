@@ -17,7 +17,7 @@ import { ProfileListItem } from '@/components/profile-list-item';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/use-auth';
-import { collection, onSnapshot, doc, deleteDoc } from 'firebase/firestore';
+import { collection, onSnapshot, doc, deleteDoc, type Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { format } from 'date-fns';
@@ -387,11 +387,16 @@ function AdminManagementCard() {
     setLoading(true);
     const adminsColRef = collection(db, 'admins');
     const unsubscribe = onSnapshot(adminsColRef, (snapshot) => {
-      const adminsData = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-        expiresAt: doc.data().expiresAt ? new Date(doc.data().expiresAt) : undefined,
-      })) as AdminUser[];
+      const adminsData = snapshot.docs.map((doc) => {
+        const data = doc.data();
+        const expiresAtTimestamp = data.expiresAt as Timestamp | undefined;
+        return {
+          id: doc.id,
+          email: data.email,
+          role: data.role,
+          expiresAt: expiresAtTimestamp ? expiresAtTimestamp.toDate() : undefined,
+        } as AdminUser;
+      });
       setAdmins(adminsData);
       setLoading(false);
     }, (error) => {
@@ -559,7 +564,7 @@ function AdminManagementCard() {
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
               This will revoke admin access for "{adminToDelete?.email}". They will no longer be able to access the dashboard. This does not delete their login account.
-            </AlertDialogDescription>
+            </Aler tDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
