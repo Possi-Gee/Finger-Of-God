@@ -1,52 +1,56 @@
-
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper Functions
+    // --- Helper Functions ---
+    
+    // Check if the user is authenticated
     function isAuth() {
       return request.auth != null;
     }
-
+    
+    // Check if the requesting user has an entry in the /admins collection
     function isAdmin() {
       return isAuth() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
 
+    // Check if the user is a superadmin. This is the most privileged role.
     function isSuperAdmin() {
-      // The initial superadmin might not have a doc, so we also check the email claim.
-      return isAuth() && 
-        (request.auth.token.email == "temahfingerofgod@gmail.com" || 
-         (isAdmin() && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == 'superadmin'));
+      return isAdmin() && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == 'superadmin';
     }
 
+    // Check if the user is the owner of a document
     function isOwner(userId) {
       return isAuth() && request.auth.uid == userId;
     }
+    
+    // --- Collection Rules ---
 
-    // Publicly readable collections
+    // Products can be read by anyone, but only written by an admin.
     match /products/{productId} {
       allow read: if true;
       allow write: if isAdmin();
     }
 
+    // Site settings (theme, name, etc.) can be read by anyone, but only written by an admin.
     match /site/{docId} {
       allow read: if true;
       allow write: if isAdmin();
     }
     
-    // User-specific collections
+    // Users can create their own orders.
+    // Users can read/update their own orders. Admins can read/update any order.
     match /orders/{orderId} {
       allow read, update: if isOwner(resource.data.userId) || isAdmin();
       allow create: if isOwner(request.resource.data.userId);
     }
     
-    // Admin-only collections
+    // Only a superadmin can read the list of other admins.
+    // Management (create/delete) is handled in the console, so write access is denied.
     match /admins/{userId} {
-      // Only superadmins should be able to view the list of other admins.
       allow list, read: if isSuperAdmin();
-      // This is now a manual process in the console, so we don't need app-based rules for write.
-      allow create, update, delete: if false; 
+      allow write: if false; 
     }
   }
 }
