@@ -344,12 +344,12 @@ function AdminManagementCard() {
     setLoading(true);
     const adminsCol = collection(db, 'admins');
     const unsubscribe = onSnapshot(adminsCol, (snapshot) => {
-      const adminList = snapshot.docs.map(doc => {
-        const data = doc.data();
+      const adminList = snapshot.docs.map(docSnap => {
+        const data = docSnap.data();
         // Correctly convert Firestore Timestamp to JS Date
         const expiresAt = data.expiresAt?.toDate ? data.expiresAt.toDate() : null;
         return {
-          id: doc.id,
+          id: docSnap.id,
           ...data,
           expiresAt: expiresAt,
         };
@@ -389,7 +389,7 @@ function AdminManagementCard() {
             <div>
               <CardTitle className="flex items-center gap-2"><Users /> Admin Management</CardTitle>
               <CardDescription>
-                View current administrators and their access status.
+                View current administrators and their access status. Admins must be managed directly in Firebase.
               </CardDescription>
             </div>
             <AlertDialog>
@@ -403,18 +403,26 @@ function AdminManagementCard() {
                 <AlertDialogHeader>
                   <AlertDialogTitle>Managing Administrator Access</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Administrator roles and access must be managed directly in your Firebase Firestore database for security reasons.
+                    For security, new admins must be added directly in your Firebase Firestore database.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
-                <div className="text-sm text-muted-foreground">
+                <div className="text-sm text-muted-foreground space-y-4">
                   <ol className="list-decimal list-inside space-y-2">
-                      <li>Go to your Firebase project console.</li>
-                      <li>Navigate to the **Firestore Database** section.</li>
-                      <li>Find the **`admins`** collection.</li>
-                      <li>To add a new admin, create a new document. The Document ID must be the user's UID from the Authentication tab.</li>
-                      <li>Set the fields: `email` (string), `role` (string: 'admin' or 'superadmin'), and optionally `expiresAt` (timestamp).</li>
-                      <li>To remove an admin, simply delete their document from the collection.</li>
+                      <li>**Get User UID:** Go to Firebase **Authentication** -&gt; **Users** tab and copy the UID of the user you want to make an admin.</li>
+                      <li>**Go to Firestore:** Navigate to the **Firestore Database** section.</li>
+                      <li>**Open `admins` Collection:** Click on the `admins` collection.</li>
+                      <li>**Add Document:** Click **+ Add document**.</li>
+                      <li>**Set Document ID:** Paste the user's UID into the **Document ID** field.</li>
+                      <li>**Add Fields:**
+                          <ul class="list-disc list-inside pl-4 mt-2">
+                              <li>`email` (string): The user's email.</li>
+                              <li>`role` (string): Set to `admin` or `superadmin`.</li>
+                              <li>`expiresAt` (timestamp, optional): Set an expiration date for their access.</li>
+                          </ul>
+                      </li>
+                      <li>**Save** the new document.</li>
                   </ol>
+                  <p>To remove an admin, simply delete their document from this collection.</p>
                 </div>
                 <AlertDialogFooter>
                   <AlertDialogAction>Got it</AlertDialogAction>
@@ -454,7 +462,7 @@ function AdminManagementCard() {
                 )) : (
                   <TableRow>
                     <TableCell colSpan={3} className="h-24 text-center">
-                      No administrators found in Firestore.
+                      No administrators found. Add one in the Firebase console.
                     </TableCell>
                   </TableRow>
                 )}
@@ -466,3 +474,5 @@ function AdminManagementCard() {
     </>
   );
 }
+
+    
