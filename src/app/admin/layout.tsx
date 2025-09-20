@@ -63,18 +63,23 @@ function AdminAuthGuard({ children }: { children: React.ReactNode }) {
 
             if (adminDoc.exists()) {
                 const adminData = adminDoc.data() as Omit<AdminInfo, 'email' | 'expiresAt'> & { expiresAt?: { toDate: () => Date } };
-                const now = new Date();
                 
-                const expiresAt = adminData.expiresAt ? adminData.expiresAt.toDate() : undefined;
+                // Anyone with a role of 'admin' or 'superadmin' is considered an admin
+                if (adminData.role === 'admin' || adminData.role === 'superadmin') {
+                    const now = new Date();
+                    const expiresAt = adminData.expiresAt ? adminData.expiresAt.toDate() : undefined;
 
-                if (!expiresAt || expiresAt > now) {
-                    setAdminInfo({ 
-                        email: user.email!, 
-                        role: adminData.role,
-                        expiresAt: expiresAt
-                    });
+                    if (!expiresAt || expiresAt > now) {
+                        setAdminInfo({ 
+                            email: user.email!, 
+                            role: adminData.role,
+                            expiresAt: expiresAt
+                        });
+                    } else {
+                        setAdminInfo(null); // Expired
+                    }
                 } else {
-                    setAdminInfo(null); // Expired
+                    setAdminInfo(null); // Not an admin role
                 }
             } else {
                 setAdminInfo(null);
