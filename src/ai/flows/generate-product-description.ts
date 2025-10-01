@@ -39,7 +39,8 @@ const prompt = ai.definePrompt({
   Product Name: {{{productName}}}
   Features: {{{features}}}
 
-  Descriptions:`, config: {
+  Descriptions:`,
+  config: {
     safetySettings: [
       {
         category: 'HARM_CATEGORY_DANGEROUS_CONTENT',
@@ -69,6 +70,9 @@ const generateProductDescriptionFlow = ai.defineFlow(
   },
   async input => {
     const {output} = await prompt(input);
-    return output!;
+    if (!output) {
+      throw new Error('The AI model did not return an output. This may be due to safety settings or a temporary issue.');
+    }
+    return output;
   }
 );
