@@ -45,6 +45,7 @@ export type Order = {
     status: OrderStatus;
     orderNotes?: string;
     appName?: string;
+    transactionRef?: string;
 };
 
 

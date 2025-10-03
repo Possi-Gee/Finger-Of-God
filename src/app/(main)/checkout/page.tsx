@@ -27,6 +27,7 @@ import { doc, setDoc, collection } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { errorEmitter } from '@/lib/firebase/error-emitter';
 import { FirestorePermissionError } from '@/lib/firebase/errors';
+import { usePaystackPayment } from 'react-paystack';
 
 
 const checkoutSchema = z.discriminatedUnion("deliveryMethod", [
@@ -54,9 +55,10 @@ const checkoutSchema = z.discriminatedUnion("deliveryMethod", [
     z.discriminatedUnion("paymentMethod", [
         z.object({
             paymentMethod: z.literal('card'),
-            cardNumber: z.string().regex(/^\d{16}$/, 'Card number must be 16 digits'),
-            expiryDate: z.string().regex(/^(0[1-9]|1[0-2])\/\d{2}$/, 'Expiry date must be in MM/YY format'),
-            cvv: z.string().regex(/^\d{3,4}$/, 'CVV must be 3 or 4 digits'),
+             // Card fields are no longer required here as Paystack handles them
+            cardNumber: z.string().optional(),
+            expiryDate: z.string().optional(),
+            cvv: z.string().optional(),
         }),
         z.object({
             paymentMethod: z.literal('mobile_money'),
@@ -85,6 +87,9 @@ export default function CheckoutPage() {
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'card' | 'mobile_money' | 'on_delivery'>('card');
   const [deliveryMethod, setDeliveryMethod] = useState<'delivery' | 'pickup'>('delivery');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [paystackConfig, setPaystackConfig] = useState<any | null>(null);
+
+  const initializePayment = usePaystackPayment(paystackConfig);
 
 
   const form = useForm<CheckoutFormValues>({
@@ -126,10 +131,8 @@ export default function CheckoutPage() {
   const deliveryFee = deliveryMethod === 'delivery' && subtotal > 0 ? settings.shippingFee : 0;
   const total = subtotal + tax + deliveryFee;
 
-  const onSubmit = async (data: CheckoutFormValues) => {
-    setIsSubmitting(true);
-    
-    if (!user) {
+  const createOrderInFirestore = (data: CheckoutFormValues, transactionRef?: string) => {
+     if (!user) {
       toast({
         title: 'Please Login',
         description: 'You must be logged in to place an order.',
@@ -139,10 +142,8 @@ export default function CheckoutPage() {
       setIsSubmitting(false);
       return;
     }
-
-    const { paymentMethod, deliveryMethod, orderNotes, email } = data;
     
-    // Generate a shorter, user-friendly order ID
+    const { paymentMethod, deliveryMethod, orderNotes, email } = data;
     const orderId = Date.now().toString().slice(-8);
 
     const newOrder: Order = {
@@ -167,23 +168,22 @@ export default function CheckoutPage() {
       } : { fullName: data.fullName || user.displayName || 'In-store Pickup', email: data.email!, address: '', city: '', state: '', zip: '', country: '' },
       paymentMethod,
       deliveryMethod,
-      status: 'Pending',
+      status: paymentMethod === 'card' ? 'Pending' : 'Pending', // All orders start as pending
       orderNotes: orderNotes,
       appName: "Jaytel Classic Store",
+      // Add transaction reference if available
+      ...(transactionRef && { transactionRef }),
     };
 
     const orderRef = doc(collection(db, 'orders'), newOrder.id.toString());
     setDoc(orderRef, newOrder).then(() => {
         orderDispatch({ type: 'ADD_ORDER', payload: newOrder });
-
         toast({
           title: 'Order Placed!',
           description: 'Thank you for your purchase. A confirmation email will be sent shortly.',
         });
-        
         cartDispatch({ type: 'CLEAR_CART' });
         router.push(`/orders/${newOrder.id}`);
-
     }).catch(serverError => {
         const permissionError = new FirestorePermissionError({
             path: orderRef.path,
@@ -194,7 +194,54 @@ export default function CheckoutPage() {
     }).finally(() => {
         setIsSubmitting(false);
     });
+  }
+
+
+  const onSubmit = async (data: CheckoutFormValues) => {
+    setIsSubmitting(true);
+    
+    if (data.paymentMethod === 'card') {
+      // Configure Paystack
+       const newConfig = {
+            reference: (new Date()).getTime().toString(),
+            email: data.email,
+            amount: total * 100, // Amount in kobo
+            publicKey: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || '',
+            currency: 'GHS',
+        };
+       
+        // This is async, so we wait for it to be set
+        await new Promise<void>(resolve => {
+            setPaystackConfig(newConfig);
+            resolve();
+        });
+       
+    } else {
+      // For other payment methods, create order directly
+      createOrderInFirestore(data);
+    }
   };
+  
+    // Effect to trigger Paystack payment after config is set
+  useEffect(() => {
+    if (paystackConfig) {
+      initializePayment({
+        onSuccess: (transaction) => {
+          // Pass form data and transaction ref to order creation
+          createOrderInFirestore(form.getValues() as CheckoutFormValues, transaction.reference);
+        },
+        onClose: () => {
+          toast({
+            title: 'Payment cancelled',
+            description: 'Your payment was not completed.',
+            variant: 'destructive',
+          });
+          setIsSubmitting(false);
+        },
+      });
+    }
+  }, [paystackConfig]);
+
 
   if (loading) {
     return (
@@ -214,6 +261,12 @@ export default function CheckoutPage() {
         </div>
     );
   }
+  
+  const getSubmitButtonText = () => {
+    if (isSubmitting) return "Processing...";
+    if (selectedPaymentMethod === 'card') return `Pay GH₵${total.toFixed(2)} with Paystack`;
+    return 'Place Order';
+  };
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -406,7 +459,7 @@ export default function CheckoutPage() {
                             <Label className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer">
                               <RadioGroupItem value="card" id="card" className="peer sr-only" />
                               <CreditCard className="mb-3 h-6 w-6"/>
-                              Credit/Debit Card
+                              Pay with Paystack
                             </Label>
                           </FormItem>
                           <FormItem>
@@ -432,46 +485,8 @@ export default function CheckoutPage() {
               </CardContent>
               <CardContent>
                 {selectedPaymentMethod === 'card' && (
-                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                     <FormField
-                      control={form.control}
-                      name="cardNumber"
-                      render={({ field }) => (
-                        <FormItem className="md:col-span-4">
-                          <FormLabel>Card Number</FormLabel>
-                          <FormControl>
-                            <Input placeholder="0000 0000 0000 0000" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                     <FormField
-                      control={form.control}
-                      name="expiryDate"
-                      render={({ field }) => (
-                        <FormItem className="md:col-span-2">
-                          <FormLabel>Expiry Date</FormLabel>
-                          <FormControl>
-                            <Input placeholder="MM/YY" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                     <FormField
-                      control={form.control}
-                      name="cvv"
-                      render={({ field }) => (
-                        <FormItem className="md:col-span-2">
-                          <FormLabel>CVV</FormLabel>
-                          <FormControl>
-                            <Input placeholder="123" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                  <div className="text-center text-muted-foreground bg-gray-50 p-4 rounded-md">
+                     You will be redirected to Paystack to complete your payment securely.
                   </div>
                 )}
                  {selectedPaymentMethod === 'mobile_money' && (
@@ -593,7 +608,7 @@ export default function CheckoutPage() {
               <CardFooter>
                  <Button type="submit" className="w-full" size="lg" disabled={items.length === 0 || isSubmitting}>
                    {isSubmitting && <Loader2 className="mr-2 animate-spin"/>}
-                   Place Order
+                    {getSubmitButtonText()}
                  </Button>
               </CardFooter>
             </Card>
@@ -603,5 +618,3 @@ export default function CheckoutPage() {
     </div>
   );
 }
-
-    
