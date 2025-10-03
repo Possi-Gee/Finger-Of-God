@@ -19,6 +19,8 @@ import { useAuth } from '@/hooks/use-auth';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -55,11 +57,14 @@ const AppleIcon = (props: React.SVGProps<SVGSVGElement>) => (
 
 export function LoginPageClient() {
   const { state: settings } = useSiteSettings();
-  const { signup, login, loginWithGoogle } = useAuth();
+  const { signup, login, loginWithGoogle, sendPasswordReset } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
   const [error, setError] = useState<string | null>(null);
+  const [resetEmail, setResetEmail] = useState('');
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
+
 
   const { register: registerLogin, handleSubmit: handleLoginSubmit, formState: { errors: loginErrors, isSubmitting: isLoggingIn } } = useForm<LoginValues>({ resolver: zodResolver(loginSchema) });
   const { register: registerSignup, handleSubmit: handleSignupSubmit, formState: { errors: signupErrors, isSubmitting: isSigningUp } } = useForm<SignupValues>({ resolver: zodResolver(signupSchema) });
@@ -101,6 +106,33 @@ export function LoginPageClient() {
     }
   }
 
+  const handlePasswordReset = async () => {
+    if (!resetEmail) {
+        toast({
+            title: 'Email Required',
+            description: 'Please enter the email address for your account.',
+            variant: 'destructive',
+        });
+        return;
+    }
+    setIsResettingPassword(true);
+    setError(null);
+    try {
+        await sendPasswordReset(resetEmail);
+        toast({
+            title: 'Password Reset Email Sent',
+            description: 'Check your inbox for a link to reset your password.',
+        });
+        setResetEmail('');
+        // Close the dialog by finding and clicking the cancel button.
+        document.getElementById('reset-password-cancel')?.click();
+    } catch (e: any) {
+        setError(e.message);
+    } finally {
+        setIsResettingPassword(false);
+    }
+  };
+
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
@@ -134,7 +166,39 @@ export function LoginPageClient() {
                   {loginErrors.email && <p className="text-sm text-destructive">{loginErrors.email.message}</p>}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="login-password">Password</Label>
+                    <div className="flex items-center justify-between">
+                        <Label htmlFor="login-password">Password</Label>
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="link" className="h-auto p-0 text-xs">Forgot Password?</Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Reset Your Password</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Enter your email address below and we'll send you a link to reset your password.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <div className="space-y-2">
+                                    <Label htmlFor="reset-email">Email Address</Label>
+                                    <Input
+                                        id="reset-email"
+                                        type="email"
+                                        placeholder="you@example.com"
+                                        value={resetEmail}
+                                        onChange={(e) => setResetEmail(e.target.value)}
+                                    />
+                                </div>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel id="reset-password-cancel">Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={handlePasswordReset} disabled={isResettingPassword}>
+                                        {isResettingPassword && <Loader2 className="mr-2 animate-spin" />}
+                                        Send Reset Link
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </div>
                   <Input id="login-password" type="password" {...registerLogin('password')} />
                    {loginErrors.password && <p className="text-sm text-destructive">{loginErrors.password.message}</p>}
                 </div>

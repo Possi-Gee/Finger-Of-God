@@ -12,6 +12,7 @@ import {
     signInWithPopup,
     updateProfile,
     updatePassword,
+    sendPasswordResetEmail,
     type User 
 } from 'firebase/auth';
 import { app } from '@/lib/firebase';
@@ -29,6 +30,7 @@ interface AuthContextType {
   loginWithGoogle: () => Promise<User | null>;
   updateUserProfile: (name: string) => Promise<void>;
   updateUserPassword: (newPassword: string) => Promise<void>;
+  sendPasswordReset: (email: string) => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -132,7 +134,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const value = { user, loading, signup, login, logout, loginWithGoogle, updateUserProfile, updateUserPassword };
+  const sendPasswordReset = async (email: string) => {
+    try {
+        await sendPasswordResetEmail(auth, email);
+    } catch (error: any) {
+        console.error("Password reset error:", error);
+        if (error.code === 'auth/user-not-found') {
+            throw new Error('No account found with that email address.');
+        }
+        throw new Error(error.message || 'Failed to send password reset email.');
+    }
+  };
+
+  const value = { user, loading, signup, login, logout, loginWithGoogle, updateUserProfile, updateUserPassword, sendPasswordReset };
 
   return (
     <AuthContext.Provider value={value}>
