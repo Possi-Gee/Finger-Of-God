@@ -2,7 +2,6 @@
 import { BottomNavbar } from '@/components/bottom-navbar';
 import { Footer } from '@/components/footer';
 import { Header } from '@/components/header';
-import { NotificationPrompt } from '@/components/notification-prompt';
 
 export default function MainLayout({
   children,
@@ -20,7 +19,6 @@ export default function MainLayout({
       <div className="md:hidden">
         <BottomNavbar />
       </div>
-       <NotificationPrompt />
     </div>
   );
 }
