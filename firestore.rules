@@ -3,44 +3,62 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-  
-    // Helper function to check if a user is an admin
-    function isAdmin() {
-      // Check for hardcoded super admins or look up in the 'admins' collection
-      return request.auth.token.email in ["admin@jaytelclassic.com", "jaytelclassicstore@gmail.com"] ||
-             exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return request.auth.uid == userId;
     }
     
-    // Products should be world-readable
-    match /products/{productId} {
+    function isAdmin() {
+      // Check a hardcoded list of super admin emails first.
+      // This is useful for bootstrapping the first admin.
+      let superAdmins = ["admin@jaytelclassic.com", "jaytelclassicstore@gmail.com", "temahfingerofgod@gmail.com"];
+      if (request.auth.token.email in superAdmins) {
+        return true;
+      }
+      
+      // Check the 'admins' collection for the user's role.
+      // Assumes the document ID in 'admins' is the user's UID.
+      let adminDoc = get(/databases/$(database)/documents/admins/$(request.auth.uid));
+      if (exists(/databases/$(database)/documents/admins/$(request.auth.uid))) {
+          // Check if the role is 'admin' or 'superadmin' and if it's not expired.
+          let hasRole = adminDoc.data.role == 'admin' || adminDoc.data.role == 'superadmin';
+          let notExpired = !('expiresAt' in adminDoc.data) || adminDoc.data.expiresAt > request.time;
+          return hasRole && notExpired;
+      }
+      
+      return false;
+    }
+    
+    // Site settings can be read by anyone, but only written by admins
+    match /site/{document} {
       allow read: if true;
       allow write: if isAdmin();
     }
     
-    // Site settings and homepage content should be world-readable
-    match /site/{document} {
-        allow read: if true;
-        allow write: if isAdmin();
+    // Products can be read by anyone, but only written by admins
+    match /products/{productId} {
+      allow read: if true;
+      allow write: if isAdmin();
     }
 
-    // Admins collection rules
-    match /admins/{userId} {
-        // Only a user themselves or another admin can see if they are an admin.
-        // Deny list access for everyone.
-        allow get: if request.auth.uid == userId || isAdmin();
-        allow list, create, update, delete: if isAdmin();
+    // Orders can be read/written by the owner, or managed by an admin
+    match /orders/{orderId} {
+      allow read, write: if isOwner(resource.data.userId) || isAdmin();
+    }
+
+    // Admins collection can only be read by other admins
+    match /admins/{adminId} {
+      allow read: if isAdmin();
+      // Write access should be managed directly in the Firebase Console for security.
+      allow write: if false; 
     }
     
-    // Orders can only be created by authenticated users for themselves.
-    // They can be read by the user who owns it or by an admin.
-    // Admins can update/delete any order.
-    match /orders/{orderId} {
-        allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-        allow read: if request.auth != null && (request.resource.data.userId == request.auth.uid || isAdmin());
-        allow update, delete: if isAdmin();
-    }
-
-    // Default deny all other access
+    // Default deny all other reads/writes
     match /{document=**} {
       allow read, write: if false;
     }
