@@ -1,49 +1,48 @@
+
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // --- Helper Functions ---
-
-    function getAdminData() {
-      return get(/databases/$(database)/documents/admins/$(request.auth.uid)).data;
-    }
-
+  
+    // Helper function to check if a user is an admin
     function isAdmin() {
-      return request.auth != null && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+      // Check for hardcoded super admins or look up in the 'admins' collection
+      return request.auth.token.email in ["admin@jaytelclassic.com", "jaytelclassicstore@gmail.com"] ||
+             exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
-
-    function isSuperAdmin() {
-      // A user is a superadmin if they have an admin document and their role is 'superadmin'.
-      return isAdmin() && getAdminData().role == 'superadmin';
-    }
-
-    function isOwner(userId) {
-      return request.auth != null && request.auth.uid == userId;
-    }
-
-    // --- Collection Rules ---
-
+    
+    // Products should be world-readable
     match /products/{productId} {
       allow read: if true;
       allow write: if isAdmin();
     }
-
-    match /site/{docId} {
-      allow read: if true;
-      allow write: if isAdmin();
+    
+    // Site settings and homepage content should be world-readable
+    match /site/{document} {
+        allow read: if true;
+        allow write: if isAdmin();
     }
 
-    match /orders/{orderId} {
-      allow read, update: if isOwner(resource.data.userId) || isAdmin();
-      allow create: if isOwner(request.resource.data.userId);
+    // Admins collection rules
+    match /admins/{userId} {
+        // Only a user themselves or another admin can see if they are an admin.
+        // Deny list access for everyone.
+        allow get: if request.auth.uid == userId || isAdmin();
+        allow list, create, update, delete: if isAdmin();
     }
     
-    match /admins/{userId} {
-      // Only a superadmin can list and read the details of all admins.
-      allow list, read: if isSuperAdmin();
-      // Admin creation/deletion is handled manually in the console, so write access is locked down.
-      allow write: if false; 
+    // Orders can only be created by authenticated users for themselves.
+    // They can be read by the user who owns it or by an admin.
+    // Admins can update/delete any order.
+    match /orders/{orderId} {
+        allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+        allow read: if request.auth != null && (request.resource.data.userId == request.auth.uid || isAdmin());
+        allow update, delete: if isAdmin();
+    }
+
+    // Default deny all other access
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }
