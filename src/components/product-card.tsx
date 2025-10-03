@@ -96,7 +96,7 @@ export function ProductCard({ product }: ProductCardProps) {
                 <Heart className={cn('h-5 w-5', wishlisted ? 'text-red-500 fill-current' : '')} />
             </Button>
             {discount > 0 && (
-                <Badge variant="destructive" className="absolute top-0 right-0 rounded-none rounded-bl-md">-{discount}%</Badge>
+                <Badge variant="default" className="absolute top-0 right-0 rounded-none rounded-bl-md">-{discount}%</Badge>
             )}
           </CardHeader>
           <CardContent className="flex flex-col flex-grow p-3">
