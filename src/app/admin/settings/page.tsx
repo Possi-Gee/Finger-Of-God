@@ -414,7 +414,7 @@ function AdminManagementCard() {
                       <li>**Add Document:** Click **+ Add document**.</li>
                       <li>**Set Document ID:** Paste the user's UID into the **Document ID** field.</li>
                       <li>**Add Fields:**
-                          <ul class="list-disc list-inside pl-4 mt-2">
+                          <ul className="list-disc list-inside pl-4 mt-2">
                               <li>`email` (string): The user's email.</li>
                               <li>`role` (string): Set to `admin` or `superadmin`.</li>
                               <li>`expiresAt` (timestamp, optional): Set an expiration date for their access.</li>
@@ -474,5 +474,3 @@ function AdminManagementCard() {
     </>
   );
 }
-
-    
