@@ -104,10 +104,15 @@ export default function AdminProductsPage() {
   const [sortBy, setSortBy] = useState('name-asc');
 
   const baseCategories = [
-    "Toiletries & Personal Care",
-    "Cleaning Supplies",
-    "Food & Beverages",
-    "Packaging & Disposables",
+    "kitchen ware, and utensils",
+    "Sewing accessories",
+    "Bedsheets",
+    "Slippers and shoes",
+    "Bubu",
+    "Kids wear",
+    "Cosmetics",
+    "Fabrics",
+    "African prints",
   ];
 
   const uniqueCategories = useMemo(() => {
