@@ -259,7 +259,7 @@ export default function CheckoutPage() {
   
   const getSubmitButtonText = () => {
     if (isSubmitting) return "Processing...";
-    if (selectedPaymentMethod === 'card') return `Pay GH₵${total.toFixed(2)} with Paystack`;
+    if (selectedPaymentMethod === 'card') return `Pay GH₵${total.toFixed(2)} Now`;
     return 'Place Order';
   };
 
@@ -454,7 +454,7 @@ export default function CheckoutPage() {
                             <Label className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer">
                               <RadioGroupItem value="card" id="card" className="peer sr-only" />
                               <CreditCard className="mb-3 h-6 w-6"/>
-                              Pay with Paystack
+                              Pay Now
                             </Label>
                           </FormItem>
                           <FormItem>
