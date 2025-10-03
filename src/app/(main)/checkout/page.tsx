@@ -82,10 +82,12 @@ export default function CheckoutPage() {
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'card' | 'on_delivery'>('card');
   const [deliveryMethod, setDeliveryMethod] = useState<'delivery' | 'pickup'>('delivery');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [paystackConfig, setPaystackConfig] = useState<any | null>(null);
 
-  const initializePayment = usePaystackPayment(paystackConfig);
 
+  const subtotal = items.reduce((sum, item) => sum + item.variant.price * item.quantity, 0);
+  const tax = subtotal * (settings.taxRate / 100);
+  const deliveryFee = deliveryMethod === 'delivery' && subtotal > 0 ? settings.shippingFee : 0;
+  const total = subtotal + tax + deliveryFee;
 
   const form = useForm<CheckoutFormValues>({
     resolver: zodResolver(checkoutSchema),
@@ -121,10 +123,7 @@ export default function CheckoutPage() {
     }
   }, [user, loading, router, toast, form]);
   
-  const subtotal = items.reduce((sum, item) => sum + item.variant.price * item.quantity, 0);
-  const tax = subtotal * (settings.taxRate / 100);
-  const deliveryFee = deliveryMethod === 'delivery' && subtotal > 0 ? settings.shippingFee : 0;
-  const total = subtotal + tax + deliveryFee;
+  
 
   const createOrderInFirestore = (data: CheckoutFormValues, transactionRef?: string) => {
      if (!user) {
@@ -191,39 +190,24 @@ export default function CheckoutPage() {
     });
   }
 
+  const paystackConfig = {
+      reference: (new Date()).getTime().toString(),
+      email: form.getValues('email'),
+      amount: Math.round(total * 100), // Amount in kobo
+      publicKey: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || '',
+      currency: 'GHS',
+  };
+
+  const initializePayment = usePaystackPayment(paystackConfig);
+
 
   const onSubmit = async (data: CheckoutFormValues) => {
     setIsSubmitting(true);
     
     if (data.paymentMethod === 'card') {
-      // Configure Paystack
-       const newConfig = {
-            reference: (new Date()).getTime().toString(),
-            email: data.email,
-            amount: total * 100, // Amount in kobo
-            publicKey: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || '',
-            currency: 'GHS',
-        };
-       
-        // This is async, so we wait for it to be set
-        await new Promise<void>(resolve => {
-            setPaystackConfig(newConfig);
-            resolve();
-        });
-       
-    } else {
-      // For other payment methods, create order directly
-      createOrderInFirestore(data);
-    }
-  };
-  
-    // Effect to trigger Paystack payment after config is set
-  useEffect(() => {
-    if (paystackConfig) {
       initializePayment({
         onSuccess: (transaction) => {
-          // Pass form data and transaction ref to order creation
-          createOrderInFirestore(form.getValues() as CheckoutFormValues, transaction.reference);
+          createOrderInFirestore(data, transaction.reference);
         },
         onClose: () => {
           toast({
@@ -234,9 +218,11 @@ export default function CheckoutPage() {
           setIsSubmitting(false);
         },
       });
+    } else {
+      createOrderInFirestore(data);
     }
-  }, [paystackConfig]);
-
+  };
+  
 
   if (loading) {
     return (
