@@ -1,4 +1,3 @@
-
 /**
  * IMPORTANT: This line must be at the very top to ensure all environment variables are loaded before any other code runs.
  */
