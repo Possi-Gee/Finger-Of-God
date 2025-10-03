@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useCart } from '@/hooks/use-cart';
@@ -18,7 +18,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import Image from 'next/image';
 import { CreditCard, Truck, Smartphone, Store, MessageSquare, Loader2 } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Order } from '@/context/order-context';
 import { Textarea } from '@/components/ui/textarea';
@@ -52,21 +52,11 @@ const checkoutSchema = z.discriminatedUnion("deliveryMethod", [
         country: z.string().optional(),
     })
 ]).and(
-    z.discriminatedUnion("paymentMethod", [
-        z.object({
-            paymentMethod: z.literal('card'),
-             // Card fields are no longer required here as Paystack handles them
-            cardNumber: z.string().optional(),
-            expiryDate: z.string().optional(),
-            cvv: z.string().optional(),
-        }),
-        z.object({
-            paymentMethod: z.literal('on_delivery'),
-        }),
-    ])
-).and(z.object({
-  orderNotes: z.string().optional(),
-}));
+    z.object({
+        paymentMethod: z.enum(['card', 'on_delivery']),
+        orderNotes: z.string().optional(),
+    })
+);
 
 
 type CheckoutFormValues = z.infer<typeof checkoutSchema>;
@@ -79,15 +69,7 @@ export default function CheckoutPage() {
   const { items } = cartState;
   const { toast } = useToast();
   const router = useRouter();
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'card' | 'on_delivery'>('card');
-  const [deliveryMethod, setDeliveryMethod] = useState<'delivery' | 'pickup'>('delivery');
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-
-  const subtotal = items.reduce((sum, item) => sum + item.variant.price * item.quantity, 0);
-  const tax = subtotal * (settings.taxRate / 100);
-  const deliveryFee = deliveryMethod === 'delivery' && subtotal > 0 ? settings.shippingFee : 0;
-  const total = subtotal + tax + deliveryFee;
 
   const form = useForm<CheckoutFormValues>({
     resolver: zodResolver(checkoutSchema),
@@ -101,12 +83,17 @@ export default function CheckoutPage() {
       state: '',
       zip: '',
       country: 'USA',
-      cardNumber: '',
-      expiryDate: '',
-      cvv: '',
       orderNotes: '',
     }
   });
+
+  const deliveryMethod = form.watch('deliveryMethod');
+  const paymentMethod = form.watch('paymentMethod');
+
+  const subtotal = items.reduce((sum, item) => sum + item.variant.price * item.quantity, 0);
+  const tax = subtotal * (settings.taxRate / 100);
+  const deliveryFee = deliveryMethod === 'delivery' && subtotal > 0 ? settings.shippingFee : 0;
+  const total = subtotal + tax + deliveryFee;
 
    useEffect(() => {
     if (!loading && !user) {
@@ -123,9 +110,7 @@ export default function CheckoutPage() {
     }
   }, [user, loading, router, toast, form]);
   
-  
-
-  const createOrderInFirestore = (data: CheckoutFormValues, transactionRef?: string) => {
+  const createOrderInFirestore = useCallback((data: CheckoutFormValues, transactionRef?: string) => {
      if (!user) {
       toast({
         title: 'Please Login',
@@ -165,7 +150,6 @@ export default function CheckoutPage() {
       status: paymentMethod === 'card' ? 'Pending' : 'Pending', // All orders start as pending
       orderNotes: orderNotes,
       appName: "Jaytel Classic Store",
-      // Add transaction reference if available
       ...(transactionRef && { transactionRef }),
     };
 
@@ -188,20 +172,19 @@ export default function CheckoutPage() {
     }).finally(() => {
         setIsSubmitting(false);
     });
-  }
+  }, [user, items, subtotal, tax, deliveryFee, total, orderDispatch, cartDispatch, router, toast]);
 
   const paystackConfig = {
       reference: (new Date()).getTime().toString(),
       email: form.getValues('email'),
-      amount: Math.round(total * 100), // Amount in kobo
+      amount: Math.round(total * 100),
       publicKey: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || '',
       currency: 'GHS',
   };
 
   const initializePayment = usePaystackPayment(paystackConfig);
 
-
-  const onSubmit = async (data: CheckoutFormValues) => {
+  const onSubmit = useCallback(async (data: CheckoutFormValues) => {
     setIsSubmitting(true);
     
     if (data.paymentMethod === 'card') {
@@ -218,11 +201,17 @@ export default function CheckoutPage() {
           setIsSubmitting(false);
         },
       });
-    } else {
+    } else { // 'on_delivery'
       createOrderInFirestore(data);
     }
-  };
-  
+  }, [initializePayment, createOrderInFirestore, toast]);
+
+  const handlePaymentMethodChange = useCallback((value: 'card' | 'on_delivery') => {
+      form.setValue('paymentMethod', value, { shouldValidate: true });
+      if (value === 'card') {
+        form.handleSubmit(onSubmit)();
+      }
+  }, [form, onSubmit]);
 
   if (loading) {
     return (
@@ -243,12 +232,6 @@ export default function CheckoutPage() {
     );
   }
   
-  const getSubmitButtonText = () => {
-    if (isSubmitting) return "Processing...";
-    if (selectedPaymentMethod === 'card') return `Pay GH₵${total.toFixed(2)} Now`;
-    return 'Place Order';
-  };
-
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-6">Checkout</h1>
@@ -268,10 +251,7 @@ export default function CheckoutPage() {
                     <FormItem>
                        <FormControl>
                           <RadioGroup
-                            onValueChange={(value) => {
-                              field.onChange(value);
-                              setDeliveryMethod(value as any);
-                            }}
+                            onValueChange={field.onChange}
                             defaultValue={field.value}
                             className="grid grid-cols-1 md:grid-cols-2 gap-4"
                           >
@@ -422,48 +402,35 @@ export default function CheckoutPage() {
                 <CardDescription>Choose how you'd like to pay for your order.</CardDescription>
               </CardHeader>
               <CardContent>
-                <FormField
-                  control={form.control}
-                  name="paymentMethod"
-                  render={({ field }) => (
-                    <FormItem>
-                       <FormControl>
-                         <RadioGroup
-                          onValueChange={(value) => {
-                            field.onChange(value);
-                            setSelectedPaymentMethod(value as any);
-                          }}
-                          defaultValue={field.value}
-                          className="grid grid-cols-1 md:grid-cols-2 gap-4"
-                        >
-                          <FormItem>
-                            <Label className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer">
-                              <RadioGroupItem value="card" id="card" className="peer sr-only" />
-                              <CreditCard className="mb-3 h-6 w-6"/>
-                              Pay Now
-                            </Label>
-                          </FormItem>
-                          <FormItem>
-                            <Label className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer">
-                                <RadioGroupItem value="on_delivery" id="on_delivery" className="peer sr-only" />
-                                <Truck className="mb-3 h-6 w-6"/>
-                                Pay on Delivery
-                            </Label>
-                          </FormItem>
-                         </RadioGroup>
-                       </FormControl>
-                       <FormMessage className="pt-4" />
-                    </FormItem>
-                  )}
-                />
+                <RadioGroup
+                  value={paymentMethod}
+                  onValueChange={(value) => handlePaymentMethodChange(value as any)}
+                  className="grid grid-cols-1 md:grid-cols-2 gap-4"
+                >
+                  <FormItem>
+                    <Label className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer">
+                      <RadioGroupItem value="card" id="card" className="peer sr-only" />
+                      <CreditCard className="mb-3 h-6 w-6"/>
+                       Pay Now
+                    </Label>
+                  </FormItem>
+                  <FormItem>
+                    <Label className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer">
+                        <RadioGroupItem value="on_delivery" id="on_delivery" className="peer sr-only" />
+                        <Truck className="mb-3 h-6 w-6"/>
+                        Pay on Delivery
+                    </Label>
+                  </FormItem>
+                 </RadioGroup>
+                 <FormMessage className="pt-4" />
               </CardContent>
               <CardContent>
-                {selectedPaymentMethod === 'card' && (
+                {paymentMethod === 'card' && (
                   <div className="text-center text-muted-foreground bg-gray-50 p-4 rounded-md">
                      You will be redirected to Paystack to complete your payment securely.
                   </div>
                 )}
-                {selectedPaymentMethod === 'on_delivery' && (
+                {paymentMethod === 'on_delivery' && (
                   <div className="text-center text-muted-foreground bg-gray-50 p-4 rounded-md">
                     You will pay with cash or mobile money when your order is delivered.
                   </div>
@@ -542,10 +509,12 @@ export default function CheckoutPage() {
                 </div>
               </CardContent>
               <CardFooter>
-                 <Button type="submit" className="w-full" size="lg" disabled={items.length === 0 || isSubmitting}>
-                   {isSubmitting && <Loader2 className="mr-2 animate-spin"/>}
-                    {getSubmitButtonText()}
-                 </Button>
+                 {paymentMethod === 'on_delivery' && (
+                    <Button type="submit" className="w-full" size="lg" disabled={items.length === 0 || isSubmitting}>
+                      {isSubmitting && <Loader2 className="mr-2 animate-spin"/>}
+                        Place Order
+                    </Button>
+                 )}
               </CardFooter>
             </Card>
           </div>
