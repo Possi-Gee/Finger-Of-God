@@ -6,6 +6,7 @@ import { db } from '@/lib/firebase';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { errorEmitter } from '@/lib/firebase/error-emitter';
 import { FirestorePermissionError } from '@/lib/firebase/errors';
+import { Loader2 } from 'lucide-react';
 
 
 export interface Promotion {
