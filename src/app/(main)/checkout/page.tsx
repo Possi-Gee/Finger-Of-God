@@ -61,11 +61,6 @@ const checkoutSchema = z.discriminatedUnion("deliveryMethod", [
             cvv: z.string().optional(),
         }),
         z.object({
-            paymentMethod: z.literal('mobile_money'),
-            mobileMoneyProvider: z.enum(["mtn", "telecel"], { required_error: "Please select a provider" }),
-            mobileMoneyNumber: z.string().min(10, 'Please enter a valid phone number'),
-        }),
-        z.object({
             paymentMethod: z.literal('on_delivery'),
         }),
     ])
@@ -84,7 +79,7 @@ export default function CheckoutPage() {
   const { items } = cartState;
   const { toast } = useToast();
   const router = useRouter();
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'card' | 'mobile_money' | 'on_delivery'>('card');
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'card' | 'on_delivery'>('card');
   const [deliveryMethod, setDeliveryMethod] = useState<'delivery' | 'pickup'>('delivery');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [paystackConfig, setPaystackConfig] = useState<any | null>(null);
@@ -453,20 +448,13 @@ export default function CheckoutPage() {
                             setSelectedPaymentMethod(value as any);
                           }}
                           defaultValue={field.value}
-                          className="grid grid-cols-1 md:grid-cols-3 gap-4"
+                          className="grid grid-cols-1 md:grid-cols-2 gap-4"
                         >
                           <FormItem>
                             <Label className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer">
                               <RadioGroupItem value="card" id="card" className="peer sr-only" />
                               <CreditCard className="mb-3 h-6 w-6"/>
                               Pay with Paystack
-                            </Label>
-                          </FormItem>
-                          <FormItem>
-                            <Label className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer">
-                              <RadioGroupItem value="mobile_money" id="mobile_money" className="peer sr-only" />
-                              <Smartphone className="mb-3 h-6 w-6" />
-                              Mobile Money
                             </Label>
                           </FormItem>
                           <FormItem>
@@ -488,44 +476,6 @@ export default function CheckoutPage() {
                   <div className="text-center text-muted-foreground bg-gray-50 p-4 rounded-md">
                      You will be redirected to Paystack to complete your payment securely.
                   </div>
-                )}
-                 {selectedPaymentMethod === 'mobile_money' && (
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <FormField
-                        control={form.control}
-                        name="mobileMoneyProvider"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Provider</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select a provider" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="mtn">MTN Momo</SelectItem>
-                                <SelectItem value="telecel">Telecel Cash</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                          control={form.control}
-                          name="mobileMoneyNumber"
-                          render={({ field }) => (
-                              <FormItem>
-                                  <FormLabel>Mobile Number</FormLabel>
-                                  <FormControl>
-                                      <Input placeholder="024 123 4567" {...field} />
-                                  </FormControl>
-                                  <FormMessage />
-                              </FormItem>
-                          )}
-                      />
-                   </div>
                 )}
                 {selectedPaymentMethod === 'on_delivery' && (
                   <div className="text-center text-muted-foreground bg-gray-50 p-4 rounded-md">
