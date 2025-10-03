@@ -109,7 +109,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     try {
-      const storedCart = localStorage.getItem('shopwave_cart');
+      const storedCart = localStorage.getItem('jaytel_cart');
       if (storedCart) {
         dispatch({ type: 'SET_STATE', payload: JSON.parse(storedCart) });
       }
@@ -123,7 +123,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     if (isHydrated) {
         try {
-            localStorage.setItem('shopwave_cart', JSON.stringify(state));
+            localStorage.setItem('jaytel_cart', JSON.stringify(state));
         } catch (error) {
             console.error("Failed to save cart to localStorage", error);
         }

@@ -39,8 +39,8 @@ const initialState: HomepageState = {
     { 
       id: 1, 
       type: 'welcome', 
-      content: 'Welcome to ShopWave!', 
-      title: 'Welcome to ShopWave!', 
+      content: 'Welcome to Jaytel Classic Store!', 
+      title: 'Welcome to Jaytel Classic Store!', 
       subtitle: 'Your one-stop shop for everything you need.',
       buttonText: 'Shop Now',
       buttonLink: '/'

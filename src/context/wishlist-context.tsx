@@ -57,7 +57,7 @@ export const WishlistProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     try {
-      const storedWishlist = localStorage.getItem('shopwave_wishlist');
+      const storedWishlist = localStorage.getItem('jaytel_wishlist');
       if (storedWishlist) {
         dispatch({ type: 'SET_STATE', payload: JSON.parse(storedWishlist) });
       }
@@ -71,7 +71,7 @@ export const WishlistProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     if (isHydrated) {
         try {
-            localStorage.setItem('shopwave_wishlist', JSON.stringify(state));
+            localStorage.setItem('jaytel_wishlist', JSON.stringify(state));
         } catch (error) {
             console.error("Failed to save wishlist to localStorage", error);
         }

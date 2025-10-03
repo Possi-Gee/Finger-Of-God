@@ -11,7 +11,7 @@ admin.initializeApp();
 
 // These imports must come AFTER dotenv.config() is called.
 // CORRECTED PATH: Point to the compiled JS output in the `dist` directory.
-const { sendOrderUpdateEmail } = require('./ai/flows/send-order-update-email');
+const { sendOrderUpdateEmail } = require('./dist/ai/flows/send-order-update-email');
 
 /**
  * Sends emails when a new order is created by invoking a Genkit flow.
@@ -21,7 +21,7 @@ exports.onOrderCreate = functions.firestore
     .document("orders/{orderId}")
     .onCreate(async (snap, context) => {
         const order = snap.data();
-        const appName = order.appName || "ShopWave";
+        const appName = order.appName || "Jaytel Classic Store";
         
         functions.logger.log(`New order #${order.id} received. Invoking email flow...`);
 

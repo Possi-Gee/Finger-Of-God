@@ -51,7 +51,7 @@ type SiteSettingsAction =
 
 
 const initialState: SiteSettingsState = {
-  appName: 'ShopWave',
+  appName: 'Jaytel Classic Store',
   logoUrl: '',
   fromEmail: 'onboarding@resend.dev',
   taxRate: 8,

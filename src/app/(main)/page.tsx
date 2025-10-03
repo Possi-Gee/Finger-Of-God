@@ -52,7 +52,7 @@ export default function HomePage() {
       <FlashSales />
       <div className="container mx-auto px-4 py-8">
         <header className="text-center mb-12">
-          <h1 className="text-4xl font-bold tracking-tight text-primary lg:text-5xl">Welcome to ShopWave</h1>
+          <h1 className="text-4xl font-bold tracking-tight text-primary lg:text-5xl">Welcome to Jaytel Classic Store</h1>
           <p className="mt-4 text-lg text-muted-foreground">Find everything you need, and more.</p>
         </header>
 

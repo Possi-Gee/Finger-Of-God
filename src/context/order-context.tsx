@@ -9,7 +9,7 @@ import { useAuth } from '@/hooks/use-auth';
 
 // This must match the admin email list in firestore.rules
 const ADMIN_EMAILS = [
-  "temahfingerofgod@gmail.com",
+  "admin@jaytelclassic.com",
 ];
 
 export type OrderStatus = 'Pending' | 'Shipped' | 'Delivered' | 'Cancelled';

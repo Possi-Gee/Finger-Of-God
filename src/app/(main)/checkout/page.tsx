@@ -167,7 +167,7 @@ export default function CheckoutPage() {
       deliveryMethod,
       status: 'Pending',
       orderNotes: orderNotes,
-      appName: settings.appName,
+      appName: "Jaytel Classic Store",
     };
 
     try {

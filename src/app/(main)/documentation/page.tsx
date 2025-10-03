@@ -27,7 +27,7 @@ export default function DocumentationPage() {
         const imgData = canvas.toDataURL('image/png');
         const pdf = new jsPDF('p', 'px', [canvas.width, canvas.height]);
         pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
-        pdf.save('Finger-Of-God-Technical-Documentation.pdf');
+        pdf.save('Jaytel-Classic-Store-Technical-Documentation.pdf');
     } catch(error) {
         console.error("Failed to generate PDF", error);
     } finally {
@@ -44,7 +44,7 @@ export default function DocumentationPage() {
                 <div className="flex justify-between items-start">
                     <div>
                         <CardTitle className="text-3xl font-bold flex items-center gap-2">
-                            <FileText /> Finger Of God Technical Documentation
+                            <FileText /> Jaytel Classic Store Technical Documentation
                         </CardTitle>
                         <CardDescription className="mt-2">
                             A comprehensive guide to the project's architecture, features, and usage.
@@ -62,7 +62,7 @@ export default function DocumentationPage() {
                  <section>
                     <h2 className="text-2xl font-semibold border-b pb-2 mb-4">1. Project Overview</h2>
                     <p className="text-muted-foreground">
-                        Finger Of God is a modern, full-stack e-commerce application built with Next.js and Firebase. It provides a complete shopping experience, including product browsing, a shopping cart, secure checkout, user authentication, and an admin dashboard for store management. The application is designed to be scalable, performant, and easily customizable, with AI-powered features to streamline administrative tasks.
+                        Jaytel Classic Store is a modern, full-stack e-commerce application built with Next.js and Firebase. It provides a complete shopping experience, including product browsing, a shopping cart, secure checkout, user authentication, and an admin dashboard for store management. The application is designed to be scalable, performant, and easily customizable, with AI-powered features to streamline administrative tasks.
                     </p>
                 </section>
 

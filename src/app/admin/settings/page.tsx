@@ -321,7 +321,7 @@ function AdminManagementCard() {
     if (!user) return;
     
     // Hardcoded check for the primary superadmin
-    if (user.email === 'temahfingerofgod@gmail.com') {
+    if (user.email === 'admin@jaytelclassic.com') {
         setCurrentUserRole('superadmin');
         return;
     }

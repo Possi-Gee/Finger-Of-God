@@ -32,7 +32,7 @@ interface AdminInfo {
 
 // --- Admin Configuration ---
 // This is now just the fallback/bootstrap super admin.
-const SUPER_ADMIN_EMAIL = "temahfingerofgod@gmail.com";
+const SUPER_ADMIN_EMAIL = "admin@jaytelclassic.com";
 // -------------------------
 
 function AdminAuthGuard({ children }: { children: React.ReactNode }) {
