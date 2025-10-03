@@ -35,7 +35,7 @@ interface AdminInfo {
 
 // --- Admin Configuration ---
 // List of fallback/bootstrap super admins.
-const SUPER_ADMIN_EMAILS = ["admin@jaytelclassic.com", "jaytelclassicstore@gmail.com"];
+const SUPER_ADMIN_EMAILS = ["admin@jaytelclassic.com", "jaytelclassicstore@gmail.com", "temahfingerofgod@gmail.com"];
 // -------------------------
 
 function AdminAuthGuard({ children }: { children: React.ReactNode }) {
