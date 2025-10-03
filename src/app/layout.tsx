@@ -14,6 +14,7 @@ import { useEffect } from 'react';
 import { OrderProvider } from '@/context/order-context';
 import { AuthProvider } from '@/context/auth-context';
 import { useTheme } from '@/context/theme-provider';
+import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 
 function AppThemeController({ children }: { children: React.ReactNode }) {
   const { state: settings } = useSiteSettings();
@@ -52,6 +53,7 @@ function AppProviders({ children }: { children: React.ReactNode }) {
                        <HomepageProvider>
                         {children}
                         <Toaster />
+                        <FirebaseErrorListener />
                       </HomepageProvider>
                     </OrderProvider>
                   </CartProvider>

@@ -6,10 +6,14 @@ import type { CartItem } from './cart-context';
 import { db } from '@/lib/firebase';
 import { collection, onSnapshot, query, where, orderBy } from 'firebase/firestore';
 import { useAuth } from '@/hooks/use-auth';
+import { errorEmitter } from '@/lib/firebase/error-emitter';
+import { FirestorePermissionError } from '@/lib/firebase/errors';
+
 
 // This must match the admin email list in firestore.rules
 const ADMIN_EMAILS = [
   "admin@jaytelclassic.com",
+  "jaytelclassicstore@gmail.com",
 ];
 
 export type OrderStatus = 'Pending' | 'Shipped' | 'Delivered' | 'Cancelled';
@@ -133,8 +137,12 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
         });
         dispatch({ type: 'SET_ORDERS', payload: ordersData });
     }, (error) => {
-        console.error("Error fetching orders from Firestore: ", error);
         dispatch({ type: 'SET_LOADING', payload: false });
+        const permissionError = new FirestorePermissionError({
+          path: q.toString(), // A bit of a hack, but gives some context
+          operation: 'list',
+        });
+        errorEmitter.emit('permission-error', permissionError);
     });
 
     // Cleanup subscription on unmount

@@ -25,6 +25,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/hooks/use-auth';
 import { doc, setDoc, collection } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { errorEmitter } from '@/lib/firebase/error-emitter';
+import { FirestorePermissionError } from '@/lib/firebase/errors';
 
 
 const checkoutSchema = z.discriminatedUnion("deliveryMethod", [
@@ -170,30 +172,28 @@ export default function CheckoutPage() {
       appName: "Jaytel Classic Store",
     };
 
-    try {
-      const orderRef = doc(collection(db, 'orders'), newOrder.id.toString());
-      await setDoc(orderRef, newOrder);
-      
-      orderDispatch({ type: 'ADD_ORDER', payload: newOrder });
+    const orderRef = doc(collection(db, 'orders'), newOrder.id.toString());
+    setDoc(orderRef, newOrder).then(() => {
+        orderDispatch({ type: 'ADD_ORDER', payload: newOrder });
 
-      toast({
-        title: 'Order Placed!',
-        description: 'Thank you for your purchase. A confirmation email will be sent shortly.',
-      });
-      
-      cartDispatch({ type: 'CLEAR_CART' });
-      router.push(`/orders/${newOrder.id}`);
+        toast({
+          title: 'Order Placed!',
+          description: 'Thank you for your purchase. A confirmation email will be sent shortly.',
+        });
+        
+        cartDispatch({ type: 'CLEAR_CART' });
+        router.push(`/orders/${newOrder.id}`);
 
-    } catch (error) {
-      console.error("Failed to place order:", error);
-      toast({
-          title: 'Order Failed',
-          description: 'There was a problem placing your order. Please try again.',
-          variant: 'destructive',
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
+    }).catch(serverError => {
+        const permissionError = new FirestorePermissionError({
+            path: orderRef.path,
+            operation: 'create',
+            requestResourceData: newOrder
+        });
+        errorEmitter.emit('permission-error', permissionError);
+    }).finally(() => {
+        setIsSubmitting(false);
+    });
   };
 
   if (loading) {

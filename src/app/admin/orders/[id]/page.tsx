@@ -19,6 +19,8 @@ import { db } from '@/lib/firebase';
 import { Loader2 } from 'lucide-react';
 import { useSiteSettings } from '@/hooks/use-site-settings';
 import { sendOrderUpdateEmail } from '@/ai/flows/send-order-update-email';
+import { errorEmitter } from '@/lib/firebase/error-emitter';
+import { FirestorePermissionError } from '@/lib/firebase/errors';
 
 
 const getStatusClass = (status: Order['status']) => {
@@ -64,10 +66,9 @@ export default function AdminOrderDetailPage() {
   const handleStatusChange = async (status: OrderStatus) => {
     if (order) {
         setIsUpdating(true);
-        try {
-            const orderRef = doc(db, 'orders', order.id.toString());
-            await updateDoc(orderRef, { status: status });
-
+        const orderRef = doc(db, 'orders', order.id.toString());
+        
+        updateDoc(orderRef, { status: status }).then(async () => {
             dispatch({ type: 'UPDATE_ORDER_STATUS', payload: { id: order.id, status } });
             
             toast({
@@ -100,18 +101,16 @@ export default function AdminOrderDetailPage() {
                     variant: 'destructive',
                 });
             }
-
-
-        } catch (error) {
-             toast({
-                title: 'Update Failed',
-                description: 'Could not update the order status in the database.',
-                variant: 'destructive',
+        }).catch(serverError => {
+            const permissionError = new FirestorePermissionError({
+                path: orderRef.path,
+                operation: 'update',
+                requestResourceData: { status: status }
             });
-             console.error("Failed to update order status: ", error);
-        } finally {
+            errorEmitter.emit('permission-error', permissionError);
+        }).finally(() => {
             setIsUpdating(false);
-        }
+        });
     }
   };
   

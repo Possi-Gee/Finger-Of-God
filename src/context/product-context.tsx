@@ -6,6 +6,9 @@ import { products as initialProducts } from '@/lib/products';
 import React, { createContext, useReducer, useEffect, type ReactNode, useState } from 'react';
 import { db } from '@/lib/firebase';
 import { collection, getDocs, onSnapshot } from 'firebase/firestore';
+import { errorEmitter } from '@/lib/firebase/error-emitter';
+import { FirestorePermissionError } from '@/lib/firebase/errors';
+
 
 type ProductState = {
   products: Product[];
@@ -81,8 +84,13 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
         });
         dispatch({ type: 'SET_PRODUCTS', payload: products });
     }, (error) => {
-        console.error("Error fetching products from Firestore: ", error);
         dispatch({ type: 'SET_LOADING', payload: false });
+        // Instead of just logging, we emit a structured error.
+        const permissionError = new FirestorePermissionError({
+          path: productsCol.path,
+          operation: 'list',
+        });
+        errorEmitter.emit('permission-error', permissionError);
     });
 
     // Cleanup subscription on unmount

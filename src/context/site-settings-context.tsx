@@ -4,6 +4,9 @@
 import React, { createContext, useReducer, useEffect, type ReactNode, useState } from 'react';
 import { db } from '@/lib/firebase';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
+import { errorEmitter } from '@/lib/firebase/error-emitter';
+import { FirestorePermissionError } from '@/lib/firebase/errors';
+
 
 export type Link = { id: number; label: string; url: string };
 export type FooterColumn = { id: number; title: string; links: Link[] };
@@ -147,9 +150,12 @@ export const SiteSettingsProvider = ({ children }: { children: ReactNode }) => {
             dispatch({ type: 'SET_STATE', payload: {} });
         }
     }, (error) => {
-        console.error("Error fetching site settings:", error);
-        // On error, use initial state
-        dispatch({ type: 'SET_STATE', payload: {} });
+        dispatch({ type: 'SET_STATE', payload: {} }); // Stop loading on error
+        const permissionError = new FirestorePermissionError({
+          path: settingsDocRef.path,
+          operation: 'get',
+        });
+        errorEmitter.emit('permission-error', permissionError);
     });
 
     return () => unsubscribe();
@@ -170,7 +176,7 @@ export const SiteSettingsProvider = ({ children }: { children: ReactNode }) => {
 
   return (
     <SiteSettingsContext.Provider value={{ state, dispatch, updateSettings }}>
-      {!state.loading ? children : null}
+      {children}
     </SiteSettingsContext.Provider>
   );
 };

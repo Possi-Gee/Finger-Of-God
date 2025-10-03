@@ -4,6 +4,9 @@
 import React, { createContext, useReducer, useEffect, type ReactNode } from 'react';
 import { db } from '@/lib/firebase';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
+import { errorEmitter } from '@/lib/firebase/error-emitter';
+import { FirestorePermissionError } from '@/lib/firebase/errors';
+
 
 export interface Promotion {
   id: number;
@@ -87,9 +90,12 @@ export const HomepageProvider = ({ children }: { children: ReactNode }) => {
             dispatch({ type: 'SET_STATE', payload: {} });
         }
     }, (error) => {
-        console.error("Error fetching homepage settings:", error);
-        // On error, use initial state
-        dispatch({ type: 'SET_STATE', payload: {} });
+        dispatch({ type: 'SET_STATE', payload: {} }); // Stop loading on error
+        const permissionError = new FirestorePermissionError({
+          path: homepageDocRef.path,
+          operation: 'get',
+        });
+        errorEmitter.emit('permission-error', permissionError);
     });
 
     return () => unsubscribe();
@@ -106,7 +112,7 @@ export const HomepageProvider = ({ children }: { children: ReactNode }) => {
 
   return (
     <HomepageContext.Provider value={{ state, dispatch, updateHomepage }}>
-      {!state.loading ? children : null}
+      {!state.loading ? children : <div className="flex h-screen items-center justify-center"><Loader2 className="h-12 w-12 animate-spin" /></div>}
     </HomepageContext.Provider>
   );
 };

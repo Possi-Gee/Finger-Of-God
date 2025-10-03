@@ -16,6 +16,9 @@ import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { sendOrderUpdateEmail } from '@/ai/flows/send-order-update-email';
 import { useSiteSettings } from '@/hooks/use-site-settings';
+import { errorEmitter } from '@/lib/firebase/error-emitter';
+import { FirestorePermissionError } from '@/lib/firebase/errors';
+
 
 const getStatusClass = (status: Order['status']) => {
   switch (status) {
@@ -37,10 +40,8 @@ export default function AdminOrdersPage() {
   const { state: siteSettings } = useSiteSettings();
 
   const handleStatusChange = async (order: Order, status: OrderStatus) => {
-    try {
-        const orderRef = doc(db, 'orders', order.id.toString());
-        await updateDoc(orderRef, { status: status });
-
+    const orderRef = doc(db, 'orders', order.id.toString());
+    updateDoc(orderRef, { status: status }).then(async () => {
         dispatch({ type: 'UPDATE_ORDER_STATUS', payload: { id: order.id, status } });
 
         toast({
@@ -73,15 +74,14 @@ export default function AdminOrdersPage() {
                 variant: 'destructive',
             });
         }
-        
-    } catch(e) {
-        toast({
-            title: 'Update Failed',
-            description: `Could not update order #${order.id}. Please check the logs.`,
-            variant: 'destructive',
+    }).catch(serverError => {
+         const permissionError = new FirestorePermissionError({
+            path: orderRef.path,
+            operation: 'update',
+            requestResourceData: { status: status }
         });
-        console.error("Failed to update status from list view:", e);
-    }
+        errorEmitter.emit('permission-error', permissionError);
+    });
   };
   
   const handleViewOrder = (orderId: string) => {

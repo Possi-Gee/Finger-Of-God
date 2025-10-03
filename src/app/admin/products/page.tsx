@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
@@ -58,6 +57,9 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { MoreHorizontal } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { CameraCapture } from '@/components/camera-capture';
+import { errorEmitter } from '@/lib/firebase/error-emitter';
+import { FirestorePermissionError } from '@/lib/firebase/errors';
+
 
 // Helper function to generate unique IDs
 const generateUniqueId = () => crypto.randomUUID();
@@ -234,42 +236,34 @@ export default function AdminProductsPage() {
 
 
   const onSubmit = async (data: ProductFormValues) => {
+    const isEditing = !!editingProduct;
     const productData = {
       ...data,
       variants: data.variants.map(v => ({...v, id: v.id || generateUniqueId()}))
     }
 
-    if (editingProduct) {
-      const updatedProduct: Product = {
-        ...editingProduct,
-        ...productData,
-      };
-      
-      const productRef = doc(db, 'products', updatedProduct.id.toString());
-      await setDoc(productRef, updatedProduct, { merge: true });
-      
-      productDispatch({ type: 'UPDATE_PRODUCT', payload: updatedProduct });
-      
-      toast({
-        title: 'Product Updated',
-        description: `${data.name} has been successfully updated.`,
-      });
+    const finalProduct: Product = {
+      id: editingProduct?.id || generateUniqueId(),
+      ...productData,
+      dataAiHint: `${data.category.toLowerCase()} product`
+    };
 
-    } else {
-      const newProduct: Product = {
-        id: generateUniqueId(),
-        ...productData,
-        dataAiHint: `${data.category.toLowerCase()} product`
-      };
-      
-      const productRef = doc(db, 'products', newProduct.id.toString());
-      await setDoc(productRef, newProduct);
-      
-      toast({
-        title: 'Product Added',
-        description: `${data.name} has been successfully added.`,
-      });
-    }
+    const productRef = doc(db, 'products', finalProduct.id.toString());
+    
+    setDoc(productRef, finalProduct, { merge: true }).catch(serverError => {
+        const permissionError = new FirestorePermissionError({
+            path: productRef.path,
+            operation: isEditing ? 'update' : 'create',
+            requestResourceData: finalProduct
+        });
+        errorEmitter.emit('permission-error', permissionError);
+    });
+
+    toast({
+      title: isEditing ? 'Product Updated' : 'Product Added',
+      description: `${finalProduct.name} has been successfully saved.`,
+    });
+
     setIsDialogOpen(false);
   };
   
@@ -290,13 +284,20 @@ export default function AdminProductsPage() {
 
   const confirmDelete = async () => {
     if (productToDelete) {
-      await deleteDoc(doc(db, "products", productToDelete.id.toString()));
-      productDispatch({ type: 'DELETE_PRODUCT', payload: { id: productToDelete.id } });
-      toast({
-        title: 'Product Deleted',
-        description: `${productToDelete.name} has been deleted.`,
-        variant: 'destructive',
-      });
+        const productRef = doc(db, "products", productToDelete.id.toString());
+        deleteDoc(productRef).catch(serverError => {
+            const permissionError = new FirestorePermissionError({
+                path: productRef.path,
+                operation: 'delete',
+            });
+            errorEmitter.emit('permission-error', permissionError);
+        });
+
+        toast({
+            title: 'Product Deletion Initiated',
+            description: `Attempting to delete ${productToDelete.name}.`,
+            variant: 'destructive',
+        });
     }
     setIsDeleteConfirmOpen(false);
     setProductToDelete(null);

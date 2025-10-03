@@ -19,8 +19,11 @@ import { AdminBottomNavbar } from '@/components/admin-bottom-navbar';
 import { useAuth } from '@/hooks/use-auth';
 import { useEffect, useState } from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { errorEmitter } from '@/lib/firebase/error-emitter';
+import { FirestorePermissionError } from '@/lib/firebase/errors';
+
 
 type AdminRole = 'admin' | 'superadmin';
 
@@ -84,8 +87,16 @@ function AdminAuthGuard({ children }: { children: React.ReactNode }) {
             } else {
                 setAdminInfo(null);
             }
-        } catch (error) {
-            console.error("Error checking admin status:", error);
+        } catch (error: any) {
+             if (error.code === 'permission-denied') {
+                const permissionError = new FirestorePermissionError({
+                    path: adminDocRef.path,
+                    operation: 'get',
+                });
+                errorEmitter.emit('permission-error', permissionError);
+            } else {
+                console.error("Error checking admin status:", error);
+            }
             setAdminInfo(null);
         } finally {
             setIsCheckingAdmin(false);
