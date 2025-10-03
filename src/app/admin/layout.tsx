@@ -31,8 +31,8 @@ interface AdminInfo {
 }
 
 // --- Admin Configuration ---
-// This is now just the fallback/bootstrap super admin.
-const SUPER_ADMIN_EMAIL = "admin@jaytelclassic.com";
+// List of fallback/bootstrap super admins.
+const SUPER_ADMIN_EMAILS = ["admin@jaytelclassic.com", "jaytelclassicstore@gmail.com"];
 // -------------------------
 
 function AdminAuthGuard({ children }: { children: React.ReactNode }) {
@@ -51,7 +51,7 @@ function AdminAuthGuard({ children }: { children: React.ReactNode }) {
 
     const checkAdminStatus = async () => {
         setIsCheckingAdmin(true);
-        if (user.email === SUPER_ADMIN_EMAIL) {
+        if (user.email && SUPER_ADMIN_EMAILS.includes(user.email)) {
             setAdminInfo({ email: user.email, role: 'superadmin' });
             setIsCheckingAdmin(false);
             return;
