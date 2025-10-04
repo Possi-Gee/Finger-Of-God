@@ -13,10 +13,9 @@ import {
     updateProfile,
     updatePassword,
     sendPasswordResetEmail,
-    getFunctions,
-    httpsCallable,
     type User 
 } from 'firebase/auth';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import { app } from '@/lib/firebase';
 import { useSiteSettings } from '@/hooks/use-site-settings';
 import { sendOrderUpdateEmail } from '@/ai/flows/send-order-update-email';
