@@ -38,6 +38,7 @@ const SendOrderUpdateEmailInputSchema = z.object({
   paymentMethod: z.string().optional().describe('The payment method for the order (e.g., "on_delivery").'),
   total: z.number().optional().describe('The total amount of the order.'),
   items: z.array(CartItemSchema).optional().describe('The items in the order.'),
+  resetLink: z.string().url().optional().describe('A password reset link.'),
 });
 export type SendOrderUpdateEmailInput = z.infer<typeof SendOrderUpdateEmailInputSchema>;
 
@@ -55,7 +56,7 @@ const getEmailContent = (
     recipient: 'customer' | 'admin',
     input: SendOrderUpdateEmailInput
 ) => {
-    const { deliveryMethod, paymentMethod, total, items } = input;
+    const { deliveryMethod, paymentMethod, total, items, resetLink } = input;
     let subject = `Your ${appName} Order #${orderId} has been updated`;
     let mainContent = `<p>Hi ${customerName},</p><p>There's an update on your order #${orderId}. The new status is: <strong>${status}</strong>.</p>`;
 
@@ -84,6 +85,15 @@ const getEmailContent = (
     ` : '';
 
     switch (status.toLowerCase()) {
+        case 'password reset':
+            subject = `Reset Your Password for ${appName}`;
+            mainContent = `
+                <h2>Password Reset Request</h2>
+                <p>Hi ${customerName},</p>
+                <p>We received a request to reset your password. Click the button below to choose a new one. This link will expire in 1 hour.</p>
+                <p>If you did not request this, you can safely ignore this email.</p>
+            `;
+            break;
         case 'confirmed':
              subject = `✅ Your ${appName} Order Confirmation #${orderId}`;
              mainContent = `
@@ -142,21 +152,29 @@ const getEmailContent = (
             break;
     }
     
-    // Append the order summary at the end
-    const finalHtml = `${mainContent}${itemsHtml}`;
+    // Append the order summary at the end for order-related emails
+    const finalHtml = status.toLowerCase() !== 'password reset' ? `${mainContent}${itemsHtml}` : mainContent;
 
-    return { subject, html: styleEmail(finalHtml, appName, orderId, recipient) };
+    return { subject, html: styleEmail(finalHtml, appName, orderId, recipient, status, resetLink) };
 };
 
-const styleEmail = (content: string, appName: string, orderId: string, recipient: 'customer' | 'admin') => {
+const styleEmail = (content: string, appName: string, orderId: string, recipient: 'customer' | 'admin', status: string, resetLink?: string) => {
     // Use environment variable for the base URL, with fallbacks for Vercel and local dev.
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:9002');
     
-    const buttonUrl = recipient === 'admin' 
-      ? `${baseUrl}/admin/orders/${orderId}`
-      : `${baseUrl}/orders/${orderId}`;
-      
-    const buttonText = recipient === 'customer' ? 'View Order in Store' : 'View in Admin Panel';
+    let buttonUrl = '#';
+    let buttonText = '';
+
+    if (status.toLowerCase() === 'password reset') {
+        buttonUrl = resetLink || '#';
+        buttonText = 'Reset Your Password';
+    } else if (recipient === 'admin') {
+        buttonUrl = `${baseUrl}/admin/orders/${orderId}`;
+        buttonText = 'View in Admin Panel';
+    } else {
+        buttonUrl = `${baseUrl}/orders/${orderId}`;
+        buttonText = 'View Order in Store';
+    }
 
     return `
       <!DOCTYPE html>
@@ -258,5 +276,3 @@ const sendOrderUpdateEmailFlow = ai.defineFlow(
     }
   }
 );
-
-    

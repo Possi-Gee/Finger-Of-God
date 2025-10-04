@@ -122,3 +122,24 @@ exports.onProductCreate = functions.firestore
       return null;
     }
   });
+
+
+/**
+ * Generates a password reset link.
+ * This is a callable function that can be triggered from the client-side.
+ */
+exports.generatePasswordResetLink = functions.https.onCall(async (data, context) => {
+    const email = data.email;
+    if (!email) {
+        throw new functions.https.HttpsError('invalid-argument', 'The function must be called with one argument "email".');
+    }
+
+    try {
+        const link = await admin.auth().generatePasswordResetLink(email);
+        return { link: link };
+    } catch (error) {
+        functions.logger.error('Error generating password reset link:', error);
+        // It's better to throw a generic error to the client for security reasons
+        throw new functions.https.HttpsError('internal', 'An error occurred while generating the password reset link.');
+    }
+});

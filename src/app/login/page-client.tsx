@@ -57,7 +57,7 @@ const AppleIcon = (props: React.SVGProps<SVGSVGElement>) => (
 
 export function LoginPageClient() {
   const { state: settings } = useSiteSettings();
-  const { signup, login, loginWithGoogle, sendPasswordReset } = useAuth();
+  const { signup, login, loginWithGoogle, sendCustomPasswordResetEmail } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
@@ -118,14 +118,17 @@ export function LoginPageClient() {
     setIsResettingPassword(true);
     setError(null);
     try {
-        await sendPasswordReset(resetEmail);
-        toast({
-            title: 'Password Reset Email Sent',
-            description: 'Check your inbox for a link to reset your password.',
-        });
-        setResetEmail('');
-        // Close the dialog by finding and clicking the cancel button.
-        document.getElementById('reset-password-cancel')?.click();
+        const result = await sendCustomPasswordResetEmail(resetEmail);
+        if (result.success) {
+            toast({
+                title: 'Password Reset Email Sent',
+                description: 'Check your inbox for a link to reset your password.',
+            });
+            setResetEmail('');
+             document.getElementById('reset-password-cancel')?.click();
+        } else {
+            throw new Error(result.message || 'Failed to send reset email.');
+        }
     } catch (e: any) {
         setError(e.message);
     } finally {

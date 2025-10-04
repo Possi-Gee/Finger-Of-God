@@ -13,12 +13,16 @@ import {
     updateProfile,
     updatePassword,
     sendPasswordResetEmail,
+    getFunctions,
+    httpsCallable,
     type User 
 } from 'firebase/auth';
 import { app } from '@/lib/firebase';
 import { useSiteSettings } from '@/hooks/use-site-settings';
+import { sendOrderUpdateEmail } from '@/ai/flows/send-order-update-email';
 
 const auth = getAuth(app);
+const functions = getFunctions(app);
 const googleProvider = new GoogleAuthProvider();
 
 interface AuthContextType {
@@ -30,7 +34,7 @@ interface AuthContextType {
   loginWithGoogle: () => Promise<User | null>;
   updateUserProfile: (name: string) => Promise<void>;
   updateUserPassword: (newPassword: string) => Promise<void>;
-  sendPasswordReset: (email: string) => Promise<void>;
+  sendCustomPasswordResetEmail: (email: string) => Promise<{ success: boolean; message: string }>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -134,19 +138,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const sendPasswordReset = async (email: string) => {
+  const sendCustomPasswordResetEmail = async (email: string): Promise<{ success: boolean; message: string }> => {
     try {
-        await sendPasswordResetEmail(auth, email);
+        const generateLink = httpsCallable(functions, 'generatePasswordResetLink');
+        const result = await generateLink({ email });
+        const { link } = result.data as { link: string };
+
+        const emailResult = await sendOrderUpdateEmail({
+            status: 'Password Reset',
+            recipientEmail: email,
+            customerName: 'Valued Customer',
+            appName: settings.appName,
+            resetLink: link,
+            orderId: ''
+        });
+
+        return emailResult;
     } catch (error: any) {
         console.error("Password reset error:", error);
-        if (error.code === 'auth/user-not-found') {
+        if (error.code === 'auth/user-not-found' || error.details?.code === 'not-found') {
             throw new Error('No account found with that email address.');
         }
         throw new Error(error.message || 'Failed to send password reset email.');
     }
   };
 
-  const value = { user, loading, signup, login, logout, loginWithGoogle, updateUserProfile, updateUserPassword, sendPasswordReset };
+
+  const value = { user, loading, signup, login, logout, loginWithGoogle, updateUserProfile, updateUserPassword, sendCustomPasswordResetEmail };
 
   return (
     <AuthContext.Provider value={value}>
