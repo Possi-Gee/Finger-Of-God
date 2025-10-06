@@ -10,7 +10,7 @@ admin.initializeApp();
 
 // These imports must come AFTER dotenv.config() is called.
 // CORRECTED PATH: Point to the compiled JS output in the `dist` directory.
-const { sendOrderUpdateEmail } = require('./dist/ai/flows/send-order-update-email');
+const { sendOrderUpdateEmail } = require('./dist/functions/src/ai/flows/send-order-update-email.js');
 
 /**
  * Sends emails when a new order is created by invoking a Genkit flow.
