@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useForm, type SubmitHandler } from 'react-hook-form';
@@ -11,6 +12,9 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Mail, MapPin, Phone } from 'lucide-react';
 import { useSiteSettings } from '@/hooks/use-site-settings';
+import { sendContactFormEmail } from '@/ai/flows/send-contact-form-email';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useState } from 'react';
 
 const contactSchema = z.object({
   name: z.string().min(2, 'Name is required'),
@@ -24,21 +28,36 @@ type ContactFormValues = z.infer<typeof contactSchema>;
 export default function ContactPage() {
   const { toast } = useToast();
   const { state: settings } = useSiteSettings();
+  const [error, setError] = useState<string | null>(null);
+
   const form = useForm<ContactFormValues>({
     resolver: zodResolver(contactSchema),
     defaultValues: { name: '', email: '', subject: '', message: '' },
   });
 
   const onSubmit: SubmitHandler<ContactFormValues> = async (data) => {
-    // Simulate sending the message
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    console.log(data);
+    setError(null);
+    try {
+      const result = await sendContactFormEmail({
+        fromName: data.name,
+        fromEmail: data.email,
+        subject: data.subject,
+        message: data.message,
+        appName: settings.appName,
+      });
 
-    toast({
-      title: 'Message Sent!',
-      description: 'Thank you for contacting us. We will get back to you shortly.',
-    });
-    form.reset();
+      if (result.success) {
+        toast({
+          title: 'Message Sent!',
+          description: 'Thank you for contacting us. We will get back to you shortly.',
+        });
+        form.reset();
+      } else {
+        throw new Error(result.message);
+      }
+    } catch (e: any) {
+      setError(e.message || 'An unexpected error occurred. Please try again.');
+    }
   };
 
   return (
@@ -83,6 +102,11 @@ export default function ContactPage() {
                       <FormMessage />
                     </FormItem>
                   )}/>
+                  {error && (
+                    <Alert variant="destructive">
+                      <AlertDescription>{error}</AlertDescription>
+                    </Alert>
+                  )}
                   <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
                     {form.formState.isSubmitting && <Loader2 className="mr-2 animate-spin" />}
                     Send Message
