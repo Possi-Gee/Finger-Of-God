@@ -29,7 +29,7 @@ const CartItemSchema = z.object({
 });
 
 const SendOrderUpdateEmailInputSchema = z.object({
-  orderId: z.string().describe('The ID of the order.'),
+  orderId: z.string().optional().describe('The ID of the order.'),
   status: z.string().describe('The new status of the order. Can be custom for different email types (e.g., "Confirmed").'),
   recipientEmail: z.string().email().describe('The email address of the recipient (customer or admin).'),
   customerName: z.string().describe('The name of the customer.'),
@@ -50,7 +50,7 @@ export type SendOrderUpdateEmailOutput = z.infer<typeof SendOrderUpdateEmailOutp
 
 const getEmailContent = (
     status: string, 
-    orderId: string, 
+    orderId: string | undefined, 
     customerName: string, 
     appName: string, 
     recipient: 'customer' | 'admin',
@@ -158,7 +158,7 @@ const getEmailContent = (
     return { subject, html: styleEmail(finalHtml, appName, orderId, recipient, status, resetLink) };
 };
 
-const styleEmail = (content: string, appName: string, orderId: string, recipient: 'customer' | 'admin', status: string, resetLink?: string) => {
+const styleEmail = (content: string, appName: string, orderId: string | undefined, recipient: 'customer' | 'admin', status: string, resetLink?: string) => {
     // Use environment variable for the base URL, with fallbacks for Vercel and local dev.
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:9002');
     
