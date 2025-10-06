@@ -44,7 +44,6 @@ const SendOrderUpdateEmailInputSchema = z.object({
   paymentMethod: z.string().optional().describe('The payment method for the order (e.g., "on_delivery").'),
   total: z.number().optional().describe('The total amount of the order.'),
   items: z.array(CartItemSchema).optional().describe('The items in the order.'),
-  resetLink: z.string().url().optional().describe('A password reset link (DEPRECATED).'),
 });
 export type SendOrderUpdateEmailInput = z.infer<typeof SendOrderUpdateEmailInputSchema>;
 
@@ -168,10 +167,10 @@ const styleEmail = (content: string, appName: string, orderId: string | undefine
     if (status.toLowerCase() === 'password reset') {
         buttonUrl = resetLink || '#';
         buttonText = 'Reset Your Password';
-    } else if (recipient === 'admin') {
+    } else if (recipient === 'admin' && orderId) {
         buttonUrl = `${baseUrl}/admin/orders/${orderId}`;
         buttonText = 'View in Admin Panel';
-    } else {
+    } else if (orderId) {
         buttonUrl = `${baseUrl}/orders/${orderId}`;
         buttonText = 'View Order in Store';
     }
@@ -247,16 +246,15 @@ const sendOrderUpdateEmailFlow = ai.defineFlow(
     let resetLink: string | undefined = undefined;
     if (status.toLowerCase() === 'password reset') {
         try {
-            // Define action code settings to redirect user back to the app
             const actionCodeSettings = {
-                url: `${NEXT_PUBLIC_APP_URL}/login`,
+                url: `${NEXT_PUBLIC_APP_URL || 'http://localhost:9002'}/login`,
                 handleCodeInApp: true,
             };
             resetLink = await admin.auth().generatePasswordResetLink(recipientEmail, actionCodeSettings);
         } catch (error: any) {
             console.error('Failed to generate password reset link:', error);
              if (error.code === 'auth/user-not-found') {
-                return { success: false, message: 'No account found with that email address.' };
+                return { success: true, message: 'If an account exists for this email, a reset link has been sent.' };
             }
             return { success: false, message: `Failed to generate reset link: ${error.message}` };
         }
@@ -287,7 +285,7 @@ const sendOrderUpdateEmailFlow = ai.defineFlow(
       await transporter.sendMail(mailOptions);
       console.log(`Email sent successfully to ${recipientEmail}`);
       const successMessage = status.toLowerCase() === 'password reset'
-        ? 'Password reset email sent successfully.'
+        ? 'If an account exists for this email, a reset link has been sent.'
         : `Update email sent to ${recipientEmail}.`;
       return { success: true, message: successMessage };
     } catch (error: any) {

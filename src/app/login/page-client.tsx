@@ -20,6 +20,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { sendOrderUpdateEmail } from '@/ai/flows/send-order-update-email';
 
 
 const loginSchema = z.object({
@@ -57,7 +58,7 @@ const AppleIcon = (props: React.SVGProps<SVGSVGElement>) => (
 
 export function LoginPageClient() {
   const { state: settings } = useSiteSettings();
-  const { signup, login, loginWithGoogle, sendCustomPasswordResetEmail } = useAuth();
+  const { signup, login, loginWithGoogle } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
@@ -118,16 +119,23 @@ export function LoginPageClient() {
     setIsResettingPassword(true);
     setError(null);
     try {
-        const result = await sendCustomPasswordResetEmail(resetEmail);
+        const result = await sendOrderUpdateEmail({
+            status: 'Password Reset',
+            recipientEmail: resetEmail,
+            customerName: 'Valued Customer',
+            appName: settings.appName,
+        });
+
         if (result.success) {
             toast({
                 title: 'Password Reset Email Sent',
-                description: 'Check your inbox for a link to reset your password.',
+                description: result.message,
             });
             setResetEmail('');
-             document.getElementById('reset-password-cancel')?.click();
+            // Programmatically "click" the cancel button to close the dialog
+            document.getElementById('reset-password-cancel')?.click();
         } else {
-            throw new Error(result.message || 'Failed to send reset email.');
+            throw new Error(result.message);
         }
     } catch (e: any) {
         setError(e.message);
@@ -269,3 +277,5 @@ export function LoginPageClient() {
     </div>
   );
 }
+
+    

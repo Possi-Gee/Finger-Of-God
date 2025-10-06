@@ -14,13 +14,9 @@ import {
     updatePassword,
     type User 
 } from 'firebase/auth';
-import { getFunctions } from 'firebase/functions';
 import { app } from '@/lib/firebase';
-import { useSiteSettings } from '@/hooks/use-site-settings';
-import { sendOrderUpdateEmail } from '@/ai/flows/send-order-update-email';
 
 const auth = getAuth(app);
-const functions = getFunctions(app);
 const googleProvider = new GoogleAuthProvider();
 
 interface AuthContextType {
@@ -32,7 +28,6 @@ interface AuthContextType {
   loginWithGoogle: () => Promise<User | null>;
   updateUserProfile: (name: string) => Promise<void>;
   updateUserPassword: (newPassword: string) => Promise<void>;
-  sendCustomPasswordResetEmail: (email: string) => Promise<{ success: boolean; message: string }>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -40,8 +35,6 @@ export const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const { state: settings } = useSiteSettings();
-
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -134,29 +127,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const sendCustomPasswordResetEmail = async (email: string): Promise<{ success: boolean; message: string }> => {
-    try {
-        // The logic is now entirely server-side in the Genkit flow.
-        const emailResult = await sendOrderUpdateEmail({
-            status: 'Password Reset',
-            recipientEmail: email,
-            customerName: 'Valued Customer',
-            appName: settings.appName,
-        });
-
-        if (!emailResult.success) {
-            throw new Error(emailResult.message);
-        }
-        return emailResult;
-
-    } catch (error: any) {
-        console.error("Password reset error:", error);
-        throw new Error(error.message || 'Failed to send password reset email.');
-    }
-  };
-
-
-  const value = { user, loading, signup, login, logout, loginWithGoogle, updateUserProfile, updateUserPassword, sendCustomPasswordResetEmail };
+  const value = { user, loading, signup, login, logout, loginWithGoogle, updateUserProfile, updateUserPassword };
 
   return (
     <AuthContext.Provider value={value}>
@@ -164,3 +135,5 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     </AuthContext.Provider>
   );
 };
+
+    
