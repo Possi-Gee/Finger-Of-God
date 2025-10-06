@@ -175,6 +175,8 @@ const styleEmail = (content: string, appName: string, orderId: string | undefine
         buttonUrl = `${baseUrl}/orders/${orderId}`;
         buttonText = 'View Order in Store';
     }
+    
+    const showButton = buttonText && buttonUrl !== '#';
 
     return `
       <!DOCTYPE html>
@@ -201,7 +203,7 @@ const styleEmail = (content: string, appName: string, orderId: string | undefine
               </div>
               <div class="content">
                 ${content}
-                ${buttonText ? `<div class="button-container"><a href="${buttonUrl}" class="button">${buttonText}</a></div>` : ''}
+                ${showButton ? `<div class="button-container"><a href="${buttonUrl}" class="button">${buttonText}</a></div>` : ''}
               </div>
               <div class="footer">
                   <p>Thank you for choosing ${appName}!</p>
