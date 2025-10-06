@@ -234,7 +234,8 @@ const sendOrderUpdateEmailFlow = ai.defineFlow(
         EMAIL_PORT,
         EMAIL_USER,
         EMAIL_PASS,
-        ADMIN_EMAIL
+        ADMIN_EMAIL,
+        NEXT_PUBLIC_APP_URL,
     } = process.env;
 
     if (!EMAIL_HOST || !EMAIL_PORT || !EMAIL_USER || !EMAIL_PASS) {
@@ -246,7 +247,12 @@ const sendOrderUpdateEmailFlow = ai.defineFlow(
     let resetLink: string | undefined = undefined;
     if (status.toLowerCase() === 'password reset') {
         try {
-            resetLink = await admin.auth().generatePasswordResetLink(recipientEmail);
+            // Define action code settings to redirect user back to the app
+            const actionCodeSettings = {
+                url: `${NEXT_PUBLIC_APP_URL}/login`,
+                handleCodeInApp: true,
+            };
+            resetLink = await admin.auth().generatePasswordResetLink(recipientEmail, actionCodeSettings);
         } catch (error: any) {
             console.error('Failed to generate password reset link:', error);
              if (error.code === 'auth/user-not-found') {
@@ -290,3 +296,5 @@ const sendOrderUpdateEmailFlow = ai.defineFlow(
     }
   }
 );
+
+    
