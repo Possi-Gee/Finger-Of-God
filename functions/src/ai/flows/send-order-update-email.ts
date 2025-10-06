@@ -161,11 +161,11 @@ const getEmailContent = (
 const styleEmail = (content: string, appName: string, orderId: string | undefined, recipient: 'customer' | 'admin', status: string, resetLink?: string) => {
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:9002');
     
-    let buttonUrl = '#';
-    let buttonText = '';
+    let buttonUrl: string | undefined;
+    let buttonText: string | undefined;
 
-    if (status.toLowerCase() === 'password reset') {
-        buttonUrl = resetLink || '#';
+    if (status.toLowerCase() === 'password reset' && resetLink) {
+        buttonUrl = resetLink;
         buttonText = 'Reset Your Password';
     } else if (recipient === 'admin' && orderId) {
         buttonUrl = `${baseUrl}/admin/orders/${orderId}`;
@@ -175,7 +175,7 @@ const styleEmail = (content: string, appName: string, orderId: string | undefine
         buttonText = 'View Order in Store';
     }
     
-    const showButton = buttonText && buttonUrl !== '#';
+    const showButton = buttonUrl && buttonText;
 
     return `
       <!DOCTYPE html>
