@@ -3,70 +3,59 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-  
-    // Helper functions
-    function isOwner(userId) {
-      return request.auth.uid == userId;
-    }
     
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
     function isAdmin() {
-      // Super admins have permanent access
+      // Super admins are hardcoded for bootstrap purposes
       let superAdmins = ["admin@jaytelclassic.com", "jaytelclassicstore@gmail.com", "temahfingerofgod@gmail.com"];
       if (request.auth.token.email in superAdmins) {
         return true;
       }
       
-      // Check for role-based access from the 'admins' collection
+      let adminDoc = get(/databases/$(database)/documents/admins/$(request.auth.uid));
       if (exists(/databases/$(database)/documents/admins/$(request.auth.uid))) {
-          let adminDoc = get(/databases/$(database)/documents/admins/$(request.auth.uid));
-          let expiresAt = adminDoc.data.expiresAt;
-          let role = adminDoc.data.role;
-          
-          // Allow if role is admin or superadmin and the token is not expired
-          return (role == 'admin' || role == 'superadmin') && (expiresAt == null || request.time < expiresAt);
+        let adminData = adminDoc.data;
+        let expiry = adminData.get('expiresAt', null);
+        let role = adminData.get('role', '');
+        
+        let hasValidRole = role == 'admin' || role == 'superadmin';
+        let isNotExpired = expiry == null || expiry > request.time;
+
+        return hasValidRole && isNotExpired;
       }
 
-      // If the document doesn't exist, they are not an admin.
       return false;
     }
 
-    // Publicly readable collections
+    // Site settings can be read by anyone, but only written by admins.
+    match /site/{document} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    // Products can be read by anyone, but only written by admins.
     match /products/{productId} {
       allow read: if true;
       allow write: if isAdmin();
     }
-    
-    match /site/{docId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
 
-    // User-specific collections
-    match /users/{userId} {
-      allow read, update: if isOwner(userId);
-      allow create: if request.auth.uid != null;
-    }
-
-    // Orders can be read by owners or admins.
-    // Orders can only be created by authenticated users.
-    // Orders can only be updated by admins.
+    // Orders can be created by authenticated users for themselves.
+    // Orders can be read/updated by the owner or any admin.
     match /orders/{orderId} {
-      allow read: if isOwner(request.resource.data.userId) || isAdmin();
-      allow create: if request.auth.uid != null;
-      allow update: if isAdmin();
-      allow delete: if isAdmin();
-    }
-    
-    // Admins collection can only be read by admins.
-    // Creation/deletion should be handled manually in the console for security.
-    match /admins/{adminId} {
-        allow read: if isAdmin();
-        allow write: if false; // Disallow client-side writes for security
+      allow read, update: if isOwner(resource.data.userId) || isAdmin();
+      allow create: if isOwner(request.resource.data.userId);
+      allow delete: if isAdmin(); // Only admins can delete orders
     }
 
-    // Allow logged-in users to read their own cart and wishlist
-    match /users/{userId}/{document=**} {
-      allow read, write: if isOwner(userId);
+    // Admins collection can only be read by admins themselves to check status.
+    // Only superadmins should be able to write/create/delete other admins,
+    // but for simplicity and security, we manage this directly in the Firebase Console.
+    match /admins/{adminId} {
+        allow read: if isOwner(adminId) || isAdmin();
+        allow write, create, delete: if false; // Prevent modification from client-side
     }
   }
 }
