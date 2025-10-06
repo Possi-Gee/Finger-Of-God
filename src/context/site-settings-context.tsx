@@ -77,33 +77,23 @@ const initialState: SiteSettingsState = {
   footer: {
     columns: [
       {
-        id: 1,
-        title: 'Shop',
-        links: [
-          { id: 1, label: 'Electronics', url: '#' },
-          { id: 2, label: 'Fashion', url: '#' },
-          { id: 3, label: 'Home Goods', url: '#' },
-          { id: 4, label: 'Groceries', url: '#' },
-        ],
-      },
-      {
         id: 2,
         title: 'Support',
         links: [
-          { id: 1, label: 'Contact Us', url: '#' },
-          { id: 2, label: 'FAQ', url: '#' },
-          { id: 3, label: 'Shipping & Returns', url: '#' },
-          { id: 4, label: 'Track Order', url: '#' },
+          { id: 1, label: 'Contact Us', url: '/contact' },
+          { id: 2, label: 'FAQ', url: '/faq' },
+          { id: 3, label: 'Shipping & Returns', url: '/shipping-returns' },
+          { id: 4, label: 'Track Order', url: '/orders' },
         ],
       },
        {
         id: 3,
         title: 'Company',
         links: [
-          { id: 1, label: 'About Us', url: '#' },
-          { id: 2, label: 'Careers', url: '#' },
-          { id: 3, label: 'Press', url: '#' },
-          { id: 4, label: 'Terms of Service', url: '#' },
+          { id: 1, label: 'About Us', url: '/about' },
+          { id: 2, label: 'Careers', url: '/careers' },
+          { id: 3, label: 'Press', url: '/press' },
+          { id: 4, label: 'Terms of Service', url: '/terms-of-service' },
         ],
       },
     ],
