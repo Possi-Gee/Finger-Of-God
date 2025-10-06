@@ -12,10 +12,9 @@ import {
     signInWithPopup,
     updateProfile,
     updatePassword,
-    sendPasswordResetEmail,
     type User 
 } from 'firebase/auth';
-import { getFunctions, httpsCallable } from 'firebase/functions';
+import { getFunctions } from 'firebase/functions';
 import { app } from '@/lib/firebase';
 import { useSiteSettings } from '@/hooks/use-site-settings';
 import { sendOrderUpdateEmail } from '@/ai/flows/send-order-update-email';
@@ -92,8 +91,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const result = await signInWithPopup(auth, googleProvider);
         return result.user;
     } catch (error: any) {
-        // This is a common case where the user closes the popup.
-        // We don't want to show an error for this.
         if (error.code === 'auth/popup-closed-by-user') {
             console.log("Google login popup closed by user.");
             return null;
@@ -139,25 +136,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const sendCustomPasswordResetEmail = async (email: string): Promise<{ success: boolean; message: string }> => {
     try {
-        const generateLink = httpsCallable(functions, 'generatePasswordResetLink');
-        const result = await generateLink({ email });
-        const { link } = result.data as { link: string };
-
+        // The logic is now entirely server-side in the Genkit flow.
         const emailResult = await sendOrderUpdateEmail({
             status: 'Password Reset',
             recipientEmail: email,
             customerName: 'Valued Customer',
             appName: settings.appName,
-            resetLink: link,
-            orderId: ''
         });
 
+        if (!emailResult.success) {
+            throw new Error(emailResult.message);
+        }
         return emailResult;
+
     } catch (error: any) {
         console.error("Password reset error:", error);
-        if (error.code === 'auth/user-not-found' || error.details?.code === 'not-found') {
-            throw new Error('No account found with that email address.');
-        }
         throw new Error(error.message || 'Failed to send password reset email.');
     }
   };

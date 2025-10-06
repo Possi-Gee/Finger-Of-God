@@ -2,9 +2,9 @@
 'use server';
 
 /**
- * @fileOverview A Genkit flow for sending order update emails using Nodemailer.
+ * @fileOverview A Genkit flow for sending order update and password reset emails.
  *
- * - sendOrderUpdateEmail - A function that sends an email notification to a customer when their order status changes.
+ * - sendOrderUpdateEmail - A function that sends an email notification.
  * - SendOrderUpdateEmailInput - The input type for the sendOrderUpdateEmail function.
  * - SendOrderUpdateEmailOutput - The return type for the sendOrderUpdateEmail function.
  */
@@ -12,6 +12,12 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import nodemailer from 'nodemailer';
+import admin from 'firebase-admin';
+
+// Initialize Firebase Admin SDK if not already initialized
+if (!admin.apps.length) {
+  admin.initializeApp();
+}
 
 const CartItemSchema = z.object({
   id: z.string(),
@@ -29,15 +35,16 @@ const CartItemSchema = z.object({
 });
 
 const SendOrderUpdateEmailInputSchema = z.object({
-  orderId: z.string().describe('The ID of the order.'),
-  status: z.string().describe('The new status of the order. Can be custom for different email types (e.g., "Confirmed").'),
-  recipientEmail: z.string().email().describe('The email address of the recipient (customer or admin).'),
+  status: z.string().describe('The purpose of the email (e.g., "Confirmed", "Shipped", "Password Reset").'),
+  recipientEmail: z.string().email().describe('The email address of the recipient.'),
   customerName: z.string().describe('The name of the customer.'),
   appName: z.string().describe('The name of the application.'),
+  orderId: z.string().optional().describe('The ID of the order.'),
   deliveryMethod: z.string().optional().describe('The delivery method for the order (e.g., "pickup", "delivery").'),
   paymentMethod: z.string().optional().describe('The payment method for the order (e.g., "on_delivery").'),
   total: z.number().optional().describe('The total amount of the order.'),
   items: z.array(CartItemSchema).optional().describe('The items in the order.'),
+  resetLink: z.string().url().optional().describe('A password reset link (DEPRECATED).'),
 });
 export type SendOrderUpdateEmailInput = z.infer<typeof SendOrderUpdateEmailInputSchema>;
 
@@ -49,15 +56,15 @@ export type SendOrderUpdateEmailOutput = z.infer<typeof SendOrderUpdateEmailOutp
 
 const getEmailContent = (
     status: string, 
-    orderId: string, 
     customerName: string, 
     appName: string, 
     recipient: 'customer' | 'admin',
-    input: SendOrderUpdateEmailInput
+    input: SendOrderUpdateEmailInput,
+    resetLink?: string,
 ) => {
-    const { deliveryMethod, paymentMethod, total, items } = input;
-    let subject = `Your ${appName} Order #${orderId} has been updated`;
-    let mainContent = `<p>Hi ${customerName},</p><p>There's an update on your order #${orderId}. The new status is: <strong>${status}</strong>.</p>`;
+    const { orderId, deliveryMethod, paymentMethod, total, items } = input;
+    let subject = `Update on your ${appName} Order`;
+    let mainContent = `<p>Hi ${customerName},</p><p>There's an update on your order. The new status is: <strong>${status}</strong>.</p>`;
 
     const isPickup = deliveryMethod === 'pickup';
 
@@ -65,7 +72,6 @@ const getEmailContent = (
       <h3>Order Summary</h3>
       <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
         ${items.map(item => {
-          // Use a reliable placeholder if the image source is from picsum.
           const imageSrc = item.image.includes('picsum.photos') 
             ? `https://placehold.co/64x64/EFEFEF/333333?text=${item.name.charAt(0)}` 
             : item.image;
@@ -84,17 +90,24 @@ const getEmailContent = (
     ` : '';
 
     switch (status.toLowerCase()) {
+        case 'password reset':
+            subject = `Reset Your Password for ${appName}`;
+            mainContent = `
+                <h2>Password Reset Request</h2>
+                <p>Hi ${customerName},</p>
+                <p>We received a request to reset your password. Click the button below to choose a new one. This link will expire in 1 hour.</p>
+                <p>If you did not request this, you can safely ignore this email.</p>
+            `;
+            break;
         case 'confirmed':
              subject = `✅ Your ${appName} Order Confirmation #${orderId}`;
              mainContent = `
                 <h2>Thanks for your order, ${customerName}!</h2>
                 <p>We've received your order #${orderId} and are getting it ready. We'll notify you as soon as it's ready for pickup or has shipped.</p>
              `;
-
              if (isPickup && paymentMethod === 'on_delivery' && total) {
                 mainContent += `<p><b>Please remember to bring GH₵${total.toFixed(2)} when you come to pick up your order.</b></p>`;
              }
-             
             break;
         case 'new order': // For Admin
             subject = `🎉 New Order Received! #${orderId}`;
@@ -142,21 +155,26 @@ const getEmailContent = (
             break;
     }
     
-    // Append the order summary at the end
-    const finalHtml = `${mainContent}${itemsHtml}`;
-
-    return { subject, html: styleEmail(finalHtml, appName, orderId, recipient) };
+    const finalHtml = status.toLowerCase() !== 'password reset' ? `${mainContent}${itemsHtml}` : mainContent;
+    return { subject, html: styleEmail(finalHtml, appName, orderId, recipient, status, resetLink) };
 };
 
-const styleEmail = (content: string, appName: string, orderId: string, recipient: 'customer' | 'admin') => {
-    // Use environment variable for the base URL, with fallbacks for Vercel and local dev.
+const styleEmail = (content: string, appName: string, orderId: string | undefined, recipient: 'customer' | 'admin', status: string, resetLink?: string) => {
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:9002');
     
-    const buttonUrl = recipient === 'admin' 
-      ? `${baseUrl}/admin/orders/${orderId}`
-      : `${baseUrl}/orders/${orderId}`;
-      
-    const buttonText = recipient === 'customer' ? 'View Order in Store' : 'View in Admin Panel';
+    let buttonUrl = '#';
+    let buttonText = '';
+
+    if (status.toLowerCase() === 'password reset') {
+        buttonUrl = resetLink || '#';
+        buttonText = 'Reset Your Password';
+    } else if (recipient === 'admin') {
+        buttonUrl = `${baseUrl}/admin/orders/${orderId}`;
+        buttonText = 'View in Admin Panel';
+    } else {
+        buttonUrl = `${baseUrl}/orders/${orderId}`;
+        buttonText = 'View Order in Store';
+    }
 
     return `
       <!DOCTYPE html>
@@ -183,9 +201,7 @@ const styleEmail = (content: string, appName: string, orderId: string, recipient
               </div>
               <div class="content">
                 ${content}
-                <div class="button-container">
-                    <a href="${buttonUrl}" class="button">${buttonText}</a>
-                </div>
+                ${buttonText ? `<div class="button-container"><a href="${buttonUrl}" class="button">${buttonText}</a></div>` : ''}
               </div>
               <div class="footer">
                   <p>Thank you for choosing ${appName}!</p>
@@ -209,7 +225,7 @@ const sendOrderUpdateEmailFlow = ai.defineFlow(
     outputSchema: SendOrderUpdateEmailOutputSchema,
   },
   async (input) => {
-    const { orderId, status, recipientEmail, customerName, appName } = input;
+    const { status, recipientEmail, customerName, appName } = input;
     
     const {
         EMAIL_HOST,
@@ -220,15 +236,28 @@ const sendOrderUpdateEmailFlow = ai.defineFlow(
     } = process.env;
 
     if (!EMAIL_HOST || !EMAIL_PORT || !EMAIL_USER || !EMAIL_PASS) {
-        const errorMessage = 'Email service is not configured. Please set required EMAIL environment variables for Nodemailer.';
+        const errorMessage = 'Email service is not configured. Please set required EMAIL environment variables.';
         console.error(errorMessage);
         return { success: false, message: errorMessage };
+    }
+    
+    let resetLink: string | undefined = undefined;
+    if (status.toLowerCase() === 'password reset') {
+        try {
+            resetLink = await admin.auth().generatePasswordResetLink(recipientEmail);
+        } catch (error: any) {
+            console.error('Failed to generate password reset link:', error);
+             if (error.code === 'auth/user-not-found') {
+                return { success: false, message: 'No account found with that email address.' };
+            }
+            return { success: false, message: `Failed to generate reset link: ${error.message}` };
+        }
     }
 
     const transporter = nodemailer.createTransport({
       host: EMAIL_HOST,
       port: parseInt(EMAIL_PORT, 10),
-      secure: parseInt(EMAIL_PORT, 10) === 465, // true for 465, false for other ports
+      secure: parseInt(EMAIL_PORT, 10) === 465,
       auth: {
         user: EMAIL_USER,
         pass: EMAIL_PASS,
@@ -236,9 +265,7 @@ const sendOrderUpdateEmailFlow = ai.defineFlow(
     });
     
     const recipientType = recipientEmail === ADMIN_EMAIL ? 'admin' : 'customer';
-
-    const { subject, html } = getEmailContent(status, orderId, customerName, appName, recipientType, input);
-    
+    const { subject, html } = getEmailContent(status, customerName, appName, recipientType, input, resetLink);
     const fromAddress = `"${appName}" <${EMAIL_USER}>`;
 
     const mailOptions = {
@@ -251,12 +278,13 @@ const sendOrderUpdateEmailFlow = ai.defineFlow(
     try {
       await transporter.sendMail(mailOptions);
       console.log(`Email sent successfully to ${recipientEmail}`);
-      return { success: true, message: `Update email sent to ${recipientEmail}.` };
+      const successMessage = status.toLowerCase() === 'password reset'
+        ? 'Password reset email sent successfully.'
+        : `Update email sent to ${recipientEmail}.`;
+      return { success: true, message: successMessage };
     } catch (error: any) {
       console.error('Failed to send email:', error);
       return { success: false, message: `Failed to send email: ${error.message}` };
     }
   }
 );
-
-    
