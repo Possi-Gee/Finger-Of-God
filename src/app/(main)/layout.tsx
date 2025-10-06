@@ -16,7 +16,9 @@ export default function MainLayout({
       {/* Spacer for bottom navbar on mobile */}
       <div className="pb-16 md:hidden"></div>
       {/* Mobile-only bottom navbar */}
-      <BottomNavbar />
+      <div className="md:hidden">
+        <BottomNavbar />
+      </div>
     </div>
   );
 }
