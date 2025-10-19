@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import Image from 'next/image';
-import { ArrowLeft, Package, Truck, User, MoreVertical, Store, MessageSquare } from 'lucide-react';
+import { ArrowLeft, Package, Truck, User, MoreVertical, Store, MessageSquare, Bike } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useMemo, useState } from 'react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -78,11 +78,11 @@ export default function AdminOrderDetailPage() {
             
             // Send email notification
             const emailResult = await sendOrderUpdateEmail({
-              orderId: order.id.toString(),
               status: status,
               recipientEmail: order.shippingAddress.email,
               customerName: order.shippingAddress.fullName,
               appName: siteSettings.appName,
+              orderId: order.id.toString(),
               deliveryMethod: order.deliveryMethod,
               paymentMethod: order.paymentMethod,
               total: order.total,
@@ -114,6 +114,10 @@ export default function AdminOrderDetailPage() {
     }
   };
   
+    const handleBookDelivery = () => {
+        window.open('https://express.yango.com/', '_blank', 'noopener,noreferrer');
+    };
+
   if (!order) {
     return (
       <div className="container mx-auto px-4 py-8 text-center">
@@ -128,29 +132,37 @@ export default function AdminOrderDetailPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <Button variant="ghost" onClick={() => router.push('/admin/orders')}>
             <ArrowLeft className="mr-2" /> Back to Orders
         </Button>
-        <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                <Button variant="outline" disabled={isUpdating}>
-                    {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Update Status <MoreVertical className="ml-2 h-4 w-4" />
+        <div className="flex items-center gap-2">
+            {order.deliveryMethod === 'delivery' && (
+                <Button variant="default" onClick={handleBookDelivery}>
+                    <Bike className="mr-2"/>
+                    Book Delivery
                 </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-                {statuses.map(status => (
-                    <DropdownMenuItem 
-                        key={status} 
-                        onClick={() => handleStatusChange(status)}
-                        disabled={order.status === status || isUpdating}
-                    >
-                        Mark as {order.deliveryMethod === 'pickup' && status === 'Shipped' ? 'Ready for Pickup' : status}
-                    </DropdownMenuItem>
-                ))}
-            </DropdownMenuContent>
-        </DropdownMenu>
+            )}
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="outline" disabled={isUpdating}>
+                        {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Update Status <MoreVertical className="ml-2 h-4 w-4" />
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                    {statuses.map(status => (
+                        <DropdownMenuItem 
+                            key={status} 
+                            onClick={() => handleStatusChange(status)}
+                            disabled={order.status === status || isUpdating}
+                        >
+                            Mark as {order.deliveryMethod === 'pickup' && status === 'Shipped' ? 'Ready for Pickup' : status}
+                        </DropdownMenuItem>
+                    ))}
+                </DropdownMenuContent>
+            </DropdownMenu>
+        </div>
       </div>
 
        <Card>
