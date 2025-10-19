@@ -115,7 +115,7 @@ export default function AdminOrderDetailPage() {
   };
   
     const handleBookDelivery = () => {
-        window.open('https://express.yango.com/', '_blank', 'noopener,noreferrer');
+        window.open('https://delivery.yango.com/', '_blank', 'noopener,noreferrer');
     };
 
   if (!order) {
