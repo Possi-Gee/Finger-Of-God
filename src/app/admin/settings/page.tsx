@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Trash2, PlusCircle, Palette, Text, Link as LinkIcon, Percent, Landmark, Image as ImageIcon, Home, Edit, Mail, Loader2, Users, ShieldAlert } from 'lucide-react';
+import { Trash2, PlusCircle, Palette, Text, Link as LinkIcon, Percent, Landmark, Image as ImageIcon, Home, Edit, Mail, Loader2, Users, ShieldAlert, Phone } from 'lucide-react';
 import Image from 'next/image';
 import { ProfileListItem } from '@/components/profile-list-item';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -27,6 +27,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 const generalSchema = z.object({ 
   appName: z.string().min(1, 'App name is required'),
   logoUrl: z.string().url().or(z.literal('')),
+  adminEmail: z.string().email('A valid email is required'),
+  adminPhone: z.string().min(1, 'Phone number is required'),
 });
 const commerceSchema = z.object({
   taxRate: z.coerce.number().min(0, 'Tax rate must be a positive number'),
@@ -93,7 +95,7 @@ export default function SiteSettingsPage() {
       </div>
       <p className="text-muted-foreground">Manage the global settings for your application.</p>
       
-      <GeneralSettingsForm onSubmit={createSubmitHandler('General Settings Updated')} defaultValues={{ appName: state.appName, logoUrl: state.logoUrl }} />
+      <GeneralSettingsForm onSubmit={createSubmitHandler('General Settings Updated')} defaultValues={{ appName: state.appName, logoUrl: state.logoUrl, adminEmail: state.adminEmail, adminPhone: state.adminPhone }} />
       <CommerceSettingsForm onSubmit={createSubmitHandler('Commerce Settings Updated')} defaultValues={{ taxRate: state.taxRate, shippingFee: state.shippingFee }} />
       <ThemeSettingsForm onSubmit={createSubmitHandler('Theme Updated')} defaultValues={state.theme} />
       <ContentManagementCard />
@@ -118,23 +120,43 @@ function GeneralSettingsForm({ onSubmit, defaultValues }: { onSubmit: (data: z.i
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><Text /> General</CardTitle>
-          <CardDescription>Basic application settings like name and logo.</CardDescription>
+          <CardDescription>Basic application settings like name, logo, and contact information.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="appName">App Name</Label>
-            <Input id="appName" {...register('appName')} />
-            {errors.appName && <p className="text-sm text-destructive mt-1">{errors.appName.message}</p>}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="appName">App Name</Label>
+              <Input id="appName" {...register('appName')} />
+              {errors.appName && <p className="text-sm text-destructive mt-1">{errors.appName.message}</p>}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="logoUrl">Logo URL</Label>
+              <Input id="logoUrl" {...register('logoUrl')} placeholder="https://example.com/logo.png" />
+              {errors.logoUrl && <p className="text-sm text-destructive mt-1">{errors.logoUrl.message}</p>}
+            </div>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="logoUrl">Logo URL</Label>
-            <Input id="logoUrl" {...register('logoUrl')} placeholder="https://example.com/logo.png" />
-            {errors.logoUrl && <p className="text-sm text-destructive mt-1">{errors.logoUrl.message}</p>}
-             {logoUrl && (
-              <div className="mt-4 p-4 border rounded-md bg-muted/50 flex items-center justify-center">
-                <Image src={logoUrl} alt="Logo Preview" width={100} height={40} style={{ objectFit: 'contain' }} />
+           {logoUrl && (
+            <div className="mt-4 p-4 border rounded-md bg-muted/50 flex items-center justify-center">
+              <Image src={logoUrl} alt="Logo Preview" width={100} height={40} style={{ objectFit: 'contain' }} />
+            </div>
+          )}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t">
+              <div className="space-y-2">
+                <Label htmlFor="adminEmail">Admin Email</Label>
+                 <div className="relative">
+                    <Mail className="absolute left-2 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                    <Input id="adminEmail" type="email" {...register('adminEmail')} className="pl-8" />
+                </div>
+                {errors.adminEmail && <p className="text-sm text-destructive mt-1">{errors.adminEmail.message}</p>}
               </div>
-            )}
+              <div className="space-y-2">
+                <Label htmlFor="adminPhone">Admin Phone</Label>
+                 <div className="relative">
+                    <Phone className="absolute left-2 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                    <Input id="adminPhone" type="tel" {...register('adminPhone')} className="pl-8" />
+                </div>
+                {errors.adminPhone && <p className="text-sm text-destructive mt-1">{errors.adminPhone.message}</p>}
+              </div>
           </div>
         </CardContent>
         <CardFooter>
@@ -474,3 +496,5 @@ function AdminManagementCard() {
     </>
   );
 }
+
+    
