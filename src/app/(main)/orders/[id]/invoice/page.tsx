@@ -5,43 +5,25 @@ import { useMemo, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useOrders } from '@/hooks/use-orders';
 import { useSiteSettings } from '@/hooks/use-site-settings';
-import { useHomepage } from '@/hooks/use-homepage';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Printer, ArrowLeft, Loader2, Download } from 'lucide-react';
+import { Printer, ArrowLeft, Loader2, Download, Package } from 'lucide-react';
 import Image from 'next/image';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { useAuth } from '@/hooks/use-auth';
 
-const getPaymentMethodName = (method: string) => {
-    const names: { [key: string]: string } = {
-        card: 'Credit/Debit Card',
-        mobile_money: 'Mobile Money',
-        on_delivery: 'Pay on Delivery',
-    };
-    return names[method] || 'Unknown';
-}
 
-const getPaymentStatus = (orderStatus: string) => {
-    if (orderStatus === 'Delivered') {
-        return { text: 'Paid', className: 'font-semibold text-green-600' };
-    }
-    return { text: 'Payment Pending', className: 'font-semibold text-yellow-600' };
-};
-
-
-export default function InvoicePage() {
+export default function PackingSlipPage() {
     const params = useParams();
     const router = useRouter();
     const { id } = params;
     const { state: orderState } = useOrders();
     const { loading: authLoading } = useAuth();
     const { state: siteSettings } = useSiteSettings();
-    const { state: homepageState } = useHomepage();
-    const invoiceRef = useRef<HTMLDivElement>(null);
+    const slipRef = useRef<HTMLDivElement>(null);
     const [isDownloading, setIsDownloading] = useState(false);
 
     const order = useMemo(() => {
@@ -49,25 +31,21 @@ export default function InvoicePage() {
     }, [id, orderState.orders]);
 
     const handleDownload = async () => {
-        if (!invoiceRef.current || !order) return;
+        if (!slipRef.current || !order) return;
         
         setIsDownloading(true);
 
-        // Hide buttons during capture
-        const buttons = invoiceRef.current.querySelectorAll('button');
+        const slipElement = slipRef.current;
+        const buttons = slipElement.querySelectorAll('button');
         buttons.forEach(btn => btn.style.visibility = 'hidden');
 
         try {
-            const canvas = await html2canvas(invoiceRef.current, {
-                scale: 2, // Higher scale for better quality
-                useCORS: true, 
-                backgroundColor: null,
-            });
-
-            // Restore button visibility
+            const canvas = await html2canvas(slipElement, { scale: 2, useCORS: true });
             buttons.forEach(btn => btn.style.visibility = 'visible');
-
             const imgData = canvas.toDataURL('image/png');
+            
+            // Standard A6 size in points (1pt = 1/72 inch) -> approx 297.6 x 419.5 pts
+            // Use pixels from canvas for better quality matching
             const pdf = new jsPDF({
                 orientation: 'portrait',
                 unit: 'px',
@@ -75,11 +53,10 @@ export default function InvoicePage() {
             });
             
             pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
-            pdf.save(`invoice-${order.id}.pdf`);
+            pdf.save(`packing-slip-${order.id}.pdf`);
 
         } catch (error) {
             console.error("Failed to generate PDF", error);
-            // Restore button visibility even on error
             buttons.forEach(btn => btn.style.visibility = 'visible');
         } finally {
             setIsDownloading(false);
@@ -91,7 +68,7 @@ export default function InvoicePage() {
         return (
              <div className="container mx-auto px-4 py-8 text-center">
                 <Loader2 className="mx-auto h-12 w-12 animate-spin" />
-                <p className="mt-4">Loading Invoice...</p>
+                <p className="mt-4">Loading Packing Slip...</p>
             </div>
         )
     }
@@ -100,7 +77,7 @@ export default function InvoicePage() {
         return (
             <div className="container mx-auto px-4 py-8 text-center">
                 <h1 className="text-2xl font-bold">Order Not Found</h1>
-                <p className="text-muted-foreground mt-2">The order you are looking for does not exist or you may not have permission to view it.</p>
+                <p className="text-muted-foreground mt-2">The order you are looking for does not exist.</p>
                  <Button onClick={() => router.push('/orders')} className="mt-6">
                     Back to My Orders
                 </Button>
@@ -108,49 +85,53 @@ export default function InvoicePage() {
         );
     }
     
-    const paymentStatus = getPaymentStatus(order.status);
-    
-    const contactNumber = useMemo(() => {
-        const ctaText = homepageState.callToAction.text;
-        const numberMatch = ctaText.match(/\b\d[\d\s-]+\d\b/);
-        return numberMatch ? numberMatch[0].trim() : '+233 123 456 789';
-    }, [homepageState.callToAction.text]);
-
 
     return (
-        <div className="bg-background text-foreground min-h-screen">
-            <div className="container mx-auto px-4 py-8">
-                 <div className="mb-8 flex justify-between items-center print:hidden">
+        <div className="bg-muted text-foreground min-h-screen py-8">
+            <div className="container mx-auto px-4">
+                 <div className="max-w-xl mx-auto mb-8 flex justify-between items-center print:hidden">
                     <Button variant="ghost" onClick={() => router.back()}>
-                        <ArrowLeft className="mr-2" /> Back to Order Details
+                        <ArrowLeft className="mr-2" /> Back
                     </Button>
-                    <Button onClick={handleDownload} disabled={isDownloading}>
-                        {isDownloading ? <Loader2 className="mr-2 animate-spin"/> : <Download className="mr-2"/>}
-                        {isDownloading ? 'Downloading...' : 'Download PDF'}
-                    </Button>
+                    <div className="flex gap-2">
+                        <Button onClick={() => window.print()}>
+                            <Printer className="mr-2" /> Print
+                        </Button>
+                        <Button onClick={handleDownload} disabled={isDownloading}>
+                            {isDownloading ? <Loader2 className="mr-2 animate-spin"/> : <Download className="mr-2"/>}
+                            {isDownloading ? 'Downloading...' : 'Download PDF'}
+                        </Button>
+                    </div>
                 </div>
-                <div ref={invoiceRef}>
-                    <Card className="p-8 shadow-lg print:shadow-none print:border-none print:p-0">
-                        <header className="flex justify-between items-start pb-6 border-b">
+                
+                <style type="text/css" media="print">
+                  {`
+                    @page { size: A6; margin: 0; }
+                    body { -webkit-print-color-adjust: exact; }
+                    .no-print { display: none; }
+                  `}
+                </style>
+
+                <div ref={slipRef} className="max-w-xl mx-auto">
+                    <Card className="p-6 shadow-lg print:shadow-none print:border-none print:p-0 bg-background">
+                        <header className="flex justify-between items-start pb-4 border-b">
                             <div>
                                 {siteSettings.logoUrl ? (
-                                    <Image src={siteSettings.logoUrl} alt={siteSettings.appName} width={120} height={50} className="object-contain rounded-md" />
+                                    <Image src={siteSettings.logoUrl} alt={siteSettings.appName} width={80} height={30} className="object-contain" />
                                 ) : (
-                                    <h1 className="text-3xl font-bold text-primary">{siteSettings.appName}</h1>
+                                    <h1 className="text-xl font-bold text-primary">{siteSettings.appName}</h1>
                                 )}
-                                <p className="text-muted-foreground mt-2">Your One-Stop Shop</p>
                             </div>
                             <div className="text-right">
-                                <h2 className="text-2xl font-bold uppercase tracking-wider">Invoice</h2>
-                                <p className="text-muted-foreground">#INV-{order.id}</p>
-                                <p className="text-muted-foreground mt-1">Date: {new Date(order.date).toLocaleDateString()}</p>
+                                <h2 className="text-lg font-bold uppercase">Packing Slip</h2>
+                                <p className="text-muted-foreground text-sm">Order #{order.id}</p>
                             </div>
                         </header>
 
-                        <section className="grid grid-cols-2 gap-8 my-8">
+                        <section className="grid grid-cols-2 gap-4 my-4 text-sm">
                             <div>
-                                <h3 className="font-semibold mb-2">Billed To:</h3>
-                                <address className="not-italic text-muted-foreground">
+                                <h3 className="font-semibold mb-1 text-xs uppercase text-muted-foreground">Ship To:</h3>
+                                <address className="not-italic">
                                     {order.shippingAddress.fullName}<br />
                                     {order.shippingAddress.address}<br />
                                     {order.shippingAddress.city}, {order.shippingAddress.state} {order.shippingAddress.zip}<br />
@@ -158,67 +139,40 @@ export default function InvoicePage() {
                                 </address>
                             </div>
                             <div className="text-right">
-                                <h3 className="font-semibold mb-2">Payment Details:</h3>
-                                <p className="text-muted-foreground">
-                                    Method: {getPaymentMethodName(order.paymentMethod)}
-                                </p>
-                                <p className="text-muted-foreground">
-                                    Status: <span className={paymentStatus.className}>{paymentStatus.text}</span>
-                                </p>
+                                <h3 className="font-semibold mb-1 text-xs uppercase text-muted-foreground">Order Date:</h3>
+                                <p>{new Date(order.date).toLocaleDateString()}</p>
                             </div>
                         </section>
+                        
+                        <Separator />
 
-                        <section>
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead className="w-[60%]">Item</TableHead>
-                                        <TableHead className="text-center">Quantity</TableHead>
-                                        <TableHead className="text-right">Unit Price</TableHead>
-                                        <TableHead className="text-right">Total</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {order.items.map(item => (
-                                        <TableRow key={item.id}>
-                                            <TableCell>
-                                                <p className="font-medium">{item.name}</p>
-                                                <p className="text-sm text-muted-foreground">{item.variant.name}</p>
-                                            </TableCell>
-                                            <TableCell className="text-center">{item.quantity}</TableCell>
-                                            <TableCell className="text-right">GH₵{item.variant.price.toFixed(2)}</TableCell>
-                                            <TableCell className="text-right">GH₵{(item.variant.price * item.quantity).toFixed(2)}</TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
+                        <section className="my-4">
+                            <h3 className="font-semibold mb-2 flex items-center gap-2"><Package size={16} /> Contents</h3>
+                             <div className="text-sm space-y-2">
+                                {order.items.map(item => (
+                                    <div key={item.id} className="flex justify-between items-center">
+                                        <div>
+                                            <span className="font-medium">{item.quantity} x</span> {item.name}
+                                            <span className="text-muted-foreground"> ({item.variant.name})</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
                         </section>
-
-                        <section className="flex justify-end mt-8">
-                            <div className="w-full max-w-sm space-y-4">
-                                <div className="flex justify-between">
-                                    <span className="text-muted-foreground">Subtotal</span>
-                                    <span>GH₵{order.subtotal.toFixed(2)}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-muted-foreground">Tax ({siteSettings.taxRate}%)</span>
-                                    <span>GH₵{order.tax.toFixed(2)}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-muted-foreground">Shipping</span>
-                                    <span>GH₵{order.shippingFee.toFixed(2)}</span>
-                                </div>
+                        
+                        {order.orderNotes && (
+                            <>
                                 <Separator />
-                                <div className="flex justify-between font-bold text-lg">
-                                    <span>Total</span>
-                                    <span>GH₵{order.total.toFixed(2)}</span>
-                                </div>
-                            </div>
-                        </section>
+                                <section className="my-4 text-sm">
+                                    <h3 className="font-semibold mb-1">Notes:</h3>
+                                    <p className="text-muted-foreground">{order.orderNotes}</p>
+                                </section>
+                            </>
+                        )}
 
-                        <footer className="mt-12 pt-6 border-t text-center text-muted-foreground text-sm">
-                            <p>Thank you for your business!</p>
-                            <p>{siteSettings.appName} | Accra, Ghana | {contactNumber}</p>
+
+                        <footer className="mt-6 pt-4 border-t text-center text-muted-foreground text-xs">
+                            <p>Thank you for shopping with {siteSettings.appName}!</p>
                         </footer>
                     </Card>
                 </div>
@@ -226,5 +180,3 @@ export default function InvoicePage() {
         </div>
     )
 }
-
-    
