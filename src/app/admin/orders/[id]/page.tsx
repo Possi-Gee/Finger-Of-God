@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import Image from 'next/image';
-import { ArrowLeft, Package, Truck, User, MoreVertical, Store, MessageSquare, Bike } from 'lucide-react';
+import { ArrowLeft, Package, Truck, User, MoreVertical, Store, MessageSquare, Bike, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useMemo, useState } from 'react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -21,6 +21,7 @@ import { useSiteSettings } from '@/hooks/use-site-settings';
 import { sendOrderUpdateEmail } from '@/ai/flows/send-order-update-email';
 import { errorEmitter } from '@/lib/firebase/error-emitter';
 import { FirestorePermissionError } from '@/lib/firebase/errors';
+import Link from 'next/link';
 
 
 const getStatusClass = (status: Order['status']) => {
@@ -137,6 +138,12 @@ export default function AdminOrderDetailPage() {
             <ArrowLeft className="mr-2" /> Back to Orders
         </Button>
         <div className="flex items-center gap-2">
+            <Button asChild variant="outline">
+                <Link href={`/orders/${order.id}/invoice`}>
+                    <FileText className="mr-2 h-4 w-4" />
+                    View Packing Slip
+                </Link>
+            </Button>
             {order.deliveryMethod === 'delivery' && (
                 <Button variant="default" onClick={handleBookDelivery}>
                     <Bike className="mr-2"/>
