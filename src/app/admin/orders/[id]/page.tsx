@@ -139,7 +139,7 @@ export default function AdminOrderDetailPage() {
         </Button>
         <div className="flex items-center gap-2">
             <Button asChild variant="outline">
-                <Link href={`/orders/${order.id}/invoice`}>
+                <Link href={`/admin/orders/${order.id}/packing-slip`}>
                     <FileText className="mr-2 h-4 w-4" />
                     View Packing Slip
                 </Link>

@@ -247,7 +247,7 @@ export default function OrderDetailPage() {
                       <Button asChild variant="outline" className="w-full">
                         <Link href={`/orders/${order.id}/invoice`}>
                             <FileText className="mr-2 h-4 w-4" />
-                            View Packing Slip
+                            View Invoice
                         </Link>
                      </Button>
                 </CardFooter>

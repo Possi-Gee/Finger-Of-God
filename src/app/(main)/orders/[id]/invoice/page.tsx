@@ -13,15 +13,16 @@ import Image from 'next/image';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { useAuth } from '@/hooks/use-auth';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
-export default function PackingSlipPage() {
+export default function InvoicePage() {
     const params = useParams();
     const router = useRouter();
     const { id } = params;
     const { state: orderState } = useOrders();
     const { loading: authLoading } = useAuth();
     const { state: siteSettings } = useSiteSettings();
-    const slipRef = useRef<HTMLDivElement>(null);
+    const invoiceRef = useRef<HTMLDivElement>(null);
     const [isDownloading, setIsDownloading] = useState(false);
 
     const order = useMemo(() => {
@@ -29,13 +30,13 @@ export default function PackingSlipPage() {
     }, [id, orderState.orders]);
 
     const handleDownload = async () => {
-        if (!slipRef.current || !order) return;
+        if (!invoiceRef.current || !order) return;
         
         setIsDownloading(true);
-        const slipElement = slipRef.current;
+        const invoiceElement = invoiceRef.current;
         
         try {
-            const canvas = await html2canvas(slipElement, { scale: 2, useCORS: true });
+            const canvas = await html2canvas(invoiceElement, { scale: 2, useCORS: true });
             const imgData = canvas.toDataURL('image/png');
             
             const pdf = new jsPDF({
@@ -45,19 +46,19 @@ export default function PackingSlipPage() {
             });
             
             pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
-            pdf.save(`packing-slip-${order.id}.pdf`);
+            pdf.save(`invoice-${order.id}.pdf`);
         } catch (error) {
             console.error("Failed to generate PDF", error);
         } finally {
             setIsDownloading(false);
         }
     };
-    
+
     if (authLoading || orderState.loading) {
         return (
              <div className="container mx-auto px-4 py-8 text-center">
                 <Loader2 className="mx-auto h-12 w-12 animate-spin" />
-                <p className="mt-4">Loading Packing Slip...</p>
+                <p className="mt-4">Loading Invoice...</p>
             </div>
         );
     }
@@ -77,9 +78,9 @@ export default function PackingSlipPage() {
     return (
         <div className="bg-muted text-foreground min-h-screen py-8 print:bg-white">
             <div className="container mx-auto px-4">
-                 <div className="max-w-xl mx-auto mb-8 flex justify-between items-center print:hidden">
+                 <div className="max-w-3xl mx-auto mb-8 flex justify-between items-center print:hidden">
                     <Button variant="ghost" onClick={() => router.back()}>
-                        <ArrowLeft className="mr-2" /> Back
+                        <ArrowLeft className="mr-2" /> Back to Order
                     </Button>
                     <div className="flex gap-2">
                         <Button onClick={() => window.print()}>
@@ -92,66 +93,91 @@ export default function PackingSlipPage() {
                     </div>
                 </div>
 
-                <div ref={slipRef} className="max-w-xl mx-auto">
-                    <Card className="p-6 shadow-lg print:shadow-none print:border-none print:p-0 bg-background print:bg-white">
-                        <header className="flex justify-between items-start pb-4 border-b">
+                <div ref={invoiceRef} className="max-w-3xl mx-auto print:max-w-none">
+                    <Card className="p-8 shadow-lg print:shadow-none print:border-none print:p-0 bg-background print:bg-white">
+                        <header className="flex justify-between items-start pb-6 border-b">
                             <div>
                                 {siteSettings.logoUrl ? (
-                                    <Image src={siteSettings.logoUrl} alt={siteSettings.appName} width={80} height={30} className="object-contain" />
+                                    <Image src={siteSettings.logoUrl} alt={siteSettings.appName} width={120} height={40} className="object-contain" />
                                 ) : (
-                                    <h1 className="text-xl font-bold text-primary">{siteSettings.appName}</h1>
+                                    <h1 className="text-2xl font-bold text-primary">{siteSettings.appName}</h1>
                                 )}
-                            </div>
-                            <div className="text-right">
-                                <h2 className="text-lg font-bold uppercase">Packing Slip</h2>
-                                <p className="text-muted-foreground text-sm">Order #{order.id}</p>
-                            </div>
-                        </header>
-
-                        <section className="grid grid-cols-2 gap-4 my-4 text-sm">
-                            <div>
-                                <h3 className="font-semibold mb-1 text-xs uppercase text-muted-foreground">Ship To:</h3>
-                                <address className="not-italic">
-                                    {order.shippingAddress.fullName}<br />
-                                    {order.shippingAddress.address}<br />
-                                    {order.shippingAddress.city}, {order.shippingAddress.state} {order.shippingAddress.zip}<br />
-                                    {order.shippingAddress.country}
+                                <address className="not-italic text-muted-foreground text-sm mt-2">
+                                    123 Classic Lane, Osu<br/>
+                                    Accra, Ghana
                                 </address>
                             </div>
                             <div className="text-right">
-                                <h3 className="font-semibold mb-1 text-xs uppercase text-muted-foreground">Order Date:</h3>
-                                <p>{new Date(order.date).toLocaleDateString()}</p>
+                                <h2 className="text-3xl font-bold uppercase text-primary">Invoice</h2>
+                                <p className="text-muted-foreground text-sm mt-1">Invoice #: {order.id}</p>
+                                <p className="text-muted-foreground text-sm">Date: {new Date(order.date).toLocaleDateString()}</p>
+                            </div>
+                        </header>
+
+                        <section className="grid grid-cols-2 gap-8 my-6 text-sm">
+                            <div>
+                                <h3 className="font-semibold mb-2 text-muted-foreground">Bill To:</h3>
+                                <address className="not-italic">
+                                    <strong>{order.shippingAddress.fullName}</strong><br />
+                                    {order.shippingAddress.address}<br />
+                                    {order.shippingAddress.city}, {order.shippingAddress.state} {order.shippingAddress.zip}<br />
+                                    {order.shippingAddress.country}<br/>
+                                    {order.shippingAddress.email}
+                                </address>
                             </div>
                         </section>
                         
-                        <Separator />
-
-                        <section className="my-4">
-                            <h3 className="font-semibold mb-2 flex items-center gap-2"><Package size={16} /> Contents</h3>
-                             <div className="text-sm space-y-2">
-                                {order.items.map(item => (
-                                    <div key={item.id} className="flex justify-between items-center">
-                                        <div>
-                                            <span className="font-medium">{item.quantity} x</span> {item.name}
-                                            <span className="text-muted-foreground"> ({item.variant.name})</span>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
+                        <section className="my-8">
+                             <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Item</TableHead>
+                                        <TableHead className="text-center">Quantity</TableHead>
+                                        <TableHead className="text-right">Price</TableHead>
+                                        <TableHead className="text-right">Total</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {order.items.map(item => (
+                                        <TableRow key={item.id}>
+                                            <TableCell>
+                                                <div className="font-medium">{item.name}</div>
+                                                <div className="text-xs text-muted-foreground">{item.variant.name}</div>
+                                            </TableCell>
+                                            <TableCell className="text-center">{item.quantity}</TableCell>
+                                            <TableCell className="text-right">GH₵{item.variant.price.toFixed(2)}</TableCell>
+                                            <TableCell className="text-right">GH₵{(item.variant.price * item.quantity).toFixed(2)}</TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
                         </section>
                         
-                        {order.orderNotes && (
-                            <>
-                                <Separator />
-                                <section className="my-4 text-sm">
-                                    <h3 className="font-semibold mb-1">Notes:</h3>
-                                    <p className="text-muted-foreground">{order.orderNotes}</p>
-                                </section>
-                            </>
-                        )}
+                        <div className="flex justify-end">
+                            <div className="w-full max-w-sm space-y-2 text-sm">
+                                <div className="flex justify-between">
+                                    <span className="text-muted-foreground">Subtotal</span>
+                                    <span className="font-medium">GH₵{order.subtotal.toFixed(2)}</span>
+                                </div>
+                                 <div className="flex justify-between">
+                                    <span className="text-muted-foreground">Shipping</span>
+                                    <span className="font-medium">GH₵{order.shippingFee.toFixed(2)}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-muted-foreground">Tax</span>
+                                    <span className="font-medium">GH₵{order.tax.toFixed(2)}</span>
+                                </div>
+                                <Separator/>
+                                <div className="flex justify-between text-base font-bold">
+                                    <span>Total</span>
+                                    <span>GH₵{order.total.toFixed(2)}</span>
+                                </div>
+                            </div>
+                        </div>
 
-                        <footer className="mt-6 pt-4 border-t text-center text-muted-foreground text-xs">
-                            <p>Thank you for shopping with {siteSettings.appName}!</p>
+                        <footer className="mt-8 pt-6 border-t text-center text-muted-foreground text-xs">
+                            <p>Thank you for your business!</p>
+                            <p>If you have any questions about this invoice, please contact us at support@jaytelclassic.com</p>
                         </footer>
                     </Card>
                 </div>
@@ -161,10 +187,10 @@ export default function PackingSlipPage() {
                   body * {
                     visibility: hidden;
                   }
-                  .max-w-xl.mx-auto > *, .max-w-xl.mx-auto {
+                  .print-container, .print-container * {
                     visibility: visible;
                   }
-                  .max-w-xl.mx-auto {
+                  .print-container {
                     position: absolute;
                     left: 0;
                     top: 0;
