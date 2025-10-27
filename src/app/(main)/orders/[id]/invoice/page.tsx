@@ -8,7 +8,6 @@ import { useSiteSettings } from '@/hooks/use-site-settings';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Printer, ArrowLeft, Loader2, Download, Package } from 'lucide-react';
 import Image from 'next/image';
 import jsPDF from 'jspdf';
@@ -36,16 +35,11 @@ export default function PackingSlipPage() {
         setIsDownloading(true);
 
         const slipElement = slipRef.current;
-        const buttons = slipElement.querySelectorAll('button');
-        buttons.forEach(btn => btn.style.visibility = 'hidden');
-
+        
         try {
             const canvas = await html2canvas(slipElement, { scale: 2, useCORS: true });
-            buttons.forEach(btn => btn.style.visibility = 'visible');
             const imgData = canvas.toDataURL('image/png');
             
-            // Standard A6 size in points (1pt = 1/72 inch) -> approx 297.6 x 419.5 pts
-            // Use pixels from canvas for better quality matching
             const pdf = new jsPDF({
                 orientation: 'portrait',
                 unit: 'px',
@@ -57,7 +51,6 @@ export default function PackingSlipPage() {
 
         } catch (error) {
             console.error("Failed to generate PDF", error);
-            buttons.forEach(btn => btn.style.visibility = 'visible');
         } finally {
             setIsDownloading(false);
         }
@@ -106,13 +99,24 @@ export default function PackingSlipPage() {
                 
                 <style type="text/css" media="print">
                   {`
-                    @page { size: A6; margin: 0; }
-                    body { -webkit-print-color-adjust: exact; }
-                    .no-print { display: none; }
+                    @media print {
+                      body * {
+                        visibility: hidden;
+                      }
+                      .printable-area, .printable-area * {
+                        visibility: visible;
+                      }
+                      .printable-area {
+                        position: absolute;
+                        left: 0;
+                        top: 0;
+                        width: 100%;
+                      }
+                    }
                   `}
                 </style>
 
-                <div ref={slipRef} className="max-w-xl mx-auto">
+                <div ref={slipRef} className="max-w-xl mx-auto printable-area">
                     <Card className="p-6 shadow-lg print:shadow-none print:border-none print:p-0 bg-background">
                         <header className="flex justify-between items-start pb-4 border-b">
                             <div>
