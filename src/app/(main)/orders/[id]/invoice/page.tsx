@@ -8,13 +8,14 @@ import { useSiteSettings } from '@/hooks/use-site-settings';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Printer, ArrowLeft, Loader2, Download, Package, CreditCard, Truck } from 'lucide-react';
+import { Printer, ArrowLeft, Loader2, Download, Package, CreditCard, Truck, BadgeDollarSign, CircleHelp } from 'lucide-react';
 import Image from 'next/image';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { useAuth } from '@/hooks/use-auth';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import type { Order } from '@/context/order-context';
+import { cn } from '@/lib/utils';
 
 const getPaymentMethodName = (method: string) => {
     const names: { [key: string]: string } = {
@@ -68,7 +69,7 @@ export default function InvoicePage() {
             setIsDownloading(false);
         }
     };
-
+    
     if (authLoading || orderState.loading) {
         return (
              <div className="container mx-auto px-4 py-8 text-center">
@@ -89,6 +90,8 @@ export default function InvoicePage() {
             </div>
         );
     }
+
+    const paymentStatus: 'Paid' | 'Pending Payment' = (order.paymentMethod === 'card' || order.status === 'Delivered') ? 'Paid' : 'Pending Payment';
 
     return (
         <div className="bg-muted min-h-screen py-8 print:bg-white">
@@ -141,12 +144,18 @@ export default function InvoicePage() {
                                     {order.shippingAddress.email}
                                 </address>
                             </div>
-                            <div className='text-right'>
+                            <div className='text-right space-y-1'>
                                 <h3 className="font-semibold mb-2 text-muted-foreground uppercase tracking-wider text-xs">Payment Details</h3>
+                                <p className={cn(
+                                    'flex items-center justify-end gap-2 font-semibold',
+                                    paymentStatus === 'Paid' ? 'text-green-600' : 'text-yellow-600'
+                                )}>
+                                    {paymentStatus === 'Paid' ? <BadgeDollarSign size={14}/> : <CircleHelp size={14}/>} {paymentStatus}
+                                </p>
                                 <p className='flex items-center justify-end gap-2'>
                                     <CreditCard size={14}/> {getPaymentMethodName(order.paymentMethod)}
                                 </p>
-                                <p className='flex items-center justify-end gap-2 mt-1'>
+                                <p className='flex items-center justify-end gap-2'>
                                     <Truck size={14}/> {order.deliveryMethod === 'delivery' ? 'Home Delivery' : 'In-store Pickup'}
                                 </p>
                             </div>
