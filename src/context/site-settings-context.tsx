@@ -41,6 +41,8 @@ export type SiteSettingsState = {
   appName: string;
   logoUrl: string;
   fromEmail: string;
+  adminEmail: string;
+  adminPhone: string;
   taxRate: number;
   shippingFee: number;
   theme: SiteTheme;
@@ -57,6 +59,8 @@ const initialState: SiteSettingsState = {
   appName: 'Jaytel Classic Store',
   logoUrl: '',
   fromEmail: 'onboarding@resend.dev',
+  adminEmail: 'admin@jaytelclassic.com',
+  adminPhone: '+233 30 274 0642',
   taxRate: 8,
   shippingFee: 5,
   theme: {

@@ -123,7 +123,7 @@ export default function InvoicePage() {
                                 <address className="not-italic text-muted-foreground text-sm mt-2">
                                     123 Classic Lane, Osu<br/>
                                     Accra, Ghana<br/>
-                                    support@jaytelclassic.com
+                                    {siteSettings.adminEmail}
                                 </address>
                             </div>
                             <div className="text-right">
@@ -211,7 +211,7 @@ export default function InvoicePage() {
 
                         <footer className="mt-12 pt-6 border-t text-center text-muted-foreground text-xs">
                             <p>Thank you for your business!</p>
-                            <p>If you have any questions about this invoice, please contact us at support@jaytelclassic.com</p>
+                            <p>If you have any questions about this invoice, please contact us at {siteSettings.adminEmail} or {siteSettings.adminPhone}</p>
                         </footer>
                     </Card>
                 </div>
