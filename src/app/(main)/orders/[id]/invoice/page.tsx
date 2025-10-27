@@ -8,12 +8,21 @@ import { useSiteSettings } from '@/hooks/use-site-settings';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Printer, ArrowLeft, Loader2, Download, Package } from 'lucide-react';
+import { Printer, ArrowLeft, Loader2, Download, Package, CreditCard, Truck } from 'lucide-react';
 import Image from 'next/image';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { useAuth } from '@/hooks/use-auth';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import type { Order } from '@/context/order-context';
+
+const getPaymentMethodName = (method: string) => {
+    const names: { [key: string]: string } = {
+        card: 'Credit/Debit Card',
+        on_delivery: 'Pay on Delivery',
+    };
+    return names[method] || 'Unknown';
+}
 
 export default function InvoicePage() {
     const params = useParams();
@@ -35,6 +44,10 @@ export default function InvoicePage() {
         setIsDownloading(true);
         const invoiceElement = invoiceRef.current;
         
+        // Temporarily hide buttons for the screenshot
+        const buttons = invoiceElement.querySelectorAll('button');
+        buttons.forEach(btn => btn.style.visibility = 'hidden');
+
         try {
             const canvas = await html2canvas(invoiceElement, { scale: 2, useCORS: true });
             const imgData = canvas.toDataURL('image/png');
@@ -50,6 +63,8 @@ export default function InvoicePage() {
         } catch (error) {
             console.error("Failed to generate PDF", error);
         } finally {
+            // Show buttons again
+            buttons.forEach(btn => btn.style.visibility = 'visible');
             setIsDownloading(false);
         }
     };
@@ -76,9 +91,9 @@ export default function InvoicePage() {
     }
 
     return (
-        <div className="bg-muted text-foreground min-h-screen py-8 print:bg-white">
+        <div className="bg-muted min-h-screen py-8 print:bg-white">
             <div className="container mx-auto px-4">
-                 <div className="max-w-3xl mx-auto mb-8 flex justify-between items-center print:hidden">
+                 <div className="max-w-4xl mx-auto mb-8 flex justify-between items-center print:hidden">
                     <Button variant="ghost" onClick={() => router.back()}>
                         <ArrowLeft className="mr-2" /> Back to Order
                     </Button>
@@ -93,7 +108,7 @@ export default function InvoicePage() {
                     </div>
                 </div>
 
-                <div ref={invoiceRef} className="max-w-3xl mx-auto print:max-w-none">
+                <div ref={invoiceRef} className="max-w-4xl mx-auto print-container">
                     <Card className="p-8 shadow-lg print:shadow-none print:border-none print:p-0 bg-background print:bg-white">
                         <header className="flex justify-between items-start pb-6 border-b">
                             <div>
@@ -104,26 +119,36 @@ export default function InvoicePage() {
                                 )}
                                 <address className="not-italic text-muted-foreground text-sm mt-2">
                                     123 Classic Lane, Osu<br/>
-                                    Accra, Ghana
+                                    Accra, Ghana<br/>
+                                    support@jaytelclassic.com
                                 </address>
                             </div>
                             <div className="text-right">
-                                <h2 className="text-3xl font-bold uppercase text-primary">Invoice</h2>
-                                <p className="text-muted-foreground text-sm mt-1">Invoice #: {order.id}</p>
+                                <h2 className="text-4xl font-bold uppercase text-primary">Invoice</h2>
+                                <p className="text-muted-foreground mt-1"># {order.id}</p>
                                 <p className="text-muted-foreground text-sm">Date: {new Date(order.date).toLocaleDateString()}</p>
                             </div>
                         </header>
 
-                        <section className="grid grid-cols-2 gap-8 my-6 text-sm">
+                        <section className="grid grid-cols-2 gap-8 my-8 text-sm">
                             <div>
-                                <h3 className="font-semibold mb-2 text-muted-foreground">Bill To:</h3>
+                                <h3 className="font-semibold mb-2 text-muted-foreground uppercase tracking-wider text-xs">Bill To</h3>
                                 <address className="not-italic">
                                     <strong>{order.shippingAddress.fullName}</strong><br />
-                                    {order.shippingAddress.address}<br />
-                                    {order.shippingAddress.city}, {order.shippingAddress.state} {order.shippingAddress.zip}<br />
-                                    {order.shippingAddress.country}<br/>
+                                    {order.shippingAddress.address && <>{order.shippingAddress.address}<br /></>}
+                                    {order.shippingAddress.city && <>{order.shippingAddress.city}, {order.shippingAddress.state} {order.shippingAddress.zip}<br /></>}
+                                    {order.shippingAddress.country && <>{order.shippingAddress.country}<br/></>}
                                     {order.shippingAddress.email}
                                 </address>
+                            </div>
+                            <div className='text-right'>
+                                <h3 className="font-semibold mb-2 text-muted-foreground uppercase tracking-wider text-xs">Payment Details</h3>
+                                <p className='flex items-center justify-end gap-2'>
+                                    <CreditCard size={14}/> {getPaymentMethodName(order.paymentMethod)}
+                                </p>
+                                <p className='flex items-center justify-end gap-2 mt-1'>
+                                    <Truck size={14}/> {order.deliveryMethod === 'delivery' ? 'Home Delivery' : 'In-store Pickup'}
+                                </p>
                             </div>
                         </section>
                         
@@ -131,9 +156,9 @@ export default function InvoicePage() {
                              <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead>Item</TableHead>
+                                        <TableHead className="w-[50%]">Item</TableHead>
                                         <TableHead className="text-center">Quantity</TableHead>
-                                        <TableHead className="text-right">Price</TableHead>
+                                        <TableHead className="text-right">Unit Price</TableHead>
                                         <TableHead className="text-right">Total</TableHead>
                                     </TableRow>
                                 </TableHeader>
@@ -146,7 +171,7 @@ export default function InvoicePage() {
                                             </TableCell>
                                             <TableCell className="text-center">{item.quantity}</TableCell>
                                             <TableCell className="text-right">GH₵{item.variant.price.toFixed(2)}</TableCell>
-                                            <TableCell className="text-right">GH₵{(item.variant.price * item.quantity).toFixed(2)}</TableCell>
+                                            <TableCell className="text-right font-medium">GH₵{(item.variant.price * item.quantity).toFixed(2)}</TableCell>
                                         </TableRow>
                                     ))}
                                 </TableBody>
@@ -164,18 +189,18 @@ export default function InvoicePage() {
                                     <span className="font-medium">GH₵{order.shippingFee.toFixed(2)}</span>
                                 </div>
                                 <div className="flex justify-between">
-                                    <span className="text-muted-foreground">Tax</span>
+                                    <span className="text-muted-foreground">Tax ({siteSettings.taxRate}%)</span>
                                     <span className="font-medium">GH₵{order.tax.toFixed(2)}</span>
                                 </div>
                                 <Separator/>
-                                <div className="flex justify-between text-base font-bold">
+                                <div className="flex justify-between text-base font-bold text-foreground">
                                     <span>Total</span>
                                     <span>GH₵{order.total.toFixed(2)}</span>
                                 </div>
                             </div>
                         </div>
 
-                        <footer className="mt-8 pt-6 border-t text-center text-muted-foreground text-xs">
+                        <footer className="mt-12 pt-6 border-t text-center text-muted-foreground text-xs">
                             <p>Thank you for your business!</p>
                             <p>If you have any questions about this invoice, please contact us at support@jaytelclassic.com</p>
                         </footer>
