@@ -14,7 +14,6 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { useAuth } from '@/hooks/use-auth';
 
-
 export default function PackingSlipPage() {
     const params = useParams();
     const router = useRouter();
@@ -33,7 +32,6 @@ export default function PackingSlipPage() {
         if (!slipRef.current || !order) return;
         
         setIsDownloading(true);
-
         const slipElement = slipRef.current;
         
         try {
@@ -48,22 +46,20 @@ export default function PackingSlipPage() {
             
             pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
             pdf.save(`packing-slip-${order.id}.pdf`);
-
         } catch (error) {
             console.error("Failed to generate PDF", error);
         } finally {
             setIsDownloading(false);
         }
     };
-
-
+    
     if (authLoading || orderState.loading) {
         return (
              <div className="container mx-auto px-4 py-8 text-center">
                 <Loader2 className="mx-auto h-12 w-12 animate-spin" />
                 <p className="mt-4">Loading Packing Slip...</p>
             </div>
-        )
+        );
     }
 
     if (!order) {
@@ -77,10 +73,9 @@ export default function PackingSlipPage() {
             </div>
         );
     }
-    
 
     return (
-        <div className="bg-muted text-foreground min-h-screen py-8">
+        <div className="bg-muted text-foreground min-h-screen py-8 print:bg-white">
             <div className="container mx-auto px-4">
                  <div className="max-w-xl mx-auto mb-8 flex justify-between items-center print:hidden">
                     <Button variant="ghost" onClick={() => router.back()}>
@@ -96,28 +91,9 @@ export default function PackingSlipPage() {
                         </Button>
                     </div>
                 </div>
-                
-                <style type="text/css" media="print">
-                  {`
-                    @media print {
-                      body * {
-                        visibility: hidden;
-                      }
-                      .printable-area, .printable-area * {
-                        visibility: visible;
-                      }
-                      .printable-area {
-                        position: absolute;
-                        left: 0;
-                        top: 0;
-                        width: 100%;
-                      }
-                    }
-                  `}
-                </style>
 
-                <div ref={slipRef} className="max-w-xl mx-auto printable-area">
-                    <Card className="p-6 shadow-lg print:shadow-none print:border-none print:p-0 bg-background">
+                <div ref={slipRef} className="max-w-xl mx-auto">
+                    <Card className="p-6 shadow-lg print:shadow-none print:border-none print:p-0 bg-background print:bg-white">
                         <header className="flex justify-between items-start pb-4 border-b">
                             <div>
                                 {siteSettings.logoUrl ? (
@@ -174,13 +150,28 @@ export default function PackingSlipPage() {
                             </>
                         )}
 
-
                         <footer className="mt-6 pt-4 border-t text-center text-muted-foreground text-xs">
                             <p>Thank you for shopping with {siteSettings.appName}!</p>
                         </footer>
                     </Card>
                 </div>
             </div>
+            <style jsx global>{`
+                @media print {
+                  body * {
+                    visibility: hidden;
+                  }
+                  .max-w-xl.mx-auto > *, .max-w-xl.mx-auto {
+                    visibility: visible;
+                  }
+                  .max-w-xl.mx-auto {
+                    position: absolute;
+                    left: 0;
+                    top: 0;
+                    width: 100%;
+                  }
+                }
+            `}</style>
         </div>
-    )
+    );
 }
