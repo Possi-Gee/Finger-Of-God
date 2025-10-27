@@ -1,7 +1,7 @@
 
 // Import the functions you need from the SDKs you need
 import { initializeApp, getApp, getApps } from "firebase/app";
-import { getFirestore, initializeFirestore, CACHE_SIZE_UNLIMITED } from "firebase/firestore";
+import { getFirestore, initializeFirestore, CACHE_SIZE_UNLIMITED, memoryLocalCache, persistentLocalCache } from "firebase/firestore";
 
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
@@ -18,10 +18,12 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
-// Initialize Firestore with offline persistence.
-// This helps the app load faster and work offline.
+// Initialize Firestore with offline persistence only on the client.
+// This helps the app load faster and work offline, while avoiding server-side errors.
 const db = initializeFirestore(app, {
-  cacheSizeBytes: CACHE_SIZE_UNLIMITED
+  localCache: typeof window !== 'undefined'
+    ? persistentLocalCache({cacheSizeBytes: CACHE_SIZE_UNLIMITED})
+    : memoryLocalCache({})
 });
 
 
