@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useSiteSettings, type SiteTheme, type FooterSettings } from '@/hooks/use-site-settings';
@@ -34,20 +34,75 @@ const commerceSchema = z.object({
   taxRate: z.coerce.number().min(0, 'Tax rate must be a positive number'),
   shippingFee: z.coerce.number().min(0, 'Shipping fee must be a positive number'),
 });
+
+const hexToHsl = (hex: string): string => {
+  if (!hex) return '';
+  let r = 0, g = 0, b = 0;
+  if (hex.length === 4) {
+    r = parseInt(hex[1] + hex[1], 16);
+    g = parseInt(hex[2] + hex[2], 16);
+    b = parseInt(hex[3] + hex[3], 16);
+  } else if (hex.length === 7) {
+    r = parseInt(hex.substring(1, 3), 16);
+    g = parseInt(hex.substring(3, 5), 16);
+    b = parseInt(hex.substring(5, 7), 16);
+  }
+  
+  r /= 255; g /= 255; b /= 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  let h = 0, s = 0, l = (max + min) / 2;
+
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+      case g: h = (b - r) / d + 2; break;
+      case b: h = (r - g) / d + 4; break;
+    }
+    h /= 6;
+  }
+  
+  return `${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
+};
+
+const hslToHex = (hsl: string): string => {
+    if (!hsl) return '#000000';
+    const [h, s, l] = hsl.match(/\d+/g)?.map(Number) ?? [0,0,0];
+    const s_norm = s / 100;
+    const l_norm = l / 100;
+
+    let c = (1 - Math.abs(2 * l_norm - 1)) * s_norm;
+    let x = c * (1 - Math.abs((h / 60) % 2 - 1));
+    let m = l_norm - c/2;
+    let r = 0, g = 0, b = 0;
+
+    if (0 <= h && h < 60) { [r,g,b] = [c,x,0] }
+    else if (60 <= h && h < 120) { [r,g,b] = [x,c,0] }
+    else if (120 <= h && h < 180) { [r,g,b] = [0,c,x] }
+    else if (180 <= h && h < 240) { [r,g,b] = [0,x,c] }
+    else if (240 <= h && h < 300) { [r,g,b] = [x,0,c] }
+    else if (300 <= h && h < 360) { [r,g,b] = [c,0,x] }
+
+    const toHex = (val: number) => Math.round((val + m) * 255).toString(16).padStart(2, '0');
+    return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+}
+
+
 const themeSchema = z.object({
-  background: z.string().min(1),
-  foreground: z.string().min(1),
-  primary: z.string().min(1),
-  'primary-foreground': z.string().min(1),
-  accent: z.string().min(1),
-  'accent-foreground': z.string().min(1),
-  card: z.string().min(1),
-  'card-foreground': z.string().min(1),
-popover: z.string().min(1),
-  'popover-foreground': z.string().min(1),
-  border: z.string().min(1),
-  input: z.string().min(1),
-  ring: z.string().min(1),
+  background: z.string(),
+  foreground: z.string(),
+  primary: z.string(),
+  'primary-foreground': z.string(),
+  accent: z.string(),
+  'accent-foreground': z.string(),
+  card: z.string(),
+  'card-foreground': z.string(),
+  popover: z.string(),
+  'popover-foreground': z.string(),
+  border: z.string(),
+  input: z.string(),
+  ring: z.string(),
 });
 const footerSchema = z.object({
   columns: z.array(z.object({
@@ -73,7 +128,14 @@ export default function SiteSettingsPage() {
 
   const createSubmitHandler = (toastTitle: string) => async (data: any) => {
     try {
-        await updateSettings(data);
+        let payload = data;
+        // Special handling for theme data to convert hex to HSL
+        if (toastTitle === 'Theme Updated') {
+            payload = Object.fromEntries(
+              Object.entries(data).map(([key, value]) => [key, hexToHsl(value as string)])
+            );
+        }
+        await updateSettings(payload);
         toast({
             title: toastTitle,
             description: 'Your settings have been saved.',
@@ -214,27 +276,56 @@ function CommerceSettingsForm({ onSubmit, defaultValues }: { onSubmit: (data: z.
 }
 
 function ThemeSettingsForm({ onSubmit, defaultValues }: { onSubmit: (data: z.infer<typeof themeSchema>) => Promise<void>; defaultValues: SiteTheme }) {
-  const { register, handleSubmit, formState: { errors, isSubmitting }, reset } = useForm({ resolver: zodResolver(themeSchema), defaultValues });
+  const hexDefaultValues = React.useMemo(() => {
+    return Object.fromEntries(
+      Object.entries(defaultValues).map(([key, value]) => [key, hslToHex(value)])
+    ) as Record<keyof SiteTheme, string>;
+  }, [defaultValues]);
+
+  const { control, handleSubmit, formState: { errors, isSubmitting }, reset, watch } = useForm({
+    resolver: zodResolver(themeSchema),
+    defaultValues: hexDefaultValues
+  });
   
   useEffect(() => {
-    reset(defaultValues);
-  }, [defaultValues, reset]);
+    reset(hexDefaultValues);
+  }, [hexDefaultValues, reset]);
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><Palette /> Theme Colors</CardTitle>
-          <CardDescription>Customize the look and feel of your app. Enter HSL values as `H S% L%` (e.g., `222 47% 11%`).</CardDescription>
+          <CardDescription>Customize the look and feel of your app. Click the color swatch to pick a new color.</CardDescription>
         </CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {(Object.keys(defaultValues) as Array<keyof SiteTheme>).map((key) => (
-            <div key={key} className="space-y-2">
-              <Label htmlFor={`theme-${key}`} className="capitalize">{key.replace(/-/g, ' ')}</Label>
-              <Input id={`theme-${key}`} {...register(key)} />
-              {errors[key] && <p className="text-sm text-destructive mt-1">{errors[key]?.message}</p>}
-            </div>
-          ))}
+          {(Object.keys(hexDefaultValues) as Array<keyof SiteTheme>).map((key) => {
+            const colorValue = watch(key);
+            return (
+              <Controller
+                key={key}
+                name={key}
+                control={control}
+                render={({ field }) => (
+                  <div className="space-y-2">
+                    <Label htmlFor={`theme-${key}`} className="capitalize">{key.replace(/-/g, ' ')}</Label>
+                    <div className="relative flex items-center">
+                        <Input id={`theme-${key}`} {...field} className="pl-12" />
+                        <div className="absolute left-2 h-6 w-8 rounded-md border" style={{ backgroundColor: colorValue }}>
+                           <Input 
+                                type="color" 
+                                value={colorValue}
+                                onChange={(e) => field.onChange(e.target.value)}
+                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                            />
+                        </div>
+                    </div>
+                    {errors[key] && <p className="text-sm text-destructive mt-1">{errors[key]?.message}</p>}
+                  </div>
+                )}
+              />
+            );
+          })}
         </CardContent>
         <CardFooter>
             <Button type="submit" disabled={isSubmitting}>
@@ -496,5 +587,7 @@ function AdminManagementCard() {
     </>
   );
 }
+
+    
 
     
