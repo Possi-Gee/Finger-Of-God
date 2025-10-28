@@ -6,7 +6,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { db } from '@/lib/firebase';
-import { collection, doc, onSnapshot, query, setDoc, orderBy, runTransaction } from 'firebase/firestore';
+import { collection, doc, onSnapshot, query, setDoc, orderBy, runTransaction, where } from 'firebase/firestore';
 import { useAuth } from '@/hooks/use-auth';
 import type { Product, Review } from '@/lib/products';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
