@@ -48,7 +48,8 @@ type FaqQuestion = z.infer<typeof FaqQuestionSchema>;
  * The AI model will use this tool when it determines the user is asking
  * about shipping, returns, or payment policies.
  */
-export const getFaqTool = () => ai.defineTool(
+export async function getFaqTool() {
+  return ai.defineTool(
     {
         name: 'getFaq',
         description: 'Get information about store policies such as shipping, returns, and payment methods.',
@@ -60,4 +61,5 @@ export const getFaqTool = () => ai.defineTool(
     async ({ topic }) => {
         return JSON.stringify(FAQ_DATA[topic]);
     }
-);
+  );
+}

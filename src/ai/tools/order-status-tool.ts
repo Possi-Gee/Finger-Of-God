@@ -15,7 +15,7 @@ import type { Order } from '@/context/order-context';
  * @param userId - The ID of the user whose orders are being requested.
  * @returns A Genkit tool.
  */
-export const getOrderStatusTool = (userId?: string) => ai.defineTool(
+export const getOrderStatusTool = async (userId?: string) => ai.defineTool(
   {
     name: 'getOrderStatus',
     description: 'Get the status of the user\'s most recent orders. Only works if the user is logged in.',

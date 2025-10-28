@@ -14,7 +14,7 @@ import type { Product } from '@/lib/products';
  * Creates a Genkit tool to find products based on a search query.
  * The AI model uses this tool to help users find items in the store.
  */
-export const getProductSearchTool = () => ai.defineTool(
+export const getProductSearchTool = async () => ai.defineTool(
   {
     name: 'findProducts',
     description: 'Search for products available in the store based on a user\'s query.',

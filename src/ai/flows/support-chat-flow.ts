@@ -53,7 +53,7 @@ const supportChatFlow = ai.defineFlow(
   },
   async (input) => {
     // Dynamically get tools. This allows tools to access user-specific data like userId.
-    const faqTool = getFaqTool();
+    const faqTool = await getFaqTool();
     const orderStatusTool = getOrderStatusTool(input.userId);
     const productSearchTool = getProductSearchTool();
     
