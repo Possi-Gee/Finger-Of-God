@@ -58,7 +58,7 @@ const supportChatFlow = ai.defineFlow(
     const productSearchTool = await getProductSearchTool();
     
     // Construct the full chat history, including the system prompt
-    const history: Message[] = [
+    const messages: Message[] = [
         {
             role: 'system',
             content: [{
@@ -80,7 +80,7 @@ const supportChatFlow = ai.defineFlow(
 
     const { output } = await ai.generate({
       model: 'googleai/gemini-1.5-flash',
-      history,
+      messages,
       tools: [faqTool, orderStatusTool, productSearchTool],
       config: {
         // Lower temperature for more predictable, less "creative" responses
