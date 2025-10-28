@@ -1,5 +1,6 @@
 
 import { BottomNavbar } from '@/components/bottom-navbar';
+import { ChatWidget } from '@/components/chat-widget';
 import { Footer } from '@/components/footer';
 import { Header } from '@/components/header';
 
@@ -13,6 +14,7 @@ export default function MainLayout({
       <Header />
       <main className="flex-1">{children}</main>
       <Footer />
+      <ChatWidget />
       {/* Spacer for bottom navbar on mobile */}
       <div className="pb-16 md:hidden"></div>
       {/* Mobile-only bottom navbar */}
