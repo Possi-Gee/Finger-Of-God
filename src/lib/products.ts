@@ -200,3 +200,15 @@ export const products: Product[] = [
     ],
   }
 ];
+
+export type Review = {
+    id: string;
+    productId: string;
+    userId: string;
+    userName: string;
+    userImage?: string;
+    rating: number;
+    title: string;
+    comment: string;
+    createdAt: string; // ISO 8601 date string
+};

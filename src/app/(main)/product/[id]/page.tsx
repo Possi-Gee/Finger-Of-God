@@ -10,7 +10,7 @@ import { useWishlist } from '@/hooks/use-wishlist';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { Heart, ShoppingCart, Minus, Plus } from 'lucide-react';
+import { Heart, ShoppingCart, Minus, Plus, Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { ProductCard } from '@/components/product-card';
@@ -18,6 +18,7 @@ import type { ProductVariant } from '@/lib/products';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Input } from '@/components/ui/input';
+import { ProductReviews } from '@/components/product-reviews';
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -160,6 +161,14 @@ export default function ProductDetailPage() {
           <div>
             <p className="text-sm font-medium text-primary">{product.category}</p>
             <h1 className="text-3xl lg:text-4xl font-bold mt-2">{product.name}</h1>
+            <div className="flex items-center gap-2 mt-2">
+                <div className="flex items-center">
+                    {[...Array(5)].map((_, i) => (
+                        <Star key={i} className={cn("h-5 w-5", i < Math.round(product.rating || 0) ? "text-yellow-400 fill-yellow-400" : "text-gray-300")} />
+                    ))}
+                </div>
+                <span className="text-sm text-muted-foreground">({product.reviews} reviews)</span>
+            </div>
             <p className="text-3xl font-bold text-primary mt-4">GH₵{selectedVariant?.price.toFixed(2)}</p>
           </div>
           
@@ -227,6 +236,10 @@ export default function ProductDetailPage() {
             </div>
           </div>
         </div>
+      </div>
+
+      <div className="mt-16">
+        <ProductReviews product={product} />
       </div>
 
       {relatedProducts.length > 0 && (
