@@ -64,7 +64,7 @@ const supportChatFlow = ai.defineFlow(
     ];
 
     const { output } = await ai.generate({
-      model: 'googleai/gemini-1.5-pro',
+      model: 'googleai/gemini-1.5-flash',
       history,
       tools: [faqTool, orderStatusTool, productSearchTool],
       prompt: `
